@@ -4,6 +4,7 @@ import chaptersData from '../data/chapters.json'
 import materialsData from '../data/materials.json'
 import scenesData from '../data/scenes.json'
 import endingsData from '../data/endings.json'
+import questsData from '../data/quests.json'
 
 const AUTO_SAVE_KEY = 'journal_game_autosave'
 const AUTO_SAVE_BACKUP_KEY = 'journal_game_autosave_backup'
@@ -17,6 +18,7 @@ const NEW_GAME_PLUS_KEY = 'journal_game_ngp'
 const HIDDEN_MATERIALS_KEY = 'journal_game_hidden_materials'
 const CYCLE_ACHIEVEMENTS_KEY = 'journal_game_cycle_achievements'
 const CHARACTER_RELATION_KEY = 'journal_game_character_relation'
+const QUEST_PROGRESS_KEY = 'journal_game_quest_progress'
 const AUTO_SAVE_DIALOGUE_INTERVAL = 5
 const HEARTBEAT_INTERVAL = 20000
 const CRASH_RECOVERY_THRESHOLD = 180000
@@ -295,6 +297,28 @@ export const useGameStore = defineStore('game', () => {
       reward: { type: 'unlock_material', value: 'frozen_teardrop' }
     }
   ])
+
+  const quests = ref(questsData)
+
+  const questProgress = ref({})
+
+  const activeQuests = ref([])
+
+  const completedQuests = ref([])
+
+  const questNotifications = ref([])
+
+  const showQuestPanel = ref(false)
+
+  const selectedQuestId = ref(null)
+
+  const totalEmotionAccumulated = ref(0)
+
+  const totalCombosTriggered = ref(0)
+
+  const scenesCompleted = ref([])
+
+  const chaptersStarted = ref([])
 
   const ngpNotification = ref(null)
 
@@ -1763,6 +1787,10 @@ export const useGameStore = defineStore('game', () => {
     const chapter = getChapterById(chapterId)
     if (!chapter || !unlockedChapters.value.includes(chapterId)) return
 
+    if (!chaptersStarted.value.includes(chapterId)) {
+      chaptersStarted.value.push(chapterId)
+    }
+
     currentChapterId.value = chapterId
     currentSceneId.value = chapter.scenes[0]
     currentDialogueIndex.value = 0
@@ -1790,6 +1818,8 @@ export const useGameStore = defineStore('game', () => {
     hiddenDialogueSequence.value = []
 
     emotionValue.value = newGamePlus.value.inheritedEmotion
+
+    trackQuestEvent('start_chapter', { chapterId })
 
     const firstScene = scenes.value[chapter.scenes[0]]
     if (firstScene) {
@@ -1864,6 +1894,9 @@ export const useGameStore = defineStore('game', () => {
       positiveBonus.value += randomFluctuation
     }
 
+    trackQuestEvent('emotion_change', {})
+    updateTotalEmotionAccumulated()
+
     processDialogueAffinity(dialogue)
     addEmotionLog('dialogue', finalEmotion, {
       dialogueId: dialogue.id,
@@ -1892,6 +1925,10 @@ export const useGameStore = defineStore('game', () => {
       currentDialogueIndex.value++
     } else if (currentScene.value.nextScene) {
       const prevSceneId = currentSceneId.value
+      if (!scenesCompleted.value.includes(prevSceneId)) {
+        scenesCompleted.value.push(prevSceneId)
+      }
+      trackQuestEvent('complete_scene', { sceneId: prevSceneId })
       currentSceneId.value = currentScene.value.nextScene
       currentDialogueIndex.value = 0
       sceneBackgroundOverride.value = null
@@ -1907,12 +1944,20 @@ export const useGameStore = defineStore('game', () => {
       }
 
       recordSceneTransition(prevSceneId, currentScene.value.nextScene)
+    } else {
+      const prevSceneId = currentSceneId.value
+      if (!scenesCompleted.value.includes(prevSceneId)) {
+        scenesCompleted.value.push(prevSceneId)
+      }
+      trackQuestEvent('complete_scene', { sceneId: prevSceneId })
     }
   }
 
   const showHiddenDialogue = (hiddenDialogue) => {
     activeHiddenDialogue.value = { ...hiddenDialogue }
     isShowingHiddenDialogue.value = true
+
+    trackQuestEvent('find_hidden', { hiddenDialogueId: hiddenDialogue.id, hiddenDialogueName: hiddenDialogue.title })
 
     hiddenDialogueSequence.value.push({
       dialogueId: hiddenDialogue.id,
@@ -2002,6 +2047,11 @@ export const useGameStore = defineStore('game', () => {
 
     comboJustTriggered.value = combo
 
+    trackQuestEvent('trigger_combo', { comboId: combo.id, comboName: combo.name })
+    updateTotalCombosTriggered()
+    trackQuestEvent('emotion_change', {})
+    updateTotalEmotionAccumulated()
+
     setTimeout(() => {
       if (comboJustTriggered.value?.id === combo.id) {
         comboJustTriggered.value = null
@@ -2085,6 +2135,10 @@ export const useGameStore = defineStore('game', () => {
       isPerfect,
       emotionGain: material.emotion + placementBonus
     })
+
+    trackQuestEvent('place_material', { materialId, isOptional: true, isPerfect })
+    trackQuestEvent('emotion_change', {})
+    updateTotalEmotionAccumulated()
 
     return {
       success: true,
@@ -2172,10 +2226,18 @@ export const useGameStore = defineStore('game', () => {
       emotionGain: material.emotion + placementBonus
     })
 
+    trackQuestEvent('place_material', { materialId, isOptional: false, isPerfect })
+    trackQuestEvent('emotion_change', {})
+    updateTotalEmotionAccumulated()
+
     if (currentDialogueIndex.value < currentScene.value.dialogues.length - 1) {
       currentDialogueIndex.value++
     } else if (currentScene.value.nextScene) {
       const prevSceneId = currentSceneId.value
+      if (!scenesCompleted.value.includes(prevSceneId)) {
+        scenesCompleted.value.push(prevSceneId)
+      }
+      trackQuestEvent('complete_scene', { sceneId: prevSceneId })
       currentSceneId.value = currentScene.value.nextScene
       currentDialogueIndex.value = 0
       sceneBackgroundOverride.value = null
@@ -2191,6 +2253,12 @@ export const useGameStore = defineStore('game', () => {
       }
 
       recordSceneTransition(prevSceneId, currentScene.value.nextScene)
+    } else {
+      const prevSceneId = currentSceneId.value
+      if (!scenesCompleted.value.includes(prevSceneId)) {
+        scenesCompleted.value.push(prevSceneId)
+      }
+      trackQuestEvent('complete_scene', { sceneId: prevSceneId })
     }
 
     return {
@@ -2290,6 +2358,10 @@ export const useGameStore = defineStore('game', () => {
     finalizeChapterPathStats(chapter.id)
 
     processChapterCompletionAffinity(chapter.id)
+
+    trackQuestEvent('complete_chapter', { chapterId: chapter.id, isPerfect })
+    trackQuestEvent('emotion_change', {})
+    updateTotalEmotionAccumulated()
 
     checkAndUnlockChapters()
   }
@@ -3598,6 +3670,8 @@ export const useGameStore = defineStore('game', () => {
       localStorage.removeItem(CYCLE_ACHIEVEMENTS_KEY)
       localStorage.removeItem(TUTORIAL_KEY)
     }
+
+    resetQuestProgress()
   }
 
   const goToChapterSelect = () => {
@@ -4785,9 +4859,434 @@ export const useGameStore = defineStore('game', () => {
   loadNewGamePlusData()
   loadCrossCycleAchievements()
   loadCharacterRelationData()
+  loadQuestProgress()
   checkAndUnlockChapters()
   checkHiddenMaterialUnlockConditions()
   checkAffinityChapterUnlocks()
+  initializeQuestSystem()
+
+  const questTypeLabels = {
+    main: { name: '主线', color: '#ec4899', icon: '📖' },
+    side: { name: '支线', color: '#8b5cf6', icon: '✨' },
+    collect: { name: '收集', color: '#f59e0b', icon: '🎯' },
+    milestone: { name: '里程碑', color: '#06b6d4', icon: '🏆' },
+    achievement: { name: '成就', color: '#10b981', icon: '👑' }
+  }
+
+  const getQuestById = (questId) => {
+    return quests.value.find(q => q.id === questId) || null
+  }
+
+  const getQuestProgress = (questId) => {
+    if (!questProgress.value[questId]) {
+      questProgress.value[questId] = {
+        questId,
+        objectives: {},
+        completed: false,
+        claimed: false,
+        unlocked: false,
+        unlockedAt: null,
+        completedAt: null
+      }
+    }
+    return questProgress.value[questId]
+  }
+
+  const getObjectiveProgress = (questId, objectiveId) => {
+    const progress = getQuestProgress(questId)
+    if (!progress.objectives[objectiveId]) {
+      progress.objectives[objectiveId] = {
+        current: 0,
+        target: 1,
+        completed: false
+      }
+    }
+    return progress.objectives[objectiveId]
+  }
+
+  const checkQuestUnlockCondition = (condition) => {
+    if (!condition) return true
+
+    switch (condition.type) {
+      case 'game_start':
+        return isInitialized.value
+      case 'chapter_start':
+        return chaptersStarted.value.includes(condition.target)
+      case 'chapter_completed':
+        return completedChapters.value.includes(condition.target)
+      case 'quest_complete':
+        return completedQuests.value.includes(condition.target)
+      case 'affinity_reach':
+        return (characterAffinities.value[condition.characterId] || 0) >= condition.value
+      case 'emotion_reached':
+        return emotionValue.value >= condition.value
+      default:
+        return false
+    }
+  }
+
+  const checkQuestUnlock = (quest) => {
+    const progress = getQuestProgress(quest.id)
+    if (progress.unlocked) return true
+    if (!quest.unlockConditions || quest.unlockConditions.length === 0) return true
+
+    const allMet = quest.unlockConditions.every(condition => checkQuestUnlockCondition(condition))
+    if (allMet) {
+      progress.unlocked = true
+      progress.unlockedAt = Date.now()
+      if (!activeQuests.value.includes(quest.id)) {
+        activeQuests.value.push(quest.id)
+      }
+      showQuestNotification(`📜 新任务解锁：${quest.title}`, 'info', 3000)
+      saveQuestProgress()
+    }
+    return allMet
+  }
+
+  const initializeQuestSystem = () => {
+    quests.value.forEach(quest => {
+      checkQuestUnlock(quest)
+    })
+    updateTotalEmotionAccumulated()
+    updateTotalCombosTriggered()
+  }
+
+  const updateObjectiveProgress = (questId, objectiveId, increment = 1) => {
+    const quest = getQuestById(questId)
+    if (!quest) return
+
+    const progress = getQuestProgress(questId)
+    if (progress.completed) return
+
+    if (!progress.unlocked) {
+      if (!checkQuestUnlock(quest)) return
+    }
+
+    const objective = quest.objectives.find(o => o.id === objectiveId)
+    if (!objective) return
+
+    const objProgress = getObjectiveProgress(questId, objectiveId)
+    objProgress.target = objective.count || 1
+    objProgress.current = Math.min(objProgress.target, objProgress.current + increment)
+    objProgress.completed = objProgress.current >= objProgress.target
+
+    checkQuestCompletion(questId)
+    saveQuestProgress()
+  }
+
+  const checkQuestCompletion = (questId) => {
+    const quest = getQuestById(questId)
+    const progress = getQuestProgress(questId)
+
+    if (progress.completed) return
+
+    const allObjectivesCompleted = quest.objectives.every(obj => {
+      const objProgress = getObjectiveProgress(questId, obj.id)
+      return objProgress.completed
+    })
+
+    if (allObjectivesCompleted) {
+      progress.completed = true
+      progress.completedAt = Date.now()
+      completedQuests.value.push(questId)
+
+      const index = activeQuests.value.indexOf(questId)
+      if (index > -1) {
+        activeQuests.value.splice(index, 1)
+      }
+
+      claimQuestRewards(questId)
+
+      if (quest.nextQuest) {
+        const nextQuest = getQuestById(quest.nextQuest)
+        if (nextQuest) {
+          checkQuestUnlock(nextQuest)
+        }
+      }
+
+      showQuestNotification(`✅ 任务完成：${quest.title}`, 'success', 4000)
+    }
+  }
+
+  const claimQuestRewards = (questId) => {
+    const quest = getQuestById(questId)
+    const progress = getQuestProgress(questId)
+
+    if (!quest || !quest.rewards || progress.claimed) return
+
+    progress.claimed = true
+
+    if (quest.rewards.emotion) {
+      emotionValue.value += quest.rewards.emotion
+      showNotification(`💖 情绪值 +${quest.rewards.emotion}`, 'success', 2000)
+    }
+
+    if (quest.rewards.materials && quest.rewards.materials.length > 0) {
+      const materialNames = quest.rewards.materials.map(mId => {
+        const mat = getMaterialById(mId)
+        return mat ? mat.name : mId
+      }).join('、')
+      showNotification(`🎁 获得素材：${materialNames}`, 'success', 2500)
+    }
+
+    if (quest.rewards.affinity) {
+      Object.entries(quest.rewards.affinity).forEach(([charId, value]) => {
+        characterAffinities.value[charId] = Math.min(100, (characterAffinities.value[charId] || 0) + value)
+        const char = characterRegistry.value.find(c => c.id === charId)
+        if (char) {
+          showNotification(`💕 ${char.name}好感度 +${value}`, 'success', 2000)
+        }
+      })
+      saveCharacterRelationData()
+      checkAffinityChapterUnlocks()
+    }
+
+    if (quest.rewards.unlockQuest) {
+      quest.rewards.unlockQuest.forEach(qId => {
+        const q = getQuestById(qId)
+        if (q) checkQuestUnlock(q)
+      })
+    }
+
+    if (quest.rewards.unlockChapter) {
+      quest.rewards.unlockChapter.forEach(chId => {
+        if (!unlockedChapters.value.includes(chId)) {
+          unlockedChapters.value.push(chId)
+          const ch = getChapterById(chId)
+          if (ch) {
+            showNotification(`📚 解锁章节：${ch.title}`, 'success', 3000)
+          }
+        }
+      })
+    }
+
+    if (quest.rewards.unlockMaterial) {
+      quest.rewards.unlockMaterial.forEach(mId => {
+        if (!newGamePlus.value.unlockedHiddenMaterialIds.includes(mId)) {
+          newGamePlus.value.unlockedHiddenMaterialIds.push(mId)
+          const mat = hiddenMaterialsRegistry.value.find(m => m.id === mId)
+          if (mat) {
+            showNotification(`✨ 解锁隐藏素材：${mat.name}`, 'success', 3000)
+          }
+        }
+      })
+      saveNewGamePlusData()
+    }
+
+    if (quest.rewards.unlockAchievement) {
+      quest.rewards.unlockAchievement.forEach(achId => {
+        const achievement = crossCycleAchievements.value.find(a => a.id === achId)
+        if (achievement && !achievement.unlocked) {
+          achievement.unlocked = true
+          achievement.unlockedAt = Date.now()
+          showNotification(`🏆 成就解锁：${achievement.name}`, 'success', 3000)
+        }
+      })
+      saveCrossCycleAchievements()
+    }
+
+    saveQuestProgress()
+  }
+
+  const trackQuestEvent = (eventType, eventData) => {
+    if (!isInitialized.value) return
+
+    activeQuests.value.forEach(questId => {
+      const quest = getQuestById(questId)
+      if (!quest) return
+
+      quest.objectives.forEach(objective => {
+        let shouldUpdate = false
+
+        switch (objective.type) {
+          case 'place_material':
+            shouldUpdate = eventType === 'place_material' && eventData.materialId === objective.target
+            break
+          case 'trigger_combo':
+            shouldUpdate = eventType === 'trigger_combo' && eventData.comboId === objective.target
+            break
+          case 'complete_scene':
+            shouldUpdate = eventType === 'complete_scene' && eventData.sceneId === objective.target
+            break
+          case 'complete_chapter':
+            shouldUpdate = eventType === 'complete_chapter' && eventData.chapterId === objective.target
+            break
+          case 'start_chapter':
+            shouldUpdate = eventType === 'start_chapter' && eventData.chapterId === objective.target
+            break
+          case 'emotion_reach':
+            shouldUpdate = eventType === 'emotion_change' && emotionValue.value >= objective.target
+            break
+          case 'total_emotion_reach':
+            shouldUpdate = eventType === 'emotion_change' && totalEmotionAccumulated.value >= objective.target
+            break
+          case 'total_combos':
+            shouldUpdate = eventType === 'trigger_combo' && totalCombosTriggered.value >= objective.target
+            break
+          case 'find_hidden_dialogue':
+            shouldUpdate = eventType === 'find_hidden_dialogue' && eventData.chapterId === objective.target
+            break
+          case 'chapter_complete_perfect':
+            shouldUpdate = eventType === 'complete_chapter' && eventData.chapterId === objective.target && eventData.isPerfect
+            break
+        }
+
+        if (shouldUpdate) {
+          updateObjectiveProgress(questId, objective.id, 1)
+        }
+      })
+    })
+
+    quests.value.forEach(quest => {
+      if (!activeQuests.value.includes(quest.id) && !completedQuests.value.includes(quest.id)) {
+        checkQuestUnlock(quest)
+      }
+    })
+  }
+
+  const updateTotalEmotionAccumulated = () => {
+    let total = emotionValue.value
+    Object.values(chapterScoreData.value).forEach(score => {
+      if (score.totalEmotion) total += score.totalEmotion
+    })
+    totalEmotionAccumulated.value = total
+  }
+
+  const updateTotalCombosTriggered = () => {
+    const globalSet = buildGlobalTriggeredComboSet()
+    totalCombosTriggered.value = globalSet.size + triggeredCombos.value.length
+  }
+
+  const showQuestNotification = (message, type = 'info', duration = 3000) => {
+    const id = Date.now()
+    questNotifications.value.push({ id, message, type })
+    showNotification(message, type, duration)
+    setTimeout(() => {
+      const index = questNotifications.value.findIndex(n => n.id === id)
+      if (index > -1) {
+        questNotifications.value.splice(index, 1)
+      }
+    }, duration)
+  }
+
+  const toggleQuestPanel = () => {
+    showQuestPanel.value = !showQuestPanel.value
+  }
+
+  const openQuestPanel = () => {
+    showQuestPanel.value = true
+  }
+
+  const closeQuestPanel = () => {
+    showQuestPanel.value = false
+  }
+
+  const selectQuest = (questId) => {
+    selectedQuestId.value = questId
+  }
+
+  const clearSelectedQuest = () => {
+    selectedQuestId.value = null
+  }
+
+  const getQuestTypeInfo = (type) => {
+    return questTypeLabels[type] || questTypeLabels.main
+  }
+
+  const sortedActiveQuests = computed(() => {
+    return activeQuests.value
+      .map(id => getQuestById(id))
+      .filter(Boolean)
+      .sort((a, b) => a.priority - b.priority)
+  })
+
+  const sortedCompletedQuests = computed(() => {
+    return completedQuests.value
+      .map(id => getQuestById(id))
+      .filter(Boolean)
+      .sort((a, b) => {
+        const progressA = getQuestProgress(a.id)
+        const progressB = getQuestProgress(b.id)
+        return (progressB.completedAt || 0) - (progressA.completedAt || 0)
+      })
+  })
+
+  const questCompletionStats = computed(() => {
+    const total = quests.value.length
+    const completed = completedQuests.value.length
+    const active = activeQuests.value.length
+    const locked = total - completed - active
+
+    const byType = {}
+    Object.keys(questTypeLabels).forEach(type => {
+      const typeQuests = quests.value.filter(q => q.type === type)
+      byType[type] = {
+        total: typeQuests.length,
+        completed: typeQuests.filter(q => completedQuests.value.includes(q.id)).length,
+        active: typeQuests.filter(q => activeQuests.value.includes(q.id)).length
+      }
+    })
+
+    return {
+      total,
+      completed,
+      active,
+      locked,
+      percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
+      byType
+    }
+  })
+
+  const currentChapterQuests = computed(() => {
+    if (!currentChapterId.value) return []
+    return sortedActiveQuests.value.filter(q => q.chapterId === currentChapterId.value)
+  })
+
+  const saveQuestProgress = () => {
+    try {
+      localStorage.setItem(QUEST_PROGRESS_KEY, JSON.stringify({
+        questProgress: questProgress.value,
+        activeQuests: activeQuests.value,
+        completedQuests: completedQuests.value,
+        totalEmotionAccumulated: totalEmotionAccumulated.value,
+        totalCombosTriggered: totalCombosTriggered.value,
+        scenesCompleted: scenesCompleted.value,
+        chaptersStarted: chaptersStarted.value
+      }))
+    } catch (e) {
+      console.error('Failed to save quest progress:', e)
+    }
+  }
+
+  const loadQuestProgress = () => {
+    try {
+      const saved = localStorage.getItem(QUEST_PROGRESS_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        questProgress.value = parsed.questProgress || {}
+        activeQuests.value = parsed.activeQuests || []
+        completedQuests.value = parsed.completedQuests || []
+        totalEmotionAccumulated.value = parsed.totalEmotionAccumulated || 0
+        totalCombosTriggered.value = parsed.totalCombosTriggered || 0
+        scenesCompleted.value = parsed.scenesCompleted || []
+        chaptersStarted.value = parsed.chaptersStarted || []
+      }
+    } catch (e) {
+      console.error('Failed to load quest progress:', e)
+    }
+  }
+
+  const resetQuestProgress = () => {
+    questProgress.value = {}
+    activeQuests.value = []
+    completedQuests.value = []
+    totalEmotionAccumulated.value = 0
+    totalCombosTriggered.value = 0
+    scenesCompleted.value = []
+    chaptersStarted.value = []
+    localStorage.removeItem(QUEST_PROGRESS_KEY)
+    initializeQuestSystem()
+  }
 
   const startChapterWithTracking = (chapterId) => {
     const chapter = getChapterById(chapterId)
@@ -5057,6 +5556,35 @@ export const useGameStore = defineStore('game', () => {
     saveCharacterRelationData,
     loadCharacterRelationData,
     dismissAffinityNotification,
-    clearAffinityNotifications
+    clearAffinityNotifications,
+    quests,
+    questProgress,
+    activeQuests,
+    completedQuests,
+    questNotifications,
+    showQuestPanel,
+    selectedQuestId,
+    totalEmotionAccumulated,
+    totalCombosTriggered,
+    scenesCompleted,
+    chaptersStarted,
+    getQuestById,
+    getQuestProgress,
+    getObjectiveProgress,
+    checkQuestUnlock,
+    trackQuestEvent,
+    toggleQuestPanel,
+    openQuestPanel,
+    closeQuestPanel,
+    selectQuest,
+    clearSelectedQuest,
+    getQuestTypeInfo,
+    sortedActiveQuests,
+    sortedCompletedQuests,
+    questCompletionStats,
+    currentChapterQuests,
+    saveQuestProgress,
+    loadQuestProgress,
+    resetQuestProgress
   }
 })

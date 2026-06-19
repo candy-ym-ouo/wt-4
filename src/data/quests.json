@@ -1,0 +1,957 @@
+[
+  {
+    "id": "quest_main_ch1_start",
+    "type": "main",
+    "chapterId": "chapter1",
+    "title": "春日的邂逅",
+    "description": "翻开尘封的手账，开始那段关于春天的回忆...",
+    "icon": "🌸",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "chapter_start", "target": "chapter1" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch1_1",
+        "type": "place_material",
+        "target": "flower",
+        "count": 1,
+        "description": "在画布上放置「樱花」素材",
+        "hint": "当剧情提示需要素材时，选择樱花放置到画布上"
+      },
+      {
+        "id": "obj_ch1_2",
+        "type": "complete_scene",
+        "target": "scene1_1",
+        "count": 1,
+        "description": "完成第一个场景的剧情"
+      }
+    ],
+    "rewards": {
+      "emotion": 10,
+      "materials": ["cloud"],
+      "affinity": { "she": 5 },
+      "unlockQuest": ["quest_side_spring_memory"]
+    },
+    "nextQuest": "quest_main_ch1_middle"
+  },
+  {
+    "id": "quest_main_ch1_middle",
+    "type": "main",
+    "chapterId": "chapter1",
+    "title": "蝴蝶的指引",
+    "description": "跟随蝴蝶的足迹，寻找更多春日的记忆...",
+    "icon": "🦋",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch1_start" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch1_3",
+        "type": "place_material",
+        "target": "butterfly",
+        "count": 1,
+        "description": "在画布上放置「蝴蝶」素材"
+      },
+      {
+        "id": "obj_ch1_4",
+        "type": "trigger_combo",
+        "target": "combo1_butterfly_flower",
+        "count": 1,
+        "description": "触发素材组合「蝶恋花」",
+        "hint": "同时放置樱花和蝴蝶可以触发隐藏组合"
+      },
+      {
+        "id": "obj_ch1_5",
+        "type": "complete_scene",
+        "target": "scene1_2",
+        "count": 1,
+        "description": "完成第二个场景的剧情"
+      }
+    ],
+    "rewards": {
+      "emotion": 15,
+      "materials": ["music"],
+      "affinity": { "she": 8 },
+      "unlockQuest": ["quest_collect_spring"]
+    },
+    "nextQuest": "quest_main_ch1_end"
+  },
+  {
+    "id": "quest_main_ch1_end",
+    "type": "main",
+    "chapterId": "chapter1",
+    "title": "春日的约定",
+    "description": "那封信里，藏着怎样的约定？",
+    "icon": "💌",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch1_middle" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch1_6",
+        "type": "place_material",
+        "target": "letter",
+        "count": 1,
+        "description": "在画布上放置「信笺」素材"
+      },
+      {
+        "id": "obj_ch1_7",
+        "type": "emotion_reach",
+        "target": 50,
+        "count": 1,
+        "description": "本章情绪值达到 50"
+      },
+      {
+        "id": "obj_ch1_8",
+        "type": "complete_chapter",
+        "target": "chapter1",
+        "count": 1,
+        "description": "完成「春日序章」章节"
+      }
+    ],
+    "rewards": {
+      "emotion": 20,
+      "materials": ["sun"],
+      "affinity": { "she": 10, "time": 5 },
+      "unlockQuest": ["quest_main_ch2_start", "quest_side_she_first"],
+      "unlockChapter": ["chapter2"]
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_main_ch2_start",
+    "type": "main",
+    "chapterId": "chapter2",
+    "title": "盛夏的阳光",
+    "description": "夏日的阳光，照亮了图书馆的角落...",
+    "icon": "☀️",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "chapter_start", "target": "chapter2" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch2_1",
+        "type": "place_material",
+        "target": "sun",
+        "count": 1,
+        "description": "在画布上放置「太阳」素材"
+      },
+      {
+        "id": "obj_ch2_2",
+        "type": "complete_scene",
+        "target": "scene2_1",
+        "count": 1,
+        "description": "完成第一个场景的剧情"
+      }
+    ],
+    "rewards": {
+      "emotion": 12,
+      "materials": ["cicada"],
+      "affinity": { "she": 6 }
+    },
+    "nextQuest": "quest_main_ch2_middle"
+  },
+  {
+    "id": "quest_main_ch2_middle",
+    "type": "main",
+    "chapterId": "chapter2",
+    "title": "蝉鸣的伴奏",
+    "description": "蝉鸣声中，是谁的心事在悄悄发酵？",
+    "icon": "🦗",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch2_start" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch2_3",
+        "type": "place_material",
+        "target": "cicada",
+        "count": 1,
+        "description": "在画布上放置「蝉」素材"
+      },
+      {
+        "id": "obj_ch2_4",
+        "type": "trigger_combo",
+        "target": "combo2_cicada_book",
+        "count": 1,
+        "description": "触发素材组合「书页间的夏天」"
+      },
+      {
+        "id": "obj_ch2_5",
+        "type": "complete_scene",
+        "target": "scene2_2",
+        "count": 1,
+        "description": "完成第二个场景的剧情"
+      }
+    ],
+    "rewards": {
+      "emotion": 18,
+      "materials": ["book"],
+      "affinity": { "she": 8, "time": 3 }
+    },
+    "nextQuest": "quest_main_ch2_end"
+  },
+  {
+    "id": "quest_main_ch2_end",
+    "type": "main",
+    "chapterId": "chapter2",
+    "title": "青春的注脚",
+    "description": "那个夏天的故事，写在了书的哪一页？",
+    "icon": "📖",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch2_middle" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch2_6",
+        "type": "place_material",
+        "target": "book",
+        "count": 1,
+        "description": "在画布上放置「书本」素材"
+      },
+      {
+        "id": "obj_ch2_7",
+        "type": "trigger_combo",
+        "target": "combo2_full_summer",
+        "count": 1,
+        "description": "触发素材组合「盛夏光年」",
+        "hint": "同时放置太阳、蝉和书本，解锁盛夏的完整回忆"
+      },
+      {
+        "id": "obj_ch2_8",
+        "type": "emotion_reach",
+        "target": 70,
+        "count": 1,
+        "description": "本章情绪值达到 70"
+      },
+      {
+        "id": "obj_ch2_9",
+        "type": "complete_chapter",
+        "target": "chapter2",
+        "count": 1,
+        "description": "完成「盛夏光年」章节"
+      }
+    ],
+    "rewards": {
+      "emotion": 25,
+      "materials": ["leaf", "star"],
+      "affinity": { "she": 12, "time": 8 },
+      "unlockQuest": ["quest_main_ch3_start", "quest_side_she_letter"]
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_main_ch3_start",
+    "type": "main",
+    "chapterId": "chapter3",
+    "title": "秋日的落叶",
+    "description": "金色的落叶，写着谁也看不懂的诗句...",
+    "icon": "🍂",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "chapter_start", "target": "chapter3" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch3_1",
+        "type": "place_material",
+        "target": "leaf",
+        "count": 1,
+        "description": "在画布上放置「落叶」素材"
+      },
+      {
+        "id": "obj_ch3_2",
+        "type": "complete_scene",
+        "target": "scene3_1",
+        "count": 1,
+        "description": "完成第一个场景的剧情"
+      }
+    ],
+    "rewards": {
+      "emotion": 15,
+      "materials": ["coffee"],
+      "affinity": { "time": 8 }
+    },
+    "nextQuest": "quest_main_ch3_middle"
+  },
+  {
+    "id": "quest_main_ch3_middle",
+    "type": "main",
+    "chapterId": "chapter3",
+    "title": "咖啡的香气",
+    "description": "街角的咖啡店，时间仿佛静止了...",
+    "icon": "☕",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch3_start" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch3_3",
+        "type": "place_material",
+        "target": "coffee",
+        "count": 1,
+        "description": "在画布上放置「咖啡」素材"
+      },
+      {
+        "id": "obj_ch3_4",
+        "type": "trigger_combo",
+        "target": "combo3_coffee_watch",
+        "count": 1,
+        "description": "触发素材组合「慢时光」"
+      },
+      {
+        "id": "obj_ch3_5",
+        "type": "complete_scene",
+        "target": "scene3_2",
+        "count": 1,
+        "description": "完成第二个场景的剧情"
+      }
+    ],
+    "rewards": {
+      "emotion": 20,
+      "materials": ["watch"],
+      "affinity": { "she": 5, "time": 10 }
+    },
+    "nextQuest": "quest_main_ch3_end"
+  },
+  {
+    "id": "quest_main_ch3_end",
+    "type": "main",
+    "chapterId": "chapter3",
+    "title": "时光的馈赠",
+    "description": "怀表的滴答声，记录着每一个重要的瞬间...",
+    "icon": "⏳",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch3_middle" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch3_6",
+        "type": "place_material",
+        "target": "watch",
+        "count": 1,
+        "description": "在画布上放置「怀表」素材"
+      },
+      {
+        "id": "obj_ch3_7",
+        "type": "trigger_combo",
+        "target": "combo3_watch_star",
+        "count": 1,
+        "description": "触发素材组合「永恒星辰」"
+      },
+      {
+        "id": "obj_ch3_8",
+        "type": "find_hidden_dialogue",
+        "target": "chapter3",
+        "count": 1,
+        "description": "在本章发现至少1段隐藏对话"
+      },
+      {
+        "id": "obj_ch3_9",
+        "type": "emotion_reach",
+        "target": 80,
+        "count": 1,
+        "description": "本章情绪值达到 80"
+      },
+      {
+        "id": "obj_ch3_10",
+        "type": "complete_chapter",
+        "target": "chapter3",
+        "count": 1,
+        "description": "完成「秋日私语」章节"
+      }
+    ],
+    "rewards": {
+      "emotion": 30,
+      "materials": ["snowflake", "scarf"],
+      "affinity": { "she": 10, "time": 15, "self": 5 },
+      "unlockQuest": ["quest_main_ch4_start", "quest_side_time_dialogue"]
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_main_ch4_start",
+    "type": "main",
+    "chapterId": "chapter4",
+    "title": "初雪的降临",
+    "description": "初雪飘落的那天，所有的答案都会揭晓...",
+    "icon": "❄️",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "chapter_start", "target": "chapter4" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch4_1",
+        "type": "place_material",
+        "target": "snowflake",
+        "count": 1,
+        "description": "在画布上放置「雪花」素材"
+      },
+      {
+        "id": "obj_ch4_2",
+        "type": "complete_scene",
+        "target": "scene4_1",
+        "count": 1,
+        "description": "完成第一个场景的剧情"
+      }
+    ],
+    "rewards": {
+      "emotion": 20,
+      "materials": ["scarf"],
+      "affinity": { "she": 8, "self": 5 }
+    },
+    "nextQuest": "quest_main_ch4_middle"
+  },
+  {
+    "id": "quest_main_ch4_middle",
+    "type": "main",
+    "chapterId": "chapter4",
+    "title": "温暖的围巾",
+    "description": "那条红色的围巾，是冬天里最贴心的守护...",
+    "icon": "🧣",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch4_start" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch4_3",
+        "type": "place_material",
+        "target": "scarf",
+        "count": 1,
+        "description": "在画布上放置「围巾」素材"
+      },
+      {
+        "id": "obj_ch4_4",
+        "type": "trigger_combo",
+        "target": "combo4_scarf_heart",
+        "count": 1,
+        "description": "触发素材组合「红色的心意」"
+      },
+      {
+        "id": "obj_ch4_5",
+        "type": "complete_scene",
+        "target": "scene4_2",
+        "count": 1,
+        "description": "完成第二个场景的剧情"
+      }
+    ],
+    "rewards": {
+      "emotion": 25,
+      "materials": ["heart"],
+      "affinity": { "she": 12, "self": 8 }
+    },
+    "nextQuest": "quest_main_ch4_end"
+  },
+  {
+    "id": "quest_main_ch4_end",
+    "type": "main",
+    "chapterId": "chapter4",
+    "title": "四季的答案",
+    "description": "春夏秋冬，四季轮回，原来你一直都在...",
+    "icon": "💕",
+    "priority": 1,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch4_middle" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ch4_6",
+        "type": "place_material",
+        "target": "heart",
+        "count": 1,
+        "description": "在画布上放置「心」素材"
+      },
+      {
+        "id": "obj_ch4_7",
+        "type": "trigger_combo",
+        "target": "combo4_full_four_seasons",
+        "count": 1,
+        "description": "触发终极组合「四季有你」",
+        "hint": "集齐四季元素+心：樱花、太阳、落叶、雪花、心"
+      },
+      {
+        "id": "obj_ch4_8",
+        "type": "emotion_reach",
+        "target": 100,
+        "count": 1,
+        "description": "本章情绪值达到 100"
+      },
+      {
+        "id": "obj_ch4_9",
+        "type": "complete_chapter",
+        "target": "chapter4",
+        "count": 1,
+        "description": "完成「冬日暖阳」章节"
+      }
+    ],
+    "rewards": {
+      "emotion": 50,
+      "materials": [],
+      "affinity": { "she": 20, "time": 15, "self": 15 },
+      "unlockQuest": ["quest_achievement_seasons", "quest_side_self_acceptance"],
+      "unlockEnding": ["true_ending"]
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_side_spring_memory",
+    "type": "side",
+    "chapterId": "chapter1",
+    "title": "春日晴空下的心事",
+    "description": "那天的云也像棉花糖一样...",
+    "icon": "☁️",
+    "priority": 2,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch1_start" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_side_1",
+        "type": "place_material",
+        "target": "cloud",
+        "count": 1,
+        "description": "在画布上放置「云朵」素材"
+      },
+      {
+        "id": "obj_side_2",
+        "type": "trigger_combo",
+        "target": "combo1_spring_sky",
+        "count": 1,
+        "description": "触发素材组合「春日晴空」"
+      }
+    ],
+    "rewards": {
+      "emotion": 12,
+      "materials": ["star"],
+      "affinity": { "she": 6 }
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_side_she_first",
+    "type": "side",
+    "chapterId": "chapter_she",
+    "title": "她的秘密",
+    "description": "当好感度足够时，一段被遗忘的约定将重新浮现...",
+    "icon": "🌺",
+    "priority": 2,
+    "unlockConditions": [
+      { "type": "affinity_reach", "characterId": "she", "value": 60 },
+      { "type": "quest_complete", "target": "quest_main_ch1_end" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_she_1",
+        "type": "start_chapter",
+        "target": "chapter_she",
+        "count": 1,
+        "description": "进入「她的记忆」章节"
+      },
+      {
+        "id": "obj_she_2",
+        "type": "complete_chapter",
+        "target": "chapter_she",
+        "count": 1,
+        "description": "完成「她的记忆」章节"
+      }
+    ],
+    "rewards": {
+      "emotion": 30,
+      "materials": ["heart"],
+      "affinity": { "she": 20 },
+      "unlockEnding": ["she_ending"]
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_side_she_letter",
+    "type": "side",
+    "chapterId": "chapter2",
+    "title": "情书的秘密",
+    "description": "信的最后，画着一颗小小的心...",
+    "icon": "💌",
+    "priority": 2,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch2_end" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_side_3",
+        "type": "place_material",
+        "target": "heart",
+        "count": 1,
+        "description": "在画布上放置「心」素材"
+      },
+      {
+        "id": "obj_side_4",
+        "type": "trigger_combo",
+        "target": "combo1_love_letter",
+        "count": 1,
+        "description": "在第一章回溯时触发「情书」组合",
+        "hint": "可以在章节选择中重玩第一章"
+      }
+    ],
+    "rewards": {
+      "emotion": 20,
+      "materials": [],
+      "affinity": { "she": 15 }
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_side_time_dialogue",
+    "type": "side",
+    "chapterId": "chapter_time",
+    "title": "时光的低语",
+    "description": "当你足够理解时光的意义，它将向你展示那些被遗忘的瞬间...",
+    "icon": "⏳",
+    "priority": 2,
+    "unlockConditions": [
+      { "type": "affinity_reach", "characterId": "time", "value": 60 },
+      { "type": "quest_complete", "target": "quest_main_ch3_end" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_time_1",
+        "type": "start_chapter",
+        "target": "chapter_time",
+        "count": 1,
+        "description": "进入「时光回廊」章节"
+      },
+      {
+        "id": "obj_time_2",
+        "type": "complete_chapter",
+        "target": "chapter_time",
+        "count": 1,
+        "description": "完成「时光回廊」章节"
+      }
+    ],
+    "rewards": {
+      "emotion": 35,
+      "materials": ["music"],
+      "affinity": { "time": 25 },
+      "unlockEnding": ["time_ending"]
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_side_self_acceptance",
+    "type": "side",
+    "chapterId": "chapter_self",
+    "title": "与自己和解",
+    "description": "当内心的勇气足够强大，你终于可以直面那个一直回避的自己...",
+    "icon": "🪞",
+    "priority": 2,
+    "unlockConditions": [
+      { "type": "affinity_reach", "characterId": "self", "value": 60 },
+      { "type": "quest_complete", "target": "quest_main_ch4_end" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_self_1",
+        "type": "start_chapter",
+        "target": "chapter_self",
+        "count": 1,
+        "description": "进入「镜中之我」章节"
+      },
+      {
+        "id": "obj_self_2",
+        "type": "complete_chapter",
+        "target": "chapter_self",
+        "count": 1,
+        "description": "完成「镜中之我」章节"
+      }
+    ],
+    "rewards": {
+      "emotion": 40,
+      "materials": [],
+      "affinity": { "self": 30 },
+      "unlockEnding": ["self_ending"],
+      "unlockAchievement": ["true_destiny"]
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_collect_spring",
+    "type": "collect",
+    "chapterId": null,
+    "title": "春日收藏家",
+    "description": "收集所有春天相关的素材组合",
+    "icon": "🌷",
+    "priority": 3,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch1_middle" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_collect_1",
+        "type": "trigger_combo",
+        "target": "combo1_spring_sky",
+        "count": 1,
+        "description": "触发「春日晴空」"
+      },
+      {
+        "id": "obj_collect_2",
+        "type": "trigger_combo",
+        "target": "combo1_starlight",
+        "count": 1,
+        "description": "触发「星光寄语」"
+      },
+      {
+        "id": "obj_collect_3",
+        "type": "trigger_combo",
+        "target": "combo1_butterfly_flower",
+        "count": 1,
+        "description": "触发「蝶恋花」"
+      },
+      {
+        "id": "obj_collect_4",
+        "type": "trigger_combo",
+        "target": "combo1_melody",
+        "count": 1,
+        "description": "触发「春之旋律」"
+      },
+      {
+        "id": "obj_collect_5",
+        "type": "trigger_combo",
+        "target": "combo1_love_letter",
+        "count": 1,
+        "description": "触发「情书」"
+      },
+      {
+        "id": "obj_collect_6",
+        "type": "trigger_combo",
+        "target": "combo1_star_promise",
+        "count": 1,
+        "description": "触发「星空下的约定」"
+      },
+      {
+        "id": "obj_collect_7",
+        "type": "trigger_combo",
+        "target": "combo1_full_spring",
+        "count": 1,
+        "description": "触发「完整的春天」"
+      }
+    ],
+    "rewards": {
+      "emotion": 30,
+      "materials": ["flower", "butterfly", "letter"],
+      "unlockAchievement": ["spring_master"]
+    },
+    "nextQuest": "quest_collect_all_seasons"
+  },
+  {
+    "id": "quest_collect_all_seasons",
+    "type": "collect",
+    "chapterId": null,
+    "title": "四季收集家",
+    "description": "收集所有四季的素材组合",
+    "icon": "🌈",
+    "priority": 3,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_collect_spring" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_collect_8",
+        "type": "chapter_complete_perfect",
+        "target": "chapter1",
+        "count": 1,
+        "description": "完美通关「春日序章」"
+      },
+      {
+        "id": "obj_collect_9",
+        "type": "chapter_complete_perfect",
+        "target": "chapter2",
+        "count": 1,
+        "description": "完美通关「盛夏光年」"
+      },
+      {
+        "id": "obj_collect_10",
+        "type": "chapter_complete_perfect",
+        "target": "chapter3",
+        "count": 1,
+        "description": "完美通关「秋日私语」"
+      },
+      {
+        "id": "obj_collect_11",
+        "type": "chapter_complete_perfect",
+        "target": "chapter4",
+        "count": 1,
+        "description": "完美通关「冬日暖阳」"
+      }
+    ],
+    "rewards": {
+      "emotion": 80,
+      "materials": [],
+      "unlockMaterial": ["memory_locket"],
+      "unlockAchievement": ["seasoned_traveler", "perfectionist"]
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_milestone_emotion_50",
+    "type": "milestone",
+    "chapterId": null,
+    "title": "心之悸动",
+    "description": "情绪值累计达到 50",
+    "icon": "💓",
+    "priority": 4,
+    "unlockConditions": [
+      { "type": "game_start" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_mile_1",
+        "type": "total_emotion_reach",
+        "target": 50,
+        "count": 1,
+        "description": "累计情绪值达到 50"
+      }
+    ],
+    "rewards": {
+      "emotion": 5,
+      "materials": ["cloud"]
+    },
+    "nextQuest": "quest_milestone_emotion_100"
+  },
+  {
+    "id": "quest_milestone_emotion_100",
+    "type": "milestone",
+    "chapterId": null,
+    "title": "心潮澎湃",
+    "description": "情绪值累计达到 100",
+    "icon": "💗",
+    "priority": 4,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_milestone_emotion_50" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_mile_2",
+        "type": "total_emotion_reach",
+        "target": 100,
+        "count": 1,
+        "description": "累计情绪值达到 100"
+      }
+    ],
+    "rewards": {
+      "emotion": 10,
+      "materials": ["star"]
+    },
+    "nextQuest": "quest_milestone_combo_5"
+  },
+  {
+    "id": "quest_milestone_combo_5",
+    "type": "milestone",
+    "chapterId": null,
+    "title": "组合新手",
+    "description": "累计触发 5 个素材组合",
+    "icon": "🎯",
+    "priority": 4,
+    "unlockConditions": [
+      { "type": "game_start" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_mile_3",
+        "type": "total_combos",
+        "target": 5,
+        "count": 1,
+        "description": "累计触发 5 个素材组合"
+      }
+    ],
+    "rewards": {
+      "emotion": 15,
+      "materials": ["music"]
+    },
+    "nextQuest": "quest_milestone_combo_15"
+  },
+  {
+    "id": "quest_milestone_combo_15",
+    "type": "milestone",
+    "chapterId": null,
+    "title": "组合大师",
+    "description": "累计触发 15 个素材组合",
+    "icon": "🏆",
+    "priority": 4,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_milestone_combo_5" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_mile_4",
+        "type": "total_combos",
+        "target": 15,
+        "count": 1,
+        "description": "累计触发 15 个素材组合"
+      }
+    ],
+    "rewards": {
+      "emotion": 25,
+      "materials": [],
+      "unlockMaterial": ["echo_shell"],
+      "unlockAchievement": ["memory_hunter"]
+    },
+    "nextQuest": null
+  },
+  {
+    "id": "quest_achievement_seasons",
+    "type": "achievement",
+    "chapterId": null,
+    "title": "四季旅人",
+    "description": "完成所有主线章节",
+    "icon": "🌍",
+    "priority": 5,
+    "unlockConditions": [
+      { "type": "quest_complete", "target": "quest_main_ch4_end" }
+    ],
+    "objectives": [
+      {
+        "id": "obj_ach_1",
+        "type": "complete_chapter",
+        "target": "chapter1",
+        "count": 1,
+        "description": "完成「春日序章」"
+      },
+      {
+        "id": "obj_ach_2",
+        "type": "complete_chapter",
+        "target": "chapter2",
+        "count": 1,
+        "description": "完成「盛夏光年」"
+      },
+      {
+        "id": "obj_ach_3",
+        "type": "complete_chapter",
+        "target": "chapter3",
+        "count": 1,
+        "description": "完成「秋日私语」"
+      },
+      {
+        "id": "obj_ach_4",
+        "type": "complete_chapter",
+        "target": "chapter4",
+        "count": 1,
+        "description": "完成「冬日暖阳」"
+      }
+    ],
+    "rewards": {
+      "emotion": 100,
+      "materials": [],
+      "unlockMaterial": ["eternal_bloom"],
+      "unlockAchievement": ["true_destiny", "ending_collector"]
+    },
+    "nextQuest": null
+  }
+]

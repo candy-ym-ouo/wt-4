@@ -39,6 +39,14 @@
         <button class="btn btn-ghost action-btn" @click="openLoadModal" title="读取">
           📂
         </button>
+        <button 
+          class="btn btn-ghost action-btn quest-action-btn" 
+          @click="openQuestPanel" 
+          title="任务委托"
+        >
+          📜
+          <span v-if="pendingRewardCount > 0" class="quest-badge">{{ pendingRewardCount }}</span>
+        </button>
         <button class="btn btn-ghost action-btn" @click="goBack" title="返回章节">
           🏠
         </button>
@@ -222,6 +230,10 @@
     </div>
 
     <TutorialOverlay page="game" @close="handleTutorialClose" />
+
+    <QuestNotification />
+    <QuestPanel />
+    <QuestDetail />
   </div>
 </template>
 
@@ -235,6 +247,9 @@ import EmotionMeter from '../components/EmotionMeter.vue'
 import MaterialPanel from '../components/MaterialPanel.vue'
 import SaveLoadModal from '../components/SaveLoadModal.vue'
 import TutorialOverlay from '../components/TutorialOverlay.vue'
+import QuestPanel from '../components/QuestPanel.vue'
+import QuestDetail from '../components/QuestDetail.vue'
+import QuestNotification from '../components/QuestNotification.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -271,6 +286,13 @@ const currentEmotionTier = computed(() => gameStore.currentEmotionTier)
 const emotionSceneTint = computed(() => gameStore.emotionSceneTint)
 const chapterEmotionProgress = computed(() => gameStore.chapterEmotionProgress)
 const currentEnvironment = computed(() => gameStore.currentEnvironmentInfo)
+
+const pendingRewardCount = computed(() => {
+  return gameStore.activeQuests.filter(questId => {
+    const progress = gameStore.getQuestProgress(questId)
+    return progress.completed && !progress.claimed
+  }).length
+})
 
 const chapterCompleteMessage = computed(() => {
   const newlyUnlocked = gameStore.chapters.filter(c =>
@@ -441,6 +463,10 @@ const openTutorial = () => {
 }
 
 const handleTutorialClose = () => {
+}
+
+const openQuestPanel = () => {
+  gameStore.openQuestPanel()
 }
 
 const goBack = () => {
@@ -659,6 +685,40 @@ onUnmounted(() => {
 .help-action-btn:hover {
   background: linear-gradient(135deg, #e9d5ff, #ddd6fe);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.quest-action-btn {
+  position: relative;
+  background: linear-gradient(135deg, #fef3c7, #fce7f3);
+  color: #b45309;
+}
+
+.quest-action-btn:hover {
+  background: linear-gradient(135deg, #fce7f3, #f3e8ff);
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+.quest-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 .game-content {
