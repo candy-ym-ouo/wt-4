@@ -1,0 +1,46 @@
+[
+  {
+    "id": "chapter1",
+    "title": "春日序章",
+    "subtitle": "遇见的开始",
+    "description": "在一个温暖的春日午后，你翻开了这本尘封已久的手账，记忆如潮水般涌来...",
+    "background": "#fef3c7",
+    "unlocked": true,
+    "requiredMaterials": ["flower", "butterfly", "letter"],
+    "emotionTarget": 50,
+    "scenes": ["scene1_1", "scene1_2", "scene1_3"]
+  },
+  {
+    "id": "chapter2",
+    "title": "盛夏光年",
+    "subtitle": "记忆中的蝉鸣",
+    "description": "夏日的阳光透过树叶洒下斑驳的光影，那些关于青春的记忆逐渐清晰...",
+    "background": "#d1fae5",
+    "unlocked": false,
+    "requiredMaterials": ["sun", "cicada", "book"],
+    "emotionTarget": 70,
+    "scenes": ["scene2_1", "scene2_2", "scene2_3"]
+  },
+  {
+    "id": "chapter3",
+    "title": "秋日私语",
+    "subtitle": "落叶的秘密",
+    "description": "金色的落叶铺满了小径，你拾起一片，上面写着谁也看不懂的诗句...",
+    "background": "#fed7aa",
+    "unlocked": false,
+    "requiredMaterials": ["leaf", "coffee", "watch"],
+    "emotionTarget": 80,
+    "scenes": ["scene3_1", "scene3_2", "scene3_3"]
+  },
+  {
+    "id": "chapter4",
+    "title": "冬日暖阳",
+    "subtitle": "时光的答案",
+    "description": "雪花飘落的季节，你终于明白了，所有的遇见都是命中注定...",
+    "background": "#dbeafe",
+    "unlocked": false,
+    "requiredMaterials": ["snowflake", "scarf", "heart"],
+    "emotionTarget": 100,
+    "scenes": ["scene4_1", "scene4_2", "scene4_3"]
+  }
+]

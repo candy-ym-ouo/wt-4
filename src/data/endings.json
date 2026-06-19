@@ -1,0 +1,29 @@
+[
+  {
+    "id": "ending_good",
+    "title": "时光的答案",
+    "type": "good",
+    "minEmotion": 90,
+    "description": "春夏秋冬，四季轮回，原来你一直都在。",
+    "content": "合上这本手账，你终于明白了。那些美好的记忆从未消失，它们只是被时光小心翼翼地收藏着。\n\n窗外的阳光正好，就像第一次遇见她的那个春日。你站起身来，决定去那个约定的地方看看。\n\n也许，这一次，不会再错过了。\n\n「原来最珍贵的，一直都在身边。」",
+    "background": "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #fef3c7 100%)"
+  },
+  {
+    "id": "ending_normal",
+    "title": "未完的故事",
+    "type": "normal",
+    "minEmotion": 50,
+    "description": "有些故事，也许没有结局才是最好的结局。",
+    "content": "手账翻到了最后一页，但故事似乎还没有结束。\n\n那些温暖的、遗憾的、快乐的、悲伤的记忆，都成为了生命中最珍贵的宝藏。\n\n也许有一天，你会找到属于自己的答案。\n\n「每一个遇见，都是命中注定。」",
+    "background": "linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #dbeafe 100%)"
+  },
+  {
+    "id": "ending_special",
+    "title": "永恒的记忆",
+    "type": "special",
+    "minEmotion": 100,
+    "description": "当所有素材都被正确放置，隐藏的结局将会显现。",
+    "content": "当最后一片素材被放置在正确的位置，整本书散发出柔和的光芒。\n\n你看到了她，就站在那片樱花树下，笑容依旧灿烂。\n\n「我等你很久了。」\n\n原来，这不是结束，而是另一个开始。\n\n「愿所有的等待，都能换来久别重逢。」",
+    "background": "linear-gradient(135deg, #e0f2fe 0%, #fce7f3 50%, #fef3c7 100%)"
+  }
+]
