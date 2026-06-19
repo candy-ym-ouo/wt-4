@@ -11,6 +11,7 @@ const CHAPTER_SNAPSHOTS_KEY = 'journal_game_chapter_snapshots'
 const SESSION_KEY = 'journal_game_session'
 const BACKUP_KEY = 'journal_game_saves_backup'
 const CHAPTER_SCORE_KEY = 'journal_game_chapter_scores'
+const BRANCH_STATS_KEY = 'journal_game_branch_stats'
 const AUTO_SAVE_DIALOGUE_INTERVAL = 5
 const HEARTBEAT_INTERVAL = 20000
 const CRASH_RECOVERY_THRESHOLD = 180000
@@ -68,6 +69,16 @@ export const useGameStore = defineStore('game', () => {
 
   const activeMaterialFilter = ref('all')
   const materialUsageHistory = ref({})
+
+  const branchStats = ref({
+    pathHistory: [],
+    sceneDecisionPoints: {},
+    choiceFrequency: {},
+    pathHeatmap: {},
+    chapterPathSummary: {},
+    totalPlaythroughs: 0
+  })
+  const currentPathSequence = ref([])
 
   const currentChapter = computed(() => {
     return chapters.value.find(c => c.id === currentChapterId.value)
@@ -446,6 +457,287 @@ export const useGameStore = defineStore('game', () => {
     })
   }
 
+  const recordBranchChoice = (choiceType, choiceData) => {
+    if (!currentSceneId.value || !currentChapterId.value) return
+
+    const entry = {
+      chapterId: currentChapterId.value,
+      sceneId: currentSceneId.value,
+      choiceType,
+      timestamp: Date.now(),
+      emotionAtChoice: emotionValue.value,
+      ...choiceData
+    }
+
+    currentPathSequence.value.push(entry)
+
+    const sceneKey = currentSceneId.value
+    if (!branchStats.value.sceneDecisionPoints[sceneKey]) {
+      branchStats.value.sceneDecisionPoints[sceneKey] = {
+        chapterId: currentChapterId.value,
+        sceneId: currentSceneId.value,
+        totalVisits: 0,
+        choices: {}
+      }
+    }
+
+    const decisionPoint = branchStats.value.sceneDecisionPoints[sceneKey]
+    decisionPoint.totalVisits++
+
+    const choiceKey = `${choiceType}:${choiceData.choiceId || choiceData.materialId || 'unknown'}`
+    if (!decisionPoint.choices[choiceKey]) {
+      decisionPoint.choices[choiceKey] = {
+        choiceType,
+        count: 0,
+        emotionSum: 0,
+        firstChosenAt: Date.now()
+      }
+    }
+    const choiceStat = decisionPoint.choices[choiceKey]
+    choiceStat.count++
+    choiceStat.emotionSum += choiceData.emotionGain || 0
+
+    const freqKey = `${currentChapterId.value}:${choiceType}:${choiceData.choiceId || choiceData.materialId || 'unknown'}`
+    branchStats.value.choiceFrequency[freqKey] = (branchStats.value.choiceFrequency[freqKey] || 0) + 1
+
+    saveBranchStats()
+  }
+
+  const recordSceneTransition = (fromSceneId, toSceneId) => {
+    if (!fromSceneId || !toSceneId || fromSceneId === toSceneId) return
+
+    const pathKey = `${fromSceneId}->${toSceneId}`
+    branchStats.value.pathHeatmap[pathKey] = (branchStats.value.pathHeatmap[pathKey] || 0) + 1
+
+    const chapterId = currentChapterId.value
+    if (chapterId) {
+      const chapterKey = `${fromSceneId}->${toSceneId}`
+      if (!branchStats.value.chapterPathSummary[chapterId]) {
+        branchStats.value.chapterPathSummary[chapterId] = {
+          pathSequences: {},
+          completionCount: 0,
+          uniquePaths: 0,
+          mostCommonPath: null
+        }
+      }
+      const chSummary = branchStats.value.chapterPathSummary[chapterId]
+      chSummary.pathSequences[chapterKey] = (chSummary.pathSequences[chapterKey] || 0) + 1
+    }
+  }
+
+  const finalizeChapterPathStats = (chapterId) => {
+    if (!chapterId) return
+
+    const chapter = getChapterById(chapterId)
+    if (!chapter) return
+
+    const pathStr = currentPathSequence.value
+      .filter(e => e.chapterId === chapterId)
+      .map(e => `${e.sceneId}:${e.choiceType}:${e.choiceId || e.materialId || ''}`)
+      .join('|')
+
+    if (!pathStr) return
+
+    if (!branchStats.value.chapterPathSummary[chapterId]) {
+      branchStats.value.chapterPathSummary[chapterId] = {
+        pathSequences: {},
+        completionCount: 0,
+        uniquePaths: 0,
+        mostCommonPath: null
+      }
+    }
+
+    const chSummary = branchStats.value.chapterPathSummary[chapterId]
+    chSummary.completionCount++
+
+    branchStats.value.pathHistory.push({
+      chapterId,
+      path: pathStr,
+      pathLength: currentPathSequence.value.filter(e => e.chapterId === chapterId).length,
+      finalEmotion: emotionValue.value,
+      timestamp: Date.now()
+    })
+
+    chSummary.uniquePaths = new Set(
+      branchStats.value.pathHistory
+        .filter(p => p.chapterId === chapterId)
+        .map(p => p.path)
+    ).size
+
+    const pathCounts = {}
+    branchStats.value.pathHistory
+      .filter(p => p.chapterId === chapterId)
+      .forEach(p => {
+        pathCounts[p.path] = (pathCounts[p.path] || 0) + 1
+      })
+    
+    let maxCount = 0
+    let mostCommon = null
+    Object.entries(pathCounts).forEach(([path, count]) => {
+      if (count > maxCount) {
+        maxCount = count
+        mostCommon = path
+      }
+    })
+    chSummary.mostCommonPath = mostCommon ? { path: mostCommon, count: maxCount } : null
+
+    saveBranchStats()
+  }
+
+  const getTopChoicePaths = (chapterId, limit = 5) => {
+    const paths = branchStats.value.pathHistory.filter(p => p.chapterId === chapterId)
+    const pathCounts = {}
+    paths.forEach(p => {
+      pathCounts[p.path] = (pathCounts[p.path] || 0) + 1
+    })
+
+    return Object.entries(pathCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([path, count]) => ({
+        path,
+        count,
+        percentage: paths.length > 0 ? Math.round((count / paths.length) * 100) : 0
+      }))
+  }
+
+  const getHotTransitions = (limit = 10) => {
+    return Object.entries(branchStats.value.pathHeatmap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([pathKey, count]) => {
+        const [from, to] = pathKey.split('->')
+        return { from, to, count }
+      })
+  }
+
+  const getSceneDecisionSummary = (sceneId) => {
+    const dp = branchStats.value.sceneDecisionPoints[sceneId]
+    if (!dp) return null
+
+    const totalChoices = Object.values(dp.choices).reduce((sum, c) => sum + c.count, 0)
+    const sortedChoices = Object.entries(dp.choices)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([key, stat]) => ({
+        key,
+        ...stat,
+        percentage: totalChoices > 0 ? Math.round((stat.count / totalChoices) * 100) : 0,
+        avgEmotion: stat.count > 0 ? Math.round(stat.emotionSum / stat.count) : 0
+      }))
+
+    return {
+      sceneId,
+      chapterId: dp.chapterId,
+      totalVisits: dp.totalVisits,
+      totalChoices,
+      choices: sortedChoices
+    }
+  }
+
+  const getChapterBranchOverview = (chapterId) => {
+    const summary = branchStats.value.chapterPathSummary[chapterId]
+    if (!summary) return null
+
+    const chapter = getChapterById(chapterId)
+    const sceneSummaries = (chapter?.scenes || []).map(sceneId => {
+      const dp = branchStats.value.sceneDecisionPoints[sceneId]
+      if (!dp) return null
+      return {
+        sceneId,
+        totalVisits: dp.totalVisits,
+        choiceCount: Object.keys(dp.choices).length,
+        topChoice: Object.entries(dp.choices)
+          .sort((a, b) => b[1].count - a[1].count)[0]
+          ? {
+              key: Object.entries(dp.choices).sort((a, b) => b[1].count - a[1].count)[0][0],
+              ...Object.entries(dp.choices).sort((a, b) => b[1].count - a[1].count)[0][1]
+            }
+          : null
+      }
+    }).filter(Boolean)
+
+    return {
+      chapterId,
+      completionCount: summary.completionCount,
+      uniquePaths: summary.uniquePaths,
+      mostCommonPath: summary.mostCommonPath,
+      sceneSummaries,
+      topPaths: getTopChoicePaths(chapterId)
+    }
+  }
+
+  const saveBranchStats = () => {
+    try {
+      localStorage.setItem(BRANCH_STATS_KEY, JSON.stringify(branchStats.value))
+    } catch (e) {
+      console.error('Failed to save branch stats:', e)
+    }
+  }
+
+  const loadBranchStats = () => {
+    try {
+      const saved = localStorage.getItem(BRANCH_STATS_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        branchStats.value = {
+          pathHistory: parsed.pathHistory || [],
+          sceneDecisionPoints: parsed.sceneDecisionPoints || {},
+          choiceFrequency: parsed.choiceFrequency || {},
+          pathHeatmap: parsed.pathHeatmap || {},
+          chapterPathSummary: parsed.chapterPathSummary || {},
+          totalPlaythroughs: parsed.totalPlaythroughs || 0
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load branch stats:', e)
+    }
+  }
+
+  const resetBranchStats = () => {
+    branchStats.value = {
+      pathHistory: [],
+      sceneDecisionPoints: {},
+      choiceFrequency: {},
+      pathHeatmap: {},
+      chapterPathSummary: {},
+      totalPlaythroughs: 0
+    }
+    currentPathSequence.value = []
+    localStorage.removeItem(BRANCH_STATS_KEY)
+  }
+
+  const generateBranchStatsReport = () => {
+    const allChapterOverviews = chapters.value
+      .filter(ch => branchStats.value.chapterPathSummary[ch.id])
+      .map(ch => getChapterBranchOverview(ch.id))
+      .filter(Boolean)
+
+    const hotTransitions = getHotTransitions()
+
+    const popularChoices = Object.entries(branchStats.value.choiceFrequency)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([key, count]) => {
+        const [chapterId, choiceType, choiceId] = key.split(':')
+        return { chapterId, choiceType, choiceId, count }
+      })
+
+    const sceneDecisionList = Object.keys(branchStats.value.sceneDecisionPoints)
+      .map(sceneId => getSceneDecisionSummary(sceneId))
+      .filter(Boolean)
+      .sort((a, b) => b.totalVisits - a.totalVisits)
+
+    return {
+      totalPlaythroughs: branchStats.value.totalPlaythroughs,
+      totalPathsRecorded: branchStats.value.pathHistory.length,
+      allChapterOverviews,
+      hotTransitions,
+      popularChoices,
+      sceneDecisionList,
+      generatedAt: Date.now()
+    }
+  }
+
   const startChapter = (chapterId) => {
     const chapter = getChapterById(chapterId)
     if (!chapter || !unlockedChapters.value.includes(chapterId)) return
@@ -471,6 +763,7 @@ export const useGameStore = defineStore('game', () => {
     currentChapterLog.value = []
     dialogueHistory.value = []
     activeMaterialFilter.value = 'all'
+    currentPathSequence.value = []
   }
 
   const addToDialogueHistory = (dialogue) => {
@@ -548,6 +841,7 @@ export const useGameStore = defineStore('game', () => {
     if (currentDialogueIndex.value < currentScene.value.dialogues.length - 1) {
       currentDialogueIndex.value++
     } else if (currentScene.value.nextScene) {
+      const prevSceneId = currentSceneId.value
       currentSceneId.value = currentScene.value.nextScene
       currentDialogueIndex.value = 0
       sceneBackgroundOverride.value = null
@@ -555,6 +849,7 @@ export const useGameStore = defineStore('game', () => {
       optionalMaterialsPlaced.value = []
       requiredMaterialPlaced.value = false
       comboJustTriggered.value = null
+      recordSceneTransition(prevSceneId, currentScene.value.nextScene)
     }
   }
 
@@ -628,6 +923,13 @@ export const useGameStore = defineStore('game', () => {
       }
     }
 
+    recordBranchChoice('combo', {
+      choiceId: combo.id,
+      comboName: combo.name,
+      emotionGain: combo.emotionBonus || 0,
+      hasHiddenDialogue: !!combo.hiddenDialogue
+    })
+
     comboJustTriggered.value = combo
 
     setTimeout(() => {
@@ -694,6 +996,14 @@ export const useGameStore = defineStore('game', () => {
 
     const newlyTriggered = checkMaterialCombos()
     const comboResults = newlyTriggered.map(combo => triggerCombo(combo)).filter(Boolean)
+
+    recordBranchChoice('optional_material', {
+      materialId,
+      materialName: material.name,
+      choiceId: materialId,
+      isPerfect,
+      emotionGain: material.emotion + placementBonus
+    })
 
     return {
       success: true,
@@ -762,9 +1072,18 @@ export const useGameStore = defineStore('game', () => {
     const newlyTriggered = checkMaterialCombos()
     const comboResults = newlyTriggered.map(combo => triggerCombo(combo)).filter(Boolean)
 
+    recordBranchChoice('required_material', {
+      materialId,
+      materialName: material.name,
+      choiceId: materialId,
+      isPerfect,
+      emotionGain: material.emotion + placementBonus
+    })
+
     if (currentDialogueIndex.value < currentScene.value.dialogues.length - 1) {
       currentDialogueIndex.value++
     } else if (currentScene.value.nextScene) {
+      const prevSceneId = currentSceneId.value
       currentSceneId.value = currentScene.value.nextScene
       currentDialogueIndex.value = 0
       sceneBackgroundOverride.value = null
@@ -772,6 +1091,7 @@ export const useGameStore = defineStore('game', () => {
       optionalMaterialsPlaced.value = []
       requiredMaterialPlaced.value = false
       comboJustTriggered.value = null
+      recordSceneTransition(prevSceneId, currentScene.value.nextScene)
     }
 
     return {
@@ -846,6 +1166,8 @@ export const useGameStore = defineStore('game', () => {
 
     saveChapterScoreData()
 
+    finalizeChapterPathStats(chapter.id)
+
     checkAndUnlockChapters()
   }
 
@@ -855,6 +1177,9 @@ export const useGameStore = defineStore('game', () => {
     if (currentChapterId.value && !completedChapters.value.includes(currentChapterId.value)) {
       completeChapter()
     }
+
+    branchStats.value.totalPlaythroughs++
+    saveBranchStats()
 
     const completedChapterCount = completedChapters.value.length
     const totalMaterialCount = Object.values(scenes.value).filter(s => s.requiredMaterial).length
@@ -878,6 +1203,7 @@ export const useGameStore = defineStore('game', () => {
     const summary = generatePlaySummary(finalScore, completedChapterCount, perfectRate)
     const materialReview = generateMaterialReview()
     const branchStatus = generateBranchStatus()
+    const branchStatsReport = generateBranchStatsReport()
     const nextGoals = generateNextGoals(finalScore, completedChapterCount, branchStatus)
 
     if (ending) {
@@ -894,6 +1220,7 @@ export const useGameStore = defineStore('game', () => {
         summary,
         materialReview,
         branchStatus,
+        branchStatsReport,
         nextGoals
       }
     }
@@ -1276,6 +1603,7 @@ export const useGameStore = defineStore('game', () => {
     currentChapterLog.value = []
     activeMaterialFilter.value = 'all'
     materialUsageHistory.value = {}
+    currentPathSequence.value = []
     resetStats()
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('journal_game_saves')
@@ -1285,6 +1613,7 @@ export const useGameStore = defineStore('game', () => {
       localStorage.removeItem(SESSION_KEY)
       localStorage.removeItem(BACKUP_KEY)
       localStorage.removeItem(CHAPTER_SCORE_KEY)
+      localStorage.removeItem(BRANCH_STATS_KEY)
     }
   }
 
@@ -1369,6 +1698,7 @@ export const useGameStore = defineStore('game', () => {
       typingSpeed: typingSpeed.value,
       activeMaterialFilter: activeMaterialFilter.value,
       materialUsageHistory: materialUsageHistory.value,
+      currentPathSequence: currentPathSequence.value,
       timestamp: Date.now()
     }
     return {
@@ -1479,6 +1809,7 @@ export const useGameStore = defineStore('game', () => {
     typingSpeed.value = saveData.typingSpeed || 50
     activeMaterialFilter.value = saveData.activeMaterialFilter || 'all'
     materialUsageHistory.value = saveData.materialUsageHistory || {}
+    currentPathSequence.value = saveData.currentPathSequence || []
     comboJustTriggered.value = null
     gameCompleted.value = false
     currentEnding.value = null
@@ -2009,6 +2340,7 @@ export const useGameStore = defineStore('game', () => {
   loadChapterSnapshots()
   loadAutoSave()
   loadChapterScoreData()
+  loadBranchStats()
   checkAndUnlockChapters()
 
   const startChapterWithTracking = (chapterId) => {
@@ -2112,6 +2444,8 @@ export const useGameStore = defineStore('game', () => {
     materialTags,
     activeMaterialFilter,
     materialUsageHistory,
+    branchStats,
+    currentPathSequence,
     sceneRecommendedMaterials,
     scenePlacedMaterialIds,
     allRecommendedMaterialIds,
@@ -2188,6 +2522,17 @@ export const useGameStore = defineStore('game', () => {
     setupEventListeners,
     cleanupEventListeners,
     addToDialogueHistory,
-    setTypingSpeed
+    setTypingSpeed,
+    recordBranchChoice,
+    recordSceneTransition,
+    finalizeChapterPathStats,
+    getTopChoicePaths,
+    getHotTransitions,
+    getSceneDecisionSummary,
+    getChapterBranchOverview,
+    saveBranchStats,
+    loadBranchStats,
+    resetBranchStats,
+    generateBranchStatsReport
   }
 })
