@@ -107,7 +107,7 @@ export const useGameStore = defineStore('game', () => {
       timeOfDay: currentTimeOfDay.value,
       weather: currentWeather.value,
       ambience: currentEnvironmentVariant.value?.ambience || 'neutral',
-      dialogueTone: currentEnvironmentVariant.value?.dialogueTone || '平静',
+      dialogueTone: currentEnvironmentVariant.value?.dialogueTone || null,
       variant: currentEnvironmentVariant.value
     }
   })

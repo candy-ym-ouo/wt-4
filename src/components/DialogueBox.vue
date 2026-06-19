@@ -12,12 +12,12 @@
         <span class="hidden-label">隐藏对白</span>
       </div>
       
-      <div class="emotion-tone-badge">
+      <div class="emotion-tone-badge" :class="{ 'tone-from-env': isToneFromEnvironment }" :style="toneBadgeStyle">
         <span class="tone-icon">{{ emotionTier.icon }}</span>
-        <span class="tone-text">{{ environment.dialogueTone || emotionTier.dialogueTone }}语气</span>
+        <span class="tone-text">{{ effectiveDialogueTone }}语气</span>
       </div>
 
-      <div v-if="environment.ambience !== 'neutral'" class="ambience-badge">
+      <div v-if="shouldShowAmbienceBadge" class="ambience-badge" :style="ambienceStyle">
         <span class="ambience-icon">{{ ambienceIcon }}</span>
         <span class="ambience-text">{{ ambienceLabel }}</span>
       </div>
@@ -174,30 +174,70 @@ const dialogueHistory = computed(() => gameStore.dialogueHistory)
 const typingSpeed = computed(() => gameStore.typingSpeed)
 const emotionTier = computed(() => gameStore.currentEmotionTier)
 
-const ambienceIcon = computed(() => {
-  const iconMap = {
-    warm: '☀️',
-    romantic: '🌅',
-    dreamy: '🌙',
-    melancholy: '🌧️',
-    serene: '🍃',
-    nostalgic: '📖',
-    cozy: '🔥'
+const AMBIENCE_MAP = {
+  warm:       { icon: '☀️', label: '温暖',  colors: ['#fef3c7', '#fde68a'], border: '#fbbf24', text: '#92400e' },
+  soft:       { icon: '🌸', label: '柔和',  colors: ['#fce7f3', '#fbcfe8'], border: '#f472b6', text: '#9d174d' },
+  romantic:   { icon: '🌅', label: '浪漫',  colors: ['#fed7aa', '#fdba74'], border: '#f97316', text: '#9a3412' },
+  quiet:      { icon: '🌿', label: '安静',  colors: ['#ecfdf5', '#d1fae5'], border: '#10b981', text: '#065f46' },
+  dreamy:     { icon: '🌙', label: '梦幻',  colors: ['#e0e7ff', '#c7d2fe'], border: '#6366f1', text: '#3730a3' },
+  bright:     { icon: '✨', label: '明亮',  colors: ['#fef9c3', '#fef08a'], border: '#eab308', text: '#854d0e' },
+  melancholy: { icon: '🌧️', label: '忧伤', colors: ['#e0e7ff', '#c7d2fe'], border: '#6366f1', text: '#3730a3' },
+  hopeful:    { icon: '🌱', label: '希望',  colors: ['#dcfce7', '#bbf7d0'], border: '#22c55e', text: '#166534' },
+  poetic:     { icon: '📜', label: '诗意',  colors: ['#f0fdf4', '#dcfce7'], border: '#84cc16', text: '#3f6212' },
+  emotional:  { icon: '�', label: '动情',  colors: ['#ffe4e6', '#fecdd3'], border: '#fb7185', text: '#9f1239' },
+  cool:       { icon: '�', label: '清凉',  colors: ['#ecfeff', '#cffafe'], border: '#06b6d4', text: '#155e75' },
+  refreshing: { icon: '🍃', label: '清新',  colors: ['#f0fdfa', '#ccfbf1'], border: '#14b8a6', text: '#115e59' },
+  lazy:       { icon: '☁️', label: '慵懒',  colors: ['#f8fafc', '#e2e8f0'], border: '#94a3b8', text: '#475569' },
+  autumn:     { icon: '🍁', label: '秋日',  colors: ['#ffedd5', '#fed7aa'], border: '#ea580c', text: '#9a3412' },
+  nostalgic:  { icon: '📖', label: '怀旧',  colors: ['#fef3c7', '#fed7aa'], border: '#d97706', text: '#78350f' },
+  cozy:       { icon: '🔥', label: '温馨',  colors: ['#ffedd5', '#fed7aa'], border: '#ea580c', text: '#9a3412' },
+  serene:     { icon: '🌊', label: '宁静',  colors: ['#eff6ff', '#dbeafe'], border: '#3b82f6', text: '#1e40af' },
+  cold:       { icon: '❄️', label: '寒冷',  colors: ['#f0f9ff', '#e0f2fe'], border: '#0ea5e9', text: '#0c4a6e' },
+  intimate:   { icon: '💕', label: '亲昵',  colors: ['#fce7f3', '#fbcfe8'], border: '#ec4899', text: '#9d174d' },
+  tender:     { icon: '🌷', label: '温柔',  colors: ['#fdf2f8', '#fce7f3'], border: '#f472b6', text: '#9d174d' },
+  magical:    { icon: '🔮', label: '魔幻',  colors: ['#f3e8ff', '#e9d5ff'], border: '#a855f7', text: '#6b21a8' },
+  twinkling:  { icon: '⭐', label: '闪烁',  colors: ['#fef9c3', '#fef3c7'], border: '#fbbf24', text: '#92400e' },
+  final:      { icon: '🎬', label: '终章',  colors: ['#faf5ff', '#f3e8ff'], border: '#8b5cf6', text: '#5b21b6' },
+  neutral:    { icon: '✨', label: '',       colors: ['#ffffff', '#f9fafb'], border: '#e5e7eb', text: '#4b5563' }
+}
+
+const getAmbienceInfo = (ambience) => {
+  if (!ambience || ambience === 'neutral') return AMBIENCE_MAP.neutral
+  return AMBIENCE_MAP[ambience] || AMBIENCE_MAP.neutral
+}
+
+const ambienceIcon = computed(() => getAmbienceInfo(props.environment?.ambience).icon)
+const ambienceLabel = computed(() => getAmbienceInfo(props.environment?.ambience).label)
+const ambienceStyle = computed(() => {
+  const info = getAmbienceInfo(props.environment?.ambience)
+  return {
+    background: `linear-gradient(135deg, ${info.colors[0]}, ${info.colors[1]})`,
+    borderColor: info.border,
+    color: info.text
   }
-  return iconMap[props.environment?.ambience] || '✨'
+})
+const shouldShowAmbienceBadge = computed(() => {
+  return props.environment?.ambience && props.environment.ambience !== 'neutral' && ambienceLabel.value
 })
 
-const ambienceLabel = computed(() => {
-  const labelMap = {
-    warm: '温暖',
-    romantic: '浪漫',
-    dreamy: '梦幻',
-    melancholy: '忧伤',
-    serene: '宁静',
-    nostalgic: '怀旧',
-    cozy: '温馨'
+const effectiveDialogueTone = computed(() => {
+  return props.environment?.dialogueTone || emotionTier.value?.dialogueTone || '平静'
+})
+
+const isToneFromEnvironment = computed(() => {
+  return !!props.environment?.dialogueTone
+})
+
+const toneBadgeStyle = computed(() => {
+  if (isToneFromEnvironment.value) {
+    const info = getAmbienceInfo(props.environment.ambience)
+    return {
+      background: `linear-gradient(135deg, ${info.colors[0]}, ${info.colors[1]})`,
+      borderColor: info.border,
+      color: info.text
+    }
   }
-  return labelMap[props.environment?.ambience] || ''
+  return {}
 })
 
 const speedPresets = [
@@ -454,14 +494,20 @@ onUnmounted(() => {
   align-items: center;
   gap: 5px;
   padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
   font-size: 0.72rem;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  border: 1px solid;
   z-index: 5;
   transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #e5e7eb;
+  color: #4b5563;
+}
+
+.emotion-tone-badge.tone-from-env {
+  border: 1px solid;
 }
 
 .emotion-tier-calm .emotion-tone-badge {
@@ -522,56 +568,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 5px;
   padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
   font-size: 0.72rem;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  border: 1px solid;
   z-index: 5;
   transition: all 0.3s ease;
-}
-
-.ambience-warm .ambience-badge {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  border-color: #fbbf24;
-  color: #92400e;
-}
-
-.ambience-romantic .ambience-badge {
-  background: linear-gradient(135deg, #fed7aa, #fdba74);
-  border-color: #f97316;
-  color: #9a3412;
-}
-
-.ambience-dreamy .ambience-badge {
-  background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
-  border-color: #6366f1;
-  color: #3730a3;
-}
-
-.ambience-melancholy .ambience-badge {
-  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
-  border-color: #6366f1;
-  color: #3730a3;
-}
-
-.ambience-serene .ambience-badge {
-  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-  border-color: #22c55e;
-  color: #166534;
-}
-
-.ambience-nostalgic .ambience-badge {
-  background: linear-gradient(135deg, #fef3c7, #fed7aa);
-  border-color: #d97706;
-  color: #78350f;
-}
-
-.ambience-cozy .ambience-badge {
-  background: linear-gradient(135deg, #ffedd5, #fed7aa);
-  border-color: #ea580c;
-  color: #9a3412;
 }
 
 .ambience-icon {
@@ -580,6 +583,59 @@ onUnmounted(() => {
 
 .ambience-text {
   letter-spacing: 0.3px;
+}
+
+.dialogue-box.ambience-dreamy .dialogue-text,
+.dialogue-box.ambience-magical .dialogue-text,
+.dialogue-box.ambience-twinkling .dialogue-text {
+  font-style: italic;
+  letter-spacing: 0.5px;
+}
+
+.dialogue-box.ambience-romantic .dialogue-text,
+.dialogue-box.ambience-tender .dialogue-text,
+.dialogue-box.ambience-intimate .dialogue-text {
+  letter-spacing: 0.3px;
+}
+
+.dialogue-box.ambience-melancholy .dialogue-text,
+.dialogue-box.ambience-emotional .dialogue-text {
+  font-style: italic;
+  opacity: 0.92;
+}
+
+.dialogue-box.ambience-poetic .dialogue-text,
+.dialogue-box.ambience-final .dialogue-text {
+  letter-spacing: 0.4px;
+  font-weight: 500;
+}
+
+.dialogue-box.ambience-soft .dialogue-text {
+  font-weight: 300;
+}
+
+.dialogue-box.ambience-bright .dialogue-text,
+.dialogue-box.ambience-hopeful .dialogue-text {
+  font-weight: 500;
+}
+
+.dialogue-box.ambience-cozy .dialogue-text,
+.dialogue-box.ambience-nostalgic .dialogue-text {
+  font-style: italic;
+  letter-spacing: 0.2px;
+}
+
+.dialogue-box.ambience-lazy .dialogue-text {
+  letter-spacing: 0.6px;
+  font-weight: 300;
+}
+
+.dialogue-box.ambience-cold .dialogue-text,
+.dialogue-box.ambience-cool .dialogue-text,
+.dialogue-box.ambience-refreshing .dialogue-text,
+.dialogue-box.ambience-serene .dialogue-text,
+.dialogue-box.ambience-quiet .dialogue-text {
+  letter-spacing: 0.2px;
 }
 
 .dialogue-box.time-dusk {
@@ -702,20 +758,6 @@ onUnmounted(() => {
 
 .dialogue-box.weather-star .typing-cursor {
   color: #c4b5fd;
-}
-
-.dialogue-box.ambience-dreamy .dialogue-text {
-  font-style: italic;
-  letter-spacing: 0.5px;
-}
-
-.dialogue-box.ambience-romantic .dialogue-text {
-  letter-spacing: 0.3px;
-}
-
-.dialogue-box.ambience-melancholy .dialogue-text {
-  font-style: italic;
-  opacity: 0.9;
 }
 
 .dialogue-box.emotion-tier-calm::before {
