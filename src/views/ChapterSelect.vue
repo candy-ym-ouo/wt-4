@@ -57,6 +57,44 @@
           <div v-if="hasChapterSnapshot(chapter.id)" class="chapter-progress">
             <span class="progress-indicator">📌 有存档点</span>
           </div>
+
+          <div v-if="isChapterCompleted(chapter.id)" class="chapter-completion">
+            <div class="completion-header">
+              <span class="completion-label">收集进度</span>
+              <span class="completion-percent">{{ getChapterCompletion(chapter.id) }}%</span>
+            </div>
+            <div class="completion-bar">
+              <div 
+                class="completion-fill" 
+                :style="{ width: getChapterCompletion(chapter.id) + '%' }"
+              ></div>
+            </div>
+            <div class="completion-stats">
+              <span class="stat-badge">
+                ✨ {{ getChapterTriggeredCombos(chapter.id) }}/{{ getChapterTotalCombos(chapter.id) }} 组合
+              </span>
+              <span class="stat-badge">
+                💬 {{ getChapterTriggeredHiddenDialogues(chapter.id) }}/{{ getChapterTotalHiddenDialogues(chapter.id) }} 隐藏对话
+              </span>
+            </div>
+            <div v-if="getChapterCollectedHint(chapter.id)" class="uncollected-hint">
+              <span class="hint-icon">🔍</span>
+              <span class="hint-text">
+                还有 {{ getChapterCollectedHint(chapter.id) }} 个隐藏组合等你发现
+              </span>
+            </div>
+            <div v-else class="completed-badge">
+              🏆 完美通关
+            </div>
+          </div>
+
+          <div v-else-if="!isChapterUnlocked(chapter.id)" class="chapter-teaser">
+            <div class="teaser-icon">❓</div>
+            <p class="teaser-text">{{ chapter.teaser }}</p>
+            <div class="teaser-unlock-hint">
+              完成上一章解锁
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -180,6 +218,30 @@ const hasChapterSnapshot = (chapterId) => {
 
 const hasChapterScoreData = (chapterId) => {
   return !!gameStore.getChapterScoreDetail(chapterId)
+}
+
+const getChapterCompletion = (chapterId) => {
+  return gameStore.getChapterCompletion(chapterId)
+}
+
+const getChapterTotalCombos = (chapterId) => {
+  return gameStore.getChapterTotalCombos(chapterId)
+}
+
+const getChapterTriggeredCombos = (chapterId) => {
+  return gameStore.getChapterTriggeredCombos(chapterId)
+}
+
+const getChapterTotalHiddenDialogues = (chapterId) => {
+  return gameStore.getChapterTotalHiddenDialogues(chapterId)
+}
+
+const getChapterTriggeredHiddenDialogues = (chapterId) => {
+  return gameStore.getChapterTriggeredHiddenDialogues(chapterId)
+}
+
+const getChapterCollectedHint = (chapterId) => {
+  return gameStore.getChapterCollectedHint(chapterId)
 }
 
 const viewScoreDetail = (chapterId) => {
@@ -322,8 +384,10 @@ onMounted(() => {
   padding: 30px 20px;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-height: 320px;
+  min-height: 420px;
   box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
 }
 
 .chapter-card:hover {
@@ -338,6 +402,9 @@ onMounted(() => {
 .chapter-content {
   position: relative;
   z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .chapter-number {
@@ -442,6 +509,135 @@ onMounted(() => {
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+.chapter-completion {
+  margin-top: 15px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+}
+
+.completion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.completion-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.completion-percent {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--accent-purple);
+}
+
+.completion-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.completion-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-pink), var(--accent-purple));
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.completion-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.stat-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  background: rgba(167, 139, 250, 0.15);
+  color: var(--accent-purple);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.uncollected-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(245, 158, 11, 0.15);
+  border-radius: 8px;
+  animation: pulse-hint 2s ease-in-out infinite;
+}
+
+@keyframes pulse-hint {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.hint-icon {
+  font-size: 0.9rem;
+}
+
+.hint-text {
+  font-size: 0.75rem;
+  color: #d97706;
+  font-weight: 500;
+}
+
+.completed-badge {
+  text-align: center;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15));
+  color: #059669;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.chapter-teaser {
+  margin-top: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  text-align: center;
+  backdrop-filter: blur(5px);
+  border: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.teaser-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+.teaser-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.teaser-unlock-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  display: inline-block;
 }
 
 .actions {

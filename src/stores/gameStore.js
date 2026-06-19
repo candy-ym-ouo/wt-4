@@ -925,6 +925,92 @@ export const useGameStore = defineStore('game', () => {
     return chapterScoreData.value[chapterId] || null
   }
 
+  const getChapterTotalCombos = (chapterId) => {
+    const chapter = getChapterById(chapterId)
+    if (!chapter) return 0
+    let count = 0
+    chapter.scenes.forEach(sceneId => {
+      const scene = scenes.value[sceneId]
+      if (scene?.materialCombos) {
+        count += scene.materialCombos.length
+      }
+    })
+    return count
+  }
+
+  const getChapterTriggeredCombos = (chapterId) => {
+    const scoreData = chapterScoreData.value[chapterId]
+    if (!scoreData?.allCombos) return 0
+    return scoreData.allCombos.filter(c => c.triggered).length
+  }
+
+  const getChapterTotalHiddenDialogues = (chapterId) => {
+    const chapter = getChapterById(chapterId)
+    if (!chapter) return 0
+    let count = 0
+    chapter.scenes.forEach(sceneId => {
+      const scene = scenes.value[sceneId]
+      if (scene?.materialCombos) {
+        scene.materialCombos.forEach(combo => {
+          if (combo.hiddenDialogue) count++
+        })
+      }
+    })
+    return count
+  }
+
+  const getChapterTriggeredHiddenDialogues = (chapterId) => {
+    const scoreData = chapterScoreData.value[chapterId]
+    if (!scoreData?.allCombos) return 0
+    return scoreData.allCombos.filter(c => c.triggered && c.hasHiddenDialogue).length
+  }
+
+  const getChapterCompletion = (chapterId) => {
+    const totalCombos = getChapterTotalCombos(chapterId)
+    if (totalCombos === 0) return 0
+    const triggeredCombos = getChapterTriggeredCombos(chapterId)
+    return Math.round((triggeredCombos / totalCombos) * 100)
+  }
+
+  const getChapterUncollectedCombos = (chapterId) => {
+    const scoreData = chapterScoreData.value[chapterId]
+    if (!scoreData?.allCombos) {
+      const chapter = getChapterById(chapterId)
+      if (!chapter) return []
+      const allCombos = []
+      chapter.scenes.forEach(sceneId => {
+        const scene = scenes.value[sceneId]
+        if (scene?.materialCombos) {
+          scene.materialCombos.forEach(combo => {
+            allCombos.push({
+              id: combo.id,
+              name: combo.name,
+              description: combo.description,
+              hasHiddenDialogue: !!combo.hiddenDialogue,
+              sceneId
+            })
+          })
+        }
+      })
+      return allCombos
+    }
+    return scoreData.allCombos.filter(c => !c.triggered).map(c => ({
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      hasHiddenDialogue: c.hasHiddenDialogue,
+      sceneId: c.sceneId
+    }))
+  }
+
+  const getChapterCollectedHint = (chapterId) => {
+    const total = getChapterTotalCombos(chapterId)
+    const triggered = getChapterTriggeredCombos(chapterId)
+    const uncollected = total - triggered
+    if (uncollected === 0) return null
+    return uncollected
+  }
+
   const backupSaveSlots = () => {
     try {
       const backup = {
@@ -1265,6 +1351,13 @@ export const useGameStore = defineStore('game', () => {
     rollbackToChapterStart,
     deleteChapterSnapshot,
     getChapterScoreDetail,
+    getChapterTotalCombos,
+    getChapterTriggeredCombos,
+    getChapterTotalHiddenDialogues,
+    getChapterTriggeredHiddenDialogues,
+    getChapterCompletion,
+    getChapterUncollectedCombos,
+    getChapterCollectedHint,
     saveChapterScoreData,
     loadChapterScoreData,
     backupSaveSlots,
