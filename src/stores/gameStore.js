@@ -1333,6 +1333,7 @@ export const useGameStore = defineStore('game', () => {
       allChaptersCompleted: completedChapterCount === 4,
       allChaptersPerfect: false,
       allCombosTriggered: false,
+      allHiddenDialogues: false,
       allHiddenDialoguesFound: false,
       keyLinesFound: false,
       materialOrderMatch: false,
@@ -1340,7 +1341,9 @@ export const useGameStore = defineStore('game', () => {
       totalHiddenDialogues: 0,
       foundHiddenDialogues: 0,
       totalCombos: 0,
-      triggeredCombos: 0
+      triggeredCombos: 0,
+      triggeredComboIds: [],
+      placedMaterialIds: []
     }
 
     let totalHidden = 0
@@ -1371,74 +1374,126 @@ export const useGameStore = defineStore('game', () => {
     conditions.totalCombos = totalCombos
     conditions.triggeredCombos = triggeredCombosCount
     conditions.allCombosTriggered = totalCombos > 0 && triggeredCombosCount === totalCombos
-    conditions.allHiddenDialoguesFound = totalHidden > 0 && foundHidden === totalHidden
+    conditions.allHiddenDialogues = totalHidden > 0 && foundHidden === totalHidden
+    conditions.allHiddenDialoguesFound = conditions.allHiddenDialogues
     conditions.allChaptersPerfect = allPerfect && completedChapterCount === 4
     conditions.keyLinesFound = keyDialogueLines.value.length >= 4
 
-    const uniqueMaterialIds = [...new Set(materialPlacementSequence.value.map(m => m.materialId))]
-    const seasonMaterials = ['flower', 'sun', 'leaf', 'snowflake']
-    const hasAllSeasonMaterials = seasonMaterials.every(m => uniqueMaterialIds.includes(m))
+    const globalComboSet = buildGlobalTriggeredComboSet()
+    conditions.triggeredComboIds = Array.from(globalComboSet)
+    conditions.seasonComboTriggered = globalComboSet.has('combo4_full_four_seasons')
 
-    if (hasAllSeasonMaterials) {
-      const seasonOrder = materialPlacementSequence.value
-        .filter(m => seasonMaterials.includes(m.materialId))
-        .map(m => m.materialId)
+    conditions.placedMaterialIds = materialPlacementSequence.value.map(m => m.materialId)
 
-      let orderIndex = 0
-      let matchesOrder = true
-      for (const matId of seasonOrder) {
-        if (matId === seasonMaterials[orderIndex]) {
-          orderIndex++
-          if (orderIndex >= seasonMaterials.length) break
+    conditions.checkMaterialOrder = (orderList, strict = true) => {
+      if (!orderList || !orderList.length) return false
+      const uniqueMaterialIds = [...new Set(conditions.placedMaterialIds)]
+      const hasAll = orderList.every(m => uniqueMaterialIds.includes(m))
+      if (!hasAll) return false
+
+      if (strict) {
+        const filteredOrder = materialPlacementSequence.value
+          .filter(m => orderList.includes(m.materialId))
+          .map(m => m.materialId)
+
+        let orderIndex = 0
+        for (const matId of filteredOrder) {
+          if (matId === orderList[orderIndex]) {
+            orderIndex++
+            if (orderIndex >= orderList.length) break
+          }
         }
+        return orderIndex === orderList.length
+      } else {
+        const placedIndices = orderList.map(id => conditions.placedMaterialIds.indexOf(id))
+        for (let i = 1; i < placedIndices.length; i++) {
+          if (placedIndices[i] === -1 || placedIndices[i] < placedIndices[i - 1]) return false
+        }
+        return true
       }
-      conditions.materialOrderMatch = orderIndex === seasonMaterials.length
     }
 
-    const globalComboSet = buildGlobalTriggeredComboSet()
-    conditions.seasonComboTriggered = globalComboSet.has('combo4_full_four_seasons')
+    const seasonMaterials = ['flower', 'sun', 'leaf', 'snowflake']
+    conditions.materialOrderMatch = conditions.checkMaterialOrder(seasonMaterials, true)
 
     return conditions
   }
 
+  const checkSingleCondition = (conditions, key, expectedValue) => {
+    const actualValue = conditions[key]
+
+    if (typeof expectedValue === 'boolean') {
+      return !!actualValue === expectedValue
+    }
+
+    if (typeof expectedValue === 'number') {
+      if (key === 'emotionValue' || key.startsWith('min')) {
+        const fieldName = key.startsWith('min') ? key.slice(3).charAt(0).toLowerCase() + key.slice(4) : key
+        const val = key.startsWith('min') ? conditions[fieldName] : actualValue
+        return typeof val === 'number' && val >= expectedValue
+      }
+      return actualValue >= expectedValue
+    }
+
+    if (Array.isArray(expectedValue)) {
+      if (key === 'materialOrder') {
+        return conditions.checkMaterialOrder ? conditions.checkMaterialOrder(expectedValue, conditions.orderStrict ?? true) : false
+      }
+      if (Array.isArray(actualValue)) {
+        return expectedValue.every(v => actualValue.includes(v))
+      }
+    }
+
+    return actualValue === expectedValue
+  }
+
+  const checkEndingTriggerConditions = (ending, conditions) => {
+    if (!ending.triggerConditions) return true
+
+    const triggerConditions = ending.triggerConditions
+
+    if (triggerConditions.allOfTheAbove) {
+      const otherEndings = endings.value.filter(e => e.triggerConditions && e.id !== ending.id)
+      for (const other of otherEndings) {
+        if (!checkEndingTriggerConditions(other, conditions)) return false
+      }
+    }
+
+    for (const [key, expectedValue] of Object.entries(triggerConditions)) {
+      if (key === 'allOfTheAbove') continue
+
+      if (key === 'materialOrder') {
+        const strict = triggerConditions.orderStrict ?? true
+        if (!conditions.checkMaterialOrder || !conditions.checkMaterialOrder(expectedValue, strict)) {
+          return false
+        }
+        continue
+      }
+
+      if (key === 'orderStrict') continue
+
+      if (!checkSingleCondition(conditions, key, expectedValue)) {
+        return false
+      }
+    }
+
+    if (typeof ending.minEmotion === 'number' && conditions.emotionValue < ending.minEmotion) {
+      return false
+    }
+
+    return true
+  }
+
   const selectEnding = (conditions) => {
-    const {
-      emotionValue,
-      finalScore,
-      completedChapterCount,
-      perfectRate,
-      allChaptersCompleted,
-      allChaptersPerfect,
-      allCombosTriggered,
-      allHiddenDialoguesFound,
-      keyLinesFound,
-      materialOrderMatch,
-      seasonComboTriggered
-    } = conditions
+    const orderedEndingTypes = ['true', 'perfect_path', 'dialogue_master', 'time_sequence', 'special', 'good', 'normal']
 
-    if (emotionValue >= 120 && allChaptersCompleted && allCombosTriggered &&
-        allHiddenDialoguesFound && seasonComboTriggered && materialOrderMatch) {
-      return endings.value.find(e => e.type === 'true')
-    }
+    for (const type of orderedEndingTypes) {
+      const ending = endings.value.find(e => e.type === type)
+      if (!ending) continue
 
-    if (allChaptersPerfect && allCombosTriggered && perfectRate >= 0.8 && finalScore >= 95) {
-      return endings.value.find(e => e.type === 'perfect_path')
-    }
-
-    if (allHiddenDialoguesFound && keyLinesFound && completedChapterCount >= 3) {
-      return endings.value.find(e => e.type === 'dialogue_master')
-    }
-
-    if (materialOrderMatch && emotionValue >= 80 && completedChapterCount >= 3) {
-      return endings.value.find(e => e.type === 'time_sequence')
-    }
-
-    if (finalScore >= 90 && completedChapterCount === 4 && perfectRate >= 0.6) {
-      return endings.value.find(e => e.type === 'special')
-    }
-
-    if (finalScore >= 65 && completedChapterCount >= 2) {
-      return endings.value.find(e => e.type === 'good')
+      if (checkEndingTriggerConditions(ending, conditions)) {
+        return ending
+      }
     }
 
     return endings.value.find(e => e.type === 'normal')
@@ -2830,6 +2885,9 @@ export const useGameStore = defineStore('game', () => {
     dismissComboNotification,
     completeChapter,
     completeGame,
+    evaluateEndingConditions,
+    checkEndingTriggerConditions,
+    selectEnding,
     saveGame,
     loadGame,
     loadSavesFromStorage,
