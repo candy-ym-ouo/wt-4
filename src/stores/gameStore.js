@@ -727,7 +727,11 @@ export const useGameStore = defineStore('game', () => {
   const completeGame = () => {
     gameCompleted.value = true
 
-    const completedChapterCount = completedChapters.value.length + (currentChapterId.value && !completedChapters.value.includes(currentChapterId.value) ? 1 : 0)
+    if (currentChapterId.value && !completedChapters.value.includes(currentChapterId.value)) {
+      completeChapter()
+    }
+
+    const completedChapterCount = completedChapters.value.length
     const totalMaterialCount = Object.values(scenes.value).filter(s => s.requiredMaterial).length
     const placedCount = placedMaterials.value.length
     const perfectRate = totalMaterialCount > 0 ? perfectPlacementCount.value / totalMaterialCount : 0
@@ -773,9 +777,25 @@ export const useGameStore = defineStore('game', () => {
     autoSave()
   }
 
+  const buildGlobalTriggeredComboSet = () => {
+    const globalSet = new Set()
+    Object.values(chapterScoreData.value).forEach(scoreData => {
+      if (scoreData?.allCombos) {
+        scoreData.allCombos.forEach(combo => {
+          if (combo.triggered) globalSet.add(combo.id)
+        })
+      }
+    })
+    triggeredCombos.value.forEach(comboId => {
+      globalSet.add(comboId)
+    })
+    return globalSet
+  }
+
   const generatePlaySummary = (finalScore, completedChapterCount, perfectRate) => {
     const totalCombos = getAllCombosCount()
-    const triggeredCount = triggeredCombos.value.length
+    const globalTriggeredSet = buildGlobalTriggeredComboSet()
+    const triggeredCount = globalTriggeredSet.size
 
     let performance
     if (finalScore >= 90) performance = 'S'
@@ -799,11 +819,13 @@ export const useGameStore = defineStore('game', () => {
     if (emotionValue.value >= 200) highlights.push('情感收集家')
     if (positiveBonus.value >= 10) highlights.push('幸运之星')
 
-    const playedChapters = completedChapterCount >= 1 ? chapters.value.slice(0, completedChapterCount) : []
-    const chapterScoreSummary = playedChapters.map(ch => {
-      const scoreData = chapterScoreData.value[ch.id]
+    const completedIds = completedChapters.value
+    const chapterScoreSummary = completedIds.map(chId => {
+      const ch = getChapterById(chId)
+      if (!ch) return null
+      const scoreData = chapterScoreData.value[chId]
       return {
-        chapterId: ch.id,
+        chapterId: chId,
         title: ch.title,
         totalEmotion: scoreData?.totalEmotion || 0,
         triggeredCombos: scoreData?.triggeredComboCount || 0,
@@ -811,7 +833,7 @@ export const useGameStore = defineStore('game', () => {
         emotionTarget: ch.emotionTarget || 0,
         reached: scoreData ? scoreData.totalEmotion >= (ch.emotionTarget || 0) : false
       }
-    })
+    }).filter(Boolean)
 
     return {
       performance,
@@ -837,11 +859,12 @@ export const useGameStore = defineStore('game', () => {
 
   const generateMaterialReview = () => {
     const reviewItems = []
+    const globalTriggeredSet = buildGlobalTriggeredComboSet()
 
     Object.values(scenes.value).forEach(scene => {
       if (!scene.materialCombos) return
       scene.materialCombos.forEach(combo => {
-        const isTriggered = triggeredCombos.value.includes(combo.id)
+        const isTriggered = globalTriggeredSet.has(combo.id)
         const matNames = combo.materials.map(mId => {
           const mat = getMaterialById(mId)
           return mat ? mat.name : mId
@@ -899,10 +922,35 @@ export const useGameStore = defineStore('game', () => {
 
   const generateBranchStatus = () => {
     const branches = []
+    const globalTriggeredSet = buildGlobalTriggeredComboSet()
 
     chapters.value.forEach(chapter => {
-      const scoreData = chapterScoreData.value[chapter.id]
-      const isCompleted = completedChapters.value.includes(chapter.id) || currentChapterId.value === chapter.id
+      let scoreData = chapterScoreData.value[chapter.id]
+      const isCompleted = completedChapters.value.includes(chapter.id)
+
+      if (!scoreData && isCompleted) {
+        const chapterScenes = chapter.scenes || []
+        const allCombos = []
+        chapterScenes.forEach(sceneId => {
+          const scene = scenes.value[sceneId]
+          if (scene?.materialCombos) {
+            scene.materialCombos.forEach(combo => {
+              allCombos.push({
+                id: combo.id,
+                name: combo.name,
+                description: combo.description,
+                hasHiddenDialogue: !!combo.hiddenDialogue,
+                triggered: globalTriggeredSet.has(combo.id)
+              })
+            })
+          }
+        })
+        scoreData = {
+          allCombos,
+          triggeredComboCount: allCombos.filter(c => c.triggered).length,
+          totalComboCount: allCombos.length
+        }
+      }
 
       const totalCombos = getChapterTotalCombos(chapter.id)
       const triggeredInChapter = scoreData?.allCombos?.filter(c => c.triggered).length || 0
@@ -916,14 +964,13 @@ export const useGameStore = defineStore('game', () => {
         hint: c.hasHiddenDialogue ? '含隐藏对话' : '普通组合'
       })) || []
 
-      let unplayedSceneCombos = []
-      if (!isCompleted || !scoreData) {
+      if (!isCompleted) {
         chapter.scenes.forEach(sceneId => {
           const scene = scenes.value[sceneId]
           if (scene?.materialCombos) {
             scene.materialCombos.forEach(combo => {
-              if (!triggeredCombos.value.includes(combo.id)) {
-                unplayedSceneCombos.push({
+              if (!globalTriggeredSet.has(combo.id)) {
+                missedCombos.push({
                   comboId: combo.id,
                   name: combo.name,
                   hasHiddenDialogue: !!combo.hiddenDialogue,
@@ -940,13 +987,13 @@ export const useGameStore = defineStore('game', () => {
         title: chapter.title,
         subtitle: chapter.subtitle,
         completed: isCompleted,
-        emotionReached: scoreData ? scoreData.totalEmotion >= (chapter.emotionTarget || 0) : false,
+        emotionReached: scoreData && scoreData.totalEmotion !== undefined ? scoreData.totalEmotion >= (chapter.emotionTarget || 0) : false,
         emotionTarget: chapter.emotionTarget || 0,
         totalCombos,
         triggeredCombos: triggeredInChapter,
         totalHidden,
         triggeredHidden,
-        missedCombos: missedCombos.length > 0 ? missedCombos : unplayedSceneCombos,
+        missedCombos,
         completionPercent: totalCombos > 0 ? Math.round((triggeredInChapter / totalCombos) * 100) : 0
       })
     })
