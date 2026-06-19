@@ -112,6 +112,23 @@
       </div>
     </Transition>
 
+    <Transition name="affinity-pop">
+      <div v-if="activeAffinityNotif" class="affinity-notif-overlay">
+        <div class="affinity-notif-card" :style="{ borderColor: activeAffinityNotif.color }">
+          <div class="affinity-notif-icon">{{ activeAffinityNotif.icon }}</div>
+          <div class="affinity-notif-body">
+            <div class="affinity-notif-name">{{ activeAffinityNotif.characterName }}</div>
+            <div class="affinity-notif-change" :class="{ positive: activeAffinityNotif.change > 0, negative: activeAffinityNotif.change < 0 }">
+              {{ activeAffinityNotif.change > 0 ? '+' : '' }}{{ activeAffinityNotif.change }} 好感
+            </div>
+            <div v-if="activeAffinityNotif.tierUp" class="affinity-notif-tier-up">
+              ✨ 关系升级为 {{ activeAffinityNotif.tierUp }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <Transition name="combo-achievement">
       <div v-if="showComboAchievement" class="combo-achievement-overlay">
         <div class="combo-achievement-card">
@@ -231,6 +248,9 @@ const showRollbackConfirm = ref(false)
 const showComboAchievement = ref(false)
 const latestCombo = ref(null)
 const comboQueue = ref([])
+const activeAffinityNotif = ref(null)
+const affinityNotifQueue = ref([])
+const affinityNotifTimer = ref(null)
 
 const currentChapter = computed(() => gameStore.currentChapter)
 const currentScene = computed(() => gameStore.currentScene)
@@ -463,6 +483,33 @@ watch(() => gameStore.completedChapters, (completed) => {
     showChapterComplete.value = true
   }
 }, { deep: true })
+
+watch(() => gameStore.affinityNotifications, (notifs) => {
+  if (notifs.length === 0) return
+  notifs.forEach(n => affinityNotifQueue.value.push(n))
+  gameStore.clearAffinityNotifications()
+  if (!activeAffinityNotif.value) processNextAffinityNotif()
+}, { deep: true })
+
+const processNextAffinityNotif = () => {
+  if (affinityNotifQueue.value.length === 0) {
+    activeAffinityNotif.value = null
+    return
+  }
+  const notif = affinityNotifQueue.value.shift()
+  const char = gameStore.characterRegistry.find(c => c.id === notif.characterId)
+  activeAffinityNotif.value = {
+    icon: char?.icon || '💫',
+    characterName: char?.name || notif.characterId,
+    change: notif.change,
+    color: char?.color || '#a78bfa',
+    tierUp: notif.tierUp || null
+  }
+  if (affinityNotifTimer.value) clearTimeout(affinityNotifTimer.value)
+  affinityNotifTimer.value = setTimeout(() => {
+    processNextAffinityNotif()
+  }, 2500)
+}
 
 onMounted(() => {
   const chapterId = route.params.chapterId
@@ -976,6 +1023,81 @@ onUnmounted(() => {
 .notification-leave-to {
   opacity: 0;
   transform: translateY(-20px);
+}
+
+.affinity-notif-overlay {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1400;
+  pointer-events: none;
+}
+
+.affinity-notif-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  border: 2px solid;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.affinity-notif-icon {
+  font-size: 2rem;
+}
+
+.affinity-notif-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.affinity-notif-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.affinity-notif-change {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.affinity-notif-change.positive {
+  color: #059669;
+}
+
+.affinity-notif-change.negative {
+  color: #dc2626;
+}
+
+.affinity-notif-tier-up {
+  font-size: 0.8rem;
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+.affinity-pop-enter-active {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.affinity-pop-leave-active {
+  transition: all 0.3s ease;
+}
+
+.affinity-pop-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-30px) scale(0.8);
+}
+
+.affinity-pop-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px) scale(0.9);
 }
 
 .recovery-overlay,

@@ -35,6 +35,11 @@ const routes = [
     path: '/memory-gallery',
     name: 'MemoryGallery',
     component: () => import('../views/MemoryGallery.vue')
+  },
+  {
+    path: '/character-relation',
+    name: 'CharacterRelation',
+    component: () => import('../views/CharacterRelationView.vue')
   }
 ]
 

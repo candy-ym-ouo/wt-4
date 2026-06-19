@@ -16,6 +16,7 @@ const TUTORIAL_KEY = 'journal_game_tutorial'
 const NEW_GAME_PLUS_KEY = 'journal_game_ngp'
 const HIDDEN_MATERIALS_KEY = 'journal_game_hidden_materials'
 const CYCLE_ACHIEVEMENTS_KEY = 'journal_game_cycle_achievements'
+const CHARACTER_RELATION_KEY = 'journal_game_character_relation'
 const AUTO_SAVE_DIALOGUE_INTERVAL = 5
 const HEARTBEAT_INTERVAL = 20000
 const CRASH_RECOVERY_THRESHOLD = 180000
@@ -296,6 +297,576 @@ export const useGameStore = defineStore('game', () => {
   ])
 
   const ngpNotification = ref(null)
+
+  const characterRegistry = ref([
+    {
+      id: 'she',
+      name: '她',
+      title: '回忆中的少女',
+      icon: '🌸',
+      color: '#ec4899',
+      gradient: 'linear-gradient(135deg, #fce7f3, #fbcfe8)',
+      description: '那个在樱花树下微笑的女孩，温暖了你的整个青春。',
+      personality: '温柔、活泼、善于发现美好',
+      preferredTags: ['romantic', 'warm', 'pink', 'nature'],
+      preferredMaterials: ['flower', 'heart', 'letter', 'scarf'],
+      affinityTiers: [
+        { id: 'stranger', name: '初遇', min: 0, max: 20, icon: '👋', color: '#9ca3af' },
+        { id: 'acquaintance', name: '相识', min: 20, max: 40, icon: '😊', color: '#f59e0b' },
+        { id: 'friend', name: '知己', min: 40, max: 60, icon: '💫', color: '#8b5cf6' },
+        { id: 'close', name: '亲密', min: 60, max: 80, icon: '💖', color: '#ec4899' },
+        { id: 'beloved', name: '挚爱', min: 80, max: 100, icon: '💕', color: '#f43f5e' }
+      ],
+      exclusiveDialogueTiers: [30, 50, 70, 90],
+      chapterUnlock: { chapterId: 'chapter_she', minAffinity: 60 }
+    },
+    {
+      id: 'time',
+      name: '时光',
+      title: '流淌的岁月',
+      icon: '⏳',
+      color: '#8b5cf6',
+      gradient: 'linear-gradient(135deg, #ede9fe, #ddd6fe)',
+      description: '无声流逝的时光，记录着每一个值得铭记的瞬间。',
+      personality: '沉稳、深邃、见证一切',
+      preferredTags: ['precious', 'nostalgic', 'stationery'],
+      preferredMaterials: ['watch', 'book', 'star', 'coffee'],
+      affinityTiers: [
+        { id: 'stranger', name: '陌生', min: 0, max: 20, icon: '🌫️', color: '#9ca3af' },
+        { id: 'aware', name: '感知', min: 20, max: 40, icon: '🌅', color: '#f59e0b' },
+        { id: 'understanding', name: '理解', min: 40, max: 60, icon: '🕐', color: '#8b5cf6' },
+        { id: 'harmony', name: '共鸣', min: 60, max: 80, icon: '✨', color: '#6366f1' },
+        { id: 'eternal', name: '永恒', min: 80, max: 100, icon: '🌟', color: '#4f46e5' }
+      ],
+      exclusiveDialogueTiers: [30, 50, 70, 90],
+      chapterUnlock: { chapterId: 'chapter_time', minAffinity: 60 }
+    },
+    {
+      id: 'self',
+      name: '自己',
+      title: '内心深处的声音',
+      icon: '🪞',
+      color: '#06b6d4',
+      gradient: 'linear-gradient(135deg, #cffafe, #a5f3fc)',
+      description: '那个一直被忽略的声音，它知道你真正想要什么。',
+      personality: '内省、敏感、追求真实',
+      preferredTags: ['dreamy', 'all', 'nature'],
+      preferredMaterials: ['music', 'cloud', 'snowflake', 'butterfly'],
+      affinityTiers: [
+        { id: 'stranger', name: '忽视', min: 0, max: 20, icon: '😶', color: '#9ca3af' },
+        { id: 'aware', name: '觉察', min: 20, max: 40, icon: '🤔', color: '#f59e0b' },
+        { id: 'dialogue', name: '对话', min: 40, max: 60, icon: '💬', color: '#06b6d4' },
+        { id: 'acceptance', name: '接纳', min: 60, max: 80, icon: '🫂', color: '#0891b2' },
+        { id: 'awakening', name: '觉醒', min: 80, max: 100, icon: '🌟', color: '#0e7490' }
+      ],
+      exclusiveDialogueTiers: [30, 50, 70, 90],
+      chapterUnlock: { chapterId: 'chapter_self', minAffinity: 60 }
+    }
+  ])
+
+  const characterAffinities = ref({
+    she: 0,
+    time: 0,
+    self: 0
+  })
+
+  const affinityLog = ref([])
+
+  const exclusiveDialogueUnlocked = ref({})
+
+  const affinityNotifications = ref([])
+
+  const characterExclusiveDialogues = ref({
+    she: {
+      30: [
+        {
+          id: 'she_exc_30_1',
+          speaker: '回忆',
+          text: '你有没有注意到，每次看樱花的时候，风都会刚好把花瓣吹到你面前？我总觉得，是樱花在帮你呢。',
+          emotionChange: 5,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 30,
+          characterId: 'she'
+        }
+      ],
+      50: [
+        {
+          id: 'she_exc_50_1',
+          speaker: '回忆',
+          text: '其实...每次你说"好巧"的时候，我都偷偷笑了。哪有那么多巧合，不过是我在等你而已。',
+          emotionChange: 6,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 50,
+          characterId: 'she'
+        }
+      ],
+      70: [
+        {
+          id: 'she_exc_70_1',
+          speaker: '回忆',
+          text: '你知道吗，围巾我织了三次才满意的。前两次都因为想你走神织错了...不过第三次的每一针，都织进了我想说的话。',
+          emotionChange: 8,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 70,
+          characterId: 'she'
+        }
+      ],
+      90: [
+        {
+          id: 'she_exc_90_1',
+          speaker: '回忆',
+          text: '如果四季会轮回，如果记忆会消失，我唯一想留住的，就是你看着我的那个瞬间。因为在那个瞬间里，我看到了全世界。',
+          emotionChange: 12,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 90,
+          characterId: 'she'
+        }
+      ]
+    },
+    time: {
+      30: [
+        {
+          id: 'time_exc_30_1',
+          speaker: '旁白',
+          text: '怀表的滴答声似乎慢了下来，你隐约感觉到，时间在为你停留片刻。',
+          emotionChange: 4,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 30,
+          characterId: 'time'
+        }
+      ],
+      50: [
+        {
+          id: 'time_exc_50_1',
+          speaker: '旁白',
+          text: '你忽然意识到，这些被写进手账的瞬间，其实都是时间赠予的礼物——那些你以为平凡的日子，才是最珍贵的。',
+          emotionChange: 6,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 50,
+          characterId: 'time'
+        }
+      ],
+      70: [
+        {
+          id: 'time_exc_70_1',
+          speaker: '旁白',
+          text: '时光的河流中，有些记忆像鹅卵石一样被冲刷得圆润，有些却像星辰一样永远不会褪色。而你现在记录的，正是后者。',
+          emotionChange: 8,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 70,
+          characterId: 'time'
+        }
+      ],
+      90: [
+        {
+          id: 'time_exc_90_1',
+          speaker: '旁白',
+          text: '时间在这一刻凝固了——过去、现在和未来交汇于此。你终于明白，所谓的永恒，不是时间无穷，而是此刻无悔。',
+          emotionChange: 12,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 90,
+          characterId: 'time'
+        }
+      ]
+    },
+    self: {
+      30: [
+        {
+          id: 'self_exc_30_1',
+          speaker: '内心',
+          text: '你有没有想过，为什么每次翻开这本手账，心跳都会快一拍？也许...你比自己以为的，更在意这些回忆。',
+          emotionChange: 4,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 30,
+          characterId: 'self'
+        }
+      ],
+      50: [
+        {
+          id: 'self_exc_50_1',
+          speaker: '内心',
+          text: '你一直在回忆别人，但你有没有好好看过自己？那些勇敢说出的话、认真放下的素材，都是你变好的证明。',
+          emotionChange: 6,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 50,
+          characterId: 'self'
+        }
+      ],
+      70: [
+        {
+          id: 'self_exc_70_1',
+          speaker: '内心',
+          text: '承认吧，你一直在害怕——害怕忘记，害怕被忘记。但正因为这份害怕，你才如此珍惜每一段故事。脆弱不是弱点，是你温柔的来源。',
+          emotionChange: 8,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 70,
+          characterId: 'self'
+        }
+      ],
+      90: [
+        {
+          id: 'self_exc_90_1',
+          speaker: '内心',
+          text: '你终于听到了自己的声音——它说，无论结局如何，你都不会后悔。因为这段旅程中，你不仅找到了她，也找到了你自己。',
+          emotionChange: 12,
+          trigger: null,
+          isExclusive: true,
+          affinityRequired: 90,
+          characterId: 'self'
+        }
+      ]
+    }
+  })
+
+  const affinityHiddenChapters = ref([
+    {
+      id: 'chapter_she',
+      title: '她的秘密花园',
+      subtitle: '只有最亲密的人才能看到',
+      description: '在她的心里，有一座只有你才能进入的花园...',
+      teaser: '🌺 她的秘密，只对你一个人敞开',
+      background: 'linear-gradient(135deg, #fce7f3, #fbcfe8)',
+      hidden: true,
+      hiddenHint: '当她对你敞开心扉时，这里才会出现...',
+      unlockConditions: [
+        { type: 'affinity_reached', characterId: 'she', value: 60, description: '与「她」的好感度达到 60' }
+      ],
+      requiredMaterials: ['flower', 'heart', 'music'],
+      emotionTarget: 60,
+      scenes: ['scene_she_1']
+    },
+    {
+      id: 'chapter_time',
+      title: '时间之外',
+      subtitle: '永恒的一刻',
+      description: '当时间为你停留，你会看到什么？',
+      teaser: '⏳ 在时间缝隙中，藏着被遗忘的真相',
+      background: 'linear-gradient(135deg, #ede9fe, #ddd6fe)',
+      hidden: true,
+      hiddenHint: '传说理解了时间真谛的人，能进入永恒的瞬间...',
+      unlockConditions: [
+        { type: 'affinity_reached', characterId: 'time', value: 60, description: '与「时光」的好感度达到 60' }
+      ],
+      requiredMaterials: ['watch', 'star', 'book'],
+      emotionTarget: 70,
+      scenes: ['scene_time_1']
+    },
+    {
+      id: 'chapter_self',
+      title: '镜中之境',
+      subtitle: '与自己的对话',
+      description: '面对内心深处的自己，你准备好了吗？',
+      teaser: '🪞 最了解你的人，或许就是你自己',
+      background: 'linear-gradient(135deg, #cffafe, #a5f3fc)',
+      hidden: true,
+      hiddenHint: '只有真正接纳自己的人，才能走进内心深处...',
+      unlockConditions: [
+        { type: 'affinity_reached', characterId: 'self', value: 60, description: '与「自己」的好感度达到 60' }
+      ],
+      requiredMaterials: ['music', 'cloud', 'butterfly'],
+      emotionTarget: 65,
+      scenes: ['scene_self_1']
+    }
+  ])
+
+  const affinitySceneData = ref({
+    scene_she_1: {
+      id: 'scene_she_1',
+      chapter: 'chapter_she',
+      background: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #fecdd3 100%)',
+      timeOfDay: 'dusk',
+      weather: 'clear',
+      variants: {
+        dusk_clear: {
+          background: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #fecdd3 100%)',
+          ambience: 'intimate',
+          dialogueTone: '亲昵'
+        }
+      },
+      dialogues: [
+        {
+          id: 'd_she_1_1',
+          speaker: '旁白',
+          text: '你走进了一座从未见过的花园，满眼都是盛开的花，每一朵都带着她的气息。',
+          emotionChange: 3,
+          trigger: null
+        },
+        {
+          id: 'd_she_1_2',
+          speaker: '回忆',
+          text: '你终于来了。这里是只属于我们两个人的地方...我种了很久呢。',
+          emotionChange: 5,
+          trigger: null
+        },
+        {
+          id: 'd_she_1_3',
+          speaker: '你',
+          text: '这些都是...为我种的？',
+          emotionChange: 4,
+          trigger: 'material_required'
+        },
+        {
+          id: 'd_she_1_4',
+          speaker: '回忆',
+          text: '每一朵花里，都藏着我想对你说的话。你听...',
+          emotionChange: 5,
+          trigger: null
+        },
+        {
+          id: 'd_she_1_5',
+          speaker: '回忆',
+          text: '「谢谢你来找我。从今以后，我的花园永远为你敞开。」',
+          emotionChange: 8,
+          isKeyLine: true,
+          trigger: 'chapter_complete'
+        }
+      ],
+      requiredMaterial: 'flower',
+      optionalMaterials: ['heart', 'music', 'star'],
+      materialCombos: [
+        {
+          id: 'combo_she_garden',
+          name: '心之花园',
+          materials: ['flower', 'heart'],
+          hiddenDialogue: {
+            id: 'hd_she_1_1',
+            speaker: '回忆',
+            text: '她在花丛中转过身，夕阳洒在她的发梢，那一刻比任何画面都要美。',
+            emotionChange: 8,
+            isHidden: true
+          },
+          emotionBonus: 10,
+          sceneFeedback: {
+            type: 'particle',
+            effect: 'petals',
+            backgroundShift: 'linear-gradient(135deg, #fce7f3 0%, #fecdd3 50%, #fda4af 100%)'
+          },
+          description: '樱花+心：花园中最美的告白'
+        },
+        {
+          id: 'combo_she_melody',
+          name: '花间曲',
+          materials: ['flower', 'music'],
+          hiddenDialogue: {
+            id: 'hd_she_1_2',
+            speaker: '内心',
+            text: '风吹过花园，花瓣随着旋律翩翩起舞。原来，幸福就是这样简单。',
+            emotionChange: 6,
+            isHidden: true
+          },
+          emotionBonus: 8,
+          sceneFeedback: {
+            type: 'particle',
+            effect: 'notes',
+            backgroundShift: null
+          },
+          description: '樱花+音符：花间飘荡的旋律'
+        }
+      ],
+      nextScene: null
+    },
+    scene_time_1: {
+      id: 'scene_time_1',
+      chapter: 'chapter_time',
+      background: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 50%, #c4b5fd 100%)',
+      timeOfDay: 'night',
+      weather: 'star',
+      variants: {
+        night_star: {
+          background: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 50%, #c4b5fd 100%)',
+          ambience: 'timeless',
+          dialogueTone: '超脱'
+        }
+      },
+      dialogues: [
+        {
+          id: 'd_time_1_1',
+          speaker: '旁白',
+          text: '时间在这一刻仿佛停止了流动，你看见星光凝结成了沙漏的形状。',
+          emotionChange: 3,
+          trigger: null
+        },
+        {
+          id: 'd_time_1_2',
+          speaker: '旁白',
+          text: '沙漏翻转的瞬间，你看到了过去与未来的交汇——那是你曾经错过的，和即将遇见的。',
+          emotionChange: 4,
+          trigger: null
+        },
+        {
+          id: 'd_time_1_3',
+          speaker: '你',
+          text: '时间...原来你一直都在。',
+          emotionChange: 4,
+          trigger: 'material_required'
+        },
+        {
+          id: 'd_time_1_4',
+          speaker: '旁白',
+          text: '怀表的指针开始逆时针旋转，星空中的每一颗星都是一个被封存的瞬间。',
+          emotionChange: 5,
+          trigger: null
+        },
+        {
+          id: 'd_time_1_5',
+          speaker: '内心',
+          text: '「时间不会为任何人停留，但它会记住每一个用心度过的瞬间。」',
+          emotionChange: 8,
+          isKeyLine: true,
+          trigger: 'chapter_complete'
+        }
+      ],
+      requiredMaterial: 'watch',
+      optionalMaterials: ['star', 'book', 'cloud'],
+      materialCombos: [
+        {
+          id: 'combo_time_star',
+          name: '星辰时刻',
+          materials: ['watch', 'star'],
+          hiddenDialogue: {
+            id: 'hd_time_1_1',
+            speaker: '旁白',
+            text: '当怀表的滴答与星辰的闪烁同频共振，你听见了宇宙的心跳。',
+            emotionChange: 7,
+            isHidden: true
+          },
+          emotionBonus: 9,
+          sceneFeedback: {
+            type: 'particle',
+            effect: 'stars',
+            backgroundShift: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)'
+          },
+          description: '怀表+星星：时间的终极答案'
+        },
+        {
+          id: 'combo_time_book',
+          name: '永恒书页',
+          materials: ['watch', 'book'],
+          hiddenDialogue: {
+            id: 'hd_time_1_2',
+            speaker: '内心',
+            text: '书页间的文字，是时间写给世人的情书。而你，是唯一读懂它的人。',
+            emotionChange: 6,
+            isHidden: true
+          },
+          emotionBonus: 7,
+          sceneFeedback: {
+            type: 'glow',
+            effect: 'warm',
+            backgroundShift: null
+          },
+          description: '怀表+书本：时间的情书'
+        }
+      ],
+      nextScene: null
+    },
+    scene_self_1: {
+      id: 'scene_self_1',
+      chapter: 'chapter_self',
+      background: 'linear-gradient(135deg, #cffafe 0%, #a5f3fc 50%, #67e8f9 100%)',
+      timeOfDay: 'day',
+      weather: 'clear',
+      variants: {
+        day_clear: {
+          background: 'linear-gradient(135deg, #cffafe 0%, #a5f3fc 50%, #67e8f9 100%)',
+          ambience: 'clarity',
+          dialogueTone: '通透'
+        }
+      },
+      dialogues: [
+        {
+          id: 'd_self_1_1',
+          speaker: '内心',
+          text: '你终于愿意停下脚步，好好听听自己的声音了。',
+          emotionChange: 3,
+          trigger: null
+        },
+        {
+          id: 'd_self_1_2',
+          speaker: '你',
+          text: '我一直都在逃避吗？',
+          emotionChange: 3,
+          trigger: null
+        },
+        {
+          id: 'd_self_1_3',
+          speaker: '内心',
+          text: '不是逃避，是还没准备好面对。但现在，你准备好了。',
+          emotionChange: 4,
+          trigger: 'material_required'
+        },
+        {
+          id: 'd_self_1_4',
+          speaker: '内心',
+          text: '你比自己想象的更勇敢，也比自己以为的更温柔。承认这一点，没什么好害羞的。',
+          emotionChange: 5,
+          trigger: null
+        },
+        {
+          id: 'd_self_1_5',
+          speaker: '你',
+          text: '「谢谢你，一直陪着我。从今以后，我会好好听自己的声音。」',
+          emotionChange: 10,
+          isKeyLine: true,
+          trigger: 'chapter_complete'
+        }
+      ],
+      requiredMaterial: 'music',
+      optionalMaterials: ['cloud', 'butterfly', 'star'],
+      materialCombos: [
+        {
+          id: 'combo_self_sky',
+          name: '心之天空',
+          materials: ['music', 'cloud'],
+          hiddenDialogue: {
+            id: 'hd_self_1_1',
+            speaker: '内心',
+            text: '云会散，天会晴。你的心也一样，再大的乌云，也遮不住本来的澄澈。',
+            emotionChange: 6,
+            isHidden: true
+          },
+          emotionBonus: 8,
+          sceneFeedback: {
+            type: 'particle',
+            effect: 'clouds',
+            backgroundShift: null
+          },
+          description: '音符+云朵：内心的天空'
+        },
+        {
+          id: 'combo_self_freedom',
+          name: '破茧成蝶',
+          materials: ['music', 'butterfly'],
+          hiddenDialogue: {
+            id: 'hd_self_1_2',
+            speaker: '内心',
+            text: '每一个不自信的瞬间，都是蝴蝶破茧前的等待。你已经在路上了。',
+            emotionChange: 7,
+            isHidden: true
+          },
+          emotionBonus: 9,
+          sceneFeedback: {
+            type: 'animation',
+            effect: 'flutter',
+            backgroundShift: 'linear-gradient(135deg, #cffafe 0%, #fce7f3 50%, #a5f3fc 100%)'
+          },
+          description: '音符+蝴蝶：破茧的勇气'
+        }
+      ],
+      nextScene: null
+    }
+  })
 
   const currentChapter = computed(() => {
     return chapters.value.find(c => c.id === currentChapterId.value)
@@ -1292,6 +1863,8 @@ export const useGameStore = defineStore('game', () => {
     if (randomFluctuation > 0) {
       positiveBonus.value += randomFluctuation
     }
+
+    processDialogueAffinity(dialogue)
     addEmotionLog('dialogue', finalEmotion, {
       dialogueId: dialogue.id,
       speaker: dialogue.speaker,
@@ -1487,6 +2060,8 @@ export const useGameStore = defineStore('game', () => {
       perfectPlacementCount.value++
     }
 
+    processMaterialAffinity(materialId, isPerfect)
+
     addEmotionLog('material', material.emotion, {
       materialId,
       materialName: material.name,
@@ -1583,6 +2158,8 @@ export const useGameStore = defineStore('game', () => {
     requiredMaterialPlaced.value = true
     isWaitingForMaterial.value = false
     requiredMaterialId.value = null
+
+    processMaterialAffinity(materialId, isPerfect)
 
     const newlyTriggered = checkMaterialCombos()
     const comboResults = newlyTriggered.map(combo => triggerCombo(combo)).filter(Boolean)
@@ -1711,6 +2288,8 @@ export const useGameStore = defineStore('game', () => {
     saveChapterScoreData()
 
     finalizeChapterPathStats(chapter.id)
+
+    processChapterCompletionAffinity(chapter.id)
 
     checkAndUnlockChapters()
   }
@@ -3148,6 +3727,8 @@ export const useGameStore = defineStore('game', () => {
       currentPathSequence: currentPathSequence.value,
       currentTimeOfDay: currentTimeOfDay.value,
       currentWeather: currentWeather.value,
+      characterAffinities: characterAffinities.value,
+      exclusiveDialogueUnlocked: exclusiveDialogueUnlocked.value,
       thumbnail,
       timestamp: Date.now()
     }
@@ -3284,6 +3865,12 @@ export const useGameStore = defineStore('game', () => {
     currentPathSequence.value = saveData.currentPathSequence || []
     currentTimeOfDay.value = saveData.currentTimeOfDay || 'day'
     currentWeather.value = saveData.currentWeather || 'clear'
+    if (saveData.characterAffinities) {
+      characterAffinities.value = { ...characterAffinities.value, ...saveData.characterAffinities }
+    }
+    if (saveData.exclusiveDialogueUnlocked) {
+      exclusiveDialogueUnlocked.value = saveData.exclusiveDialogueUnlocked
+    }
     comboJustTriggered.value = null
     gameCompleted.value = false
     currentEnding.value = null
@@ -3513,6 +4100,9 @@ export const useGameStore = defineStore('game', () => {
           ? newGamePlus.value.discoveredEndingIds.includes(endingId)
           : newGamePlus.value.discoveredEndingIds.length > 0
 
+      case 'affinity_reached':
+        return getCharacterAffinity(condition.characterId) >= (condition.value || 0)
+
       default:
         return isNgpConditionMet(condition)
     }
@@ -3600,6 +4190,11 @@ export const useGameStore = defineStore('game', () => {
           return newGamePlus.value.discoveredEndingIds.includes(endingId) ? 1 : 0
         }
         return Math.min(1, newGamePlus.value.discoveredEndingIds.length / Math.max(1, endings.value.length))
+      }
+
+      case 'affinity_reached': {
+        const current = getCharacterAffinity(condition.characterId)
+        return Math.min(1, current / Math.max(1, condition.value || 1))
       }
 
       default:
@@ -3866,6 +4461,321 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  const getCharacterAffinity = (characterId) => {
+    return characterAffinities.value[characterId] || 0
+  }
+
+  const getCharacterAffinityTier = (characterId) => {
+    const affinity = getCharacterAffinity(characterId)
+    const char = characterRegistry.value.find(c => c.id === characterId)
+    if (!char) return null
+    for (let i = char.affinityTiers.length - 1; i >= 0; i--) {
+      if (affinity >= char.affinityTiers[i].min) {
+        return { ...char.affinityTiers[i], characterId }
+      }
+    }
+    return { ...char.affinityTiers[0], characterId }
+  }
+
+  const getCharacterAffinityProgress = (characterId) => {
+    const affinity = getCharacterAffinity(characterId)
+    const char = characterRegistry.value.find(c => c.id === characterId)
+    if (!char) return 0
+    const currentTier = getCharacterAffinityTier(characterId)
+    if (!currentTier) return 0
+    const range = currentTier.max - currentTier.min
+    const progress = affinity - currentTier.min
+    return range > 0 ? Math.min(100, (progress / range) * 100) : 100
+  }
+
+  const changeAffinity = (characterId, amount, reason = '') => {
+    if (!characterAffinities.value.hasOwnProperty(characterId)) return null
+    const oldAffinity = characterAffinities.value[characterId]
+    const newAffinity = Math.min(100, Math.max(0, oldAffinity + amount))
+    characterAffinities.value[characterId] = newAffinity
+
+    affinityLog.value.push({
+      characterId,
+      oldAffinity,
+      newAffinity,
+      change: amount,
+      reason,
+      chapterId: currentChapterId.value,
+      sceneId: currentSceneId.value,
+      timestamp: Date.now()
+    })
+
+    const oldTier = getCharacterAffinityTierById(characterId, oldAffinity)
+    const newTier = getCharacterAffinityTierById(characterId, newAffinity)
+
+    if (newTier && oldTier && newTier.id !== oldTier.id) {
+      const char = characterRegistry.value.find(c => c.id === characterId)
+      if (amount > 0) {
+        affinityNotifications.value.push({
+          id: Date.now() + '_' + characterId,
+          type: 'tier_up',
+          characterId,
+          characterName: char.name,
+          characterIcon: char.icon,
+          oldTier: oldTier.name,
+          newTier: newTier.name,
+          newTierIcon: newTier.icon,
+          affinity: newAffinity,
+          timestamp: Date.now()
+        })
+      }
+    }
+
+    checkExclusiveDialogueUnlocks(characterId, newAffinity)
+    checkAffinityChapterUnlocks()
+    saveCharacterRelationData()
+    return { oldAffinity, newAffinity, tierChanged: oldTier?.id !== newTier?.id }
+  }
+
+  const getCharacterAffinityTierById = (characterId, affinity) => {
+    const char = characterRegistry.value.find(c => c.id === characterId)
+    if (!char) return null
+    for (let i = char.affinityTiers.length - 1; i >= 0; i--) {
+      if (affinity >= char.affinityTiers[i].min) {
+        return char.affinityTiers[i]
+      }
+    }
+    return char.affinityTiers[0]
+  }
+
+  const processDialogueAffinity = (dialogue) => {
+    if (!dialogue) return
+    const speaker = dialogue.speaker
+    const emotion = dialogue.emotionChange || 0
+    let charId = null
+    let baseGain = 0
+
+    if (speaker === '回忆') {
+      charId = 'she'
+      baseGain = Math.max(1, Math.ceil(emotion * 0.6))
+    } else if (speaker === '内心') {
+      charId = 'self'
+      baseGain = Math.max(1, Math.ceil(emotion * 0.5))
+    } else if (speaker === '旁白') {
+      charId = 'time'
+      baseGain = Math.max(1, Math.ceil(emotion * 0.4))
+    }
+
+    if (charId && baseGain > 0) {
+      changeAffinity(charId, baseGain, `对话: ${dialogue.text?.slice(0, 20)}...`)
+    }
+  }
+
+  const processMaterialAffinity = (materialId, isPerfect) => {
+    const material = getMaterialById(materialId)
+    if (!material) return
+
+    characterRegistry.value.forEach(char => {
+      let gain = 0
+      const isPreferred = char.preferredMaterials.includes(materialId)
+      const tagMatch = material.tags.some(t => char.preferredTags.includes(t))
+
+      if (isPreferred) {
+        gain = 3
+      } else if (tagMatch) {
+        gain = 2
+      } else {
+        gain = 1
+      }
+
+      if (isPerfect) {
+        gain += 1
+      }
+
+      if (gain > 0) {
+        changeAffinity(char.id, gain, `放置素材: ${material.name}${isPerfect ? '(完美)' : ''}`)
+      }
+    })
+  }
+
+  const processChapterCompletionAffinity = (chapterId) => {
+    const detail = chapterCompletionDetails.value[chapterId]
+    if (!detail) return
+
+    let bonusBase = 5
+    if (detail.isPerfect) bonusBase += 5
+    if (detail.emotionReached) bonusBase += 3
+    if (detail.allCombosTriggered) bonusBase += 2
+
+    const chapter = getChapterById(chapterId)
+    if (!chapter) return
+
+    const chapterIndex = chapters.value.findIndex(c => c.id === chapterId)
+    if (chapterIndex === 0) {
+      changeAffinity('she', bonusBase + 3, '完成春日序章(她+额外)')
+      changeAffinity('time', bonusBase, '完成春日序章')
+      changeAffinity('self', bonusBase - 1, '完成春日序章')
+    } else if (chapterIndex === 1) {
+      changeAffinity('she', bonusBase + 2, '完成盛夏光年')
+      changeAffinity('time', bonusBase, '完成盛夏光年')
+      changeAffinity('self', bonusBase + 1, '完成盛夏光年(自我+额外)')
+    } else if (chapterIndex === 2) {
+      changeAffinity('she', bonusBase, '完成秋日私语')
+      changeAffinity('time', bonusBase + 3, '完成秋日私语(时光+额外)')
+      changeAffinity('self', bonusBase + 2, '完成秋日私语')
+    } else if (chapterIndex === 3) {
+      changeAffinity('she', bonusBase + 5, '完成冬日暖阳(她+额外)')
+      changeAffinity('time', bonusBase + 2, '完成冬日暖阳')
+      changeAffinity('self', bonusBase + 3, '完成冬日暖阳(自我+额外)')
+    } else {
+      changeAffinity('she', bonusBase, `完成${chapter.title}`)
+      changeAffinity('time', bonusBase, `完成${chapter.title}`)
+      changeAffinity('self', bonusBase, `完成${chapter.title}`)
+    }
+  }
+
+  const checkExclusiveDialogueUnlocks = (characterId, newAffinity) => {
+    const char = characterRegistry.value.find(c => c.id === characterId)
+    if (!char) return []
+
+    const newlyUnlocked = []
+    char.exclusiveDialogueTiers.forEach(tier => {
+      if (newAffinity >= tier) {
+        const key = `${characterId}_${tier}`
+        if (!exclusiveDialogueUnlocked.value[key]) {
+          exclusiveDialogueUnlocked.value[key] = true
+          newlyUnlocked.push({
+            characterId,
+            tier,
+            characterName: char.name,
+            characterIcon: char.icon
+          })
+
+          const dialogues = characterExclusiveDialogues.value[characterId]?.[tier] || []
+          if (dialogues.length > 0) {
+            dialogues.forEach(d => {
+              pendingHiddenDialogues.value.push({ ...d, isExclusive: true })
+            })
+            showNotification(
+              `${char.icon} ${char.name}的好感度突破 ${tier}！解锁专属对话`,
+              'success',
+              4000
+            )
+          }
+        }
+      }
+    })
+
+    return newlyUnlocked
+  }
+
+  const checkAffinityChapterUnlocks = () => {
+    const newlyUnlocked = []
+
+    affinityHiddenChapters.value.forEach(affChapter => {
+      if (unlockedChapters.value.includes(affChapter.id)) return
+
+      const conditions = affChapter.unlockConditions || []
+      const allMet = conditions.every(cond => {
+        if (cond.type === 'affinity_reached') {
+          return getCharacterAffinity(cond.characterId) >= (cond.value || 0)
+        }
+        return isChapterConditionMet(affChapter.id, cond)
+      })
+
+      if (allMet) {
+        const existingChapter = chapters.value.find(c => c.id === affChapter.id)
+        if (!existingChapter) {
+          chapters.value.push({ ...affChapter })
+        }
+        unlockedChapters.value.push(affChapter.id)
+
+        Object.entries(affinitySceneData.value).forEach(([sceneId, sceneData]) => {
+          if (sceneData.chapter === affChapter.id && !scenes.value[sceneId]) {
+            scenes.value[sceneId] = sceneData
+          }
+        })
+
+        newlyUnlocked.push(affChapter)
+      }
+    })
+
+    if (newlyUnlocked.length > 0) {
+      const names = newlyUnlocked.map(c => `「${c.title}」`).join('、')
+      showNotification(`✨ 角色好感解锁隐藏章节：${names}`, 'success', 5000)
+    }
+
+    return newlyUnlocked
+  }
+
+  const getAffinitySummary = () => {
+    return characterRegistry.value.map(char => {
+      const affinity = getCharacterAffinity(char.id)
+      const tier = getCharacterAffinityTier(char.id)
+      const progress = getCharacterAffinityProgress(char.id)
+      const unlockedTiers = char.exclusiveDialogueTiers.filter(t => affinity >= t).length
+      const totalTiers = char.exclusiveDialogueTiers.length
+      const isChapterUnlocked = unlockedChapters.value.includes(char.chapterUnlock?.chapterId)
+
+      return {
+        id: char.id,
+        name: char.name,
+        icon: char.icon,
+        color: char.color,
+        gradient: char.gradient,
+        title: char.title,
+        description: char.description,
+        personality: char.personality,
+        affinity,
+        tier: tier?.name || '未知',
+        tierIcon: tier?.icon || '❓',
+        tierColor: tier?.color || '#9ca3af',
+        progress,
+        unlockedDialogueTiers: unlockedTiers,
+        totalDialogueTiers: totalTiers,
+        isChapterUnlocked,
+        chapterName: char.chapterUnlock?.chapterId ? 
+          (affinityHiddenChapters.value.find(c => c.id === char.chapterUnlock.chapterId)?.title || '') : ''
+      }
+    })
+  }
+
+  const saveCharacterRelationData = () => {
+    try {
+      const data = {
+        affinities: characterAffinities.value,
+        exclusiveUnlocked: exclusiveDialogueUnlocked.value,
+        log: affinityLog.value.slice(-200)
+      }
+      localStorage.setItem(CHARACTER_RELATION_KEY, JSON.stringify(data))
+    } catch (e) {
+      console.error('Failed to save character relation data:', e)
+    }
+  }
+
+  const loadCharacterRelationData = () => {
+    try {
+      const saved = localStorage.getItem(CHARACTER_RELATION_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.affinities) {
+          characterAffinities.value = { ...characterAffinities.value, ...parsed.affinities }
+        }
+        if (parsed.exclusiveUnlocked) {
+          exclusiveDialogueUnlocked.value = parsed.exclusiveUnlocked
+        }
+        if (parsed.log) {
+          affinityLog.value = parsed.log
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load character relation data:', e)
+    }
+  }
+
+  const dismissAffinityNotification = (notifId) => {
+    affinityNotifications.value = affinityNotifications.value.filter(n => n.id !== notifId)
+  }
+
+  const clearAffinityNotifications = () => {
+    affinityNotifications.value = []
+  }
+
   loadSavesFromStorage()
   loadChapterSnapshots()
   loadAutoSave()
@@ -3874,8 +4784,10 @@ export const useGameStore = defineStore('game', () => {
   loadTutorialState()
   loadNewGamePlusData()
   loadCrossCycleAchievements()
+  loadCharacterRelationData()
   checkAndUnlockChapters()
   checkHiddenMaterialUnlockConditions()
+  checkAffinityChapterUnlocks()
 
   const startChapterWithTracking = (chapterId) => {
     const chapter = getChapterById(chapterId)
@@ -4124,6 +5036,27 @@ export const useGameStore = defineStore('game', () => {
     getGalleryEndings,
     getGalleryStats,
     getEndingTypeLabel,
-    getEndingTypeIcon
+    getEndingTypeIcon,
+    characterRegistry,
+    characterAffinities,
+    affinityLog,
+    exclusiveDialogueUnlocked,
+    affinityNotifications,
+    affinityHiddenChapters,
+    characterExclusiveDialogues,
+    getCharacterAffinity,
+    getCharacterAffinityTier,
+    getCharacterAffinityProgress,
+    changeAffinity,
+    processDialogueAffinity,
+    processMaterialAffinity,
+    processChapterCompletionAffinity,
+    checkExclusiveDialogueUnlocks,
+    checkAffinityChapterUnlocks,
+    getAffinitySummary,
+    saveCharacterRelationData,
+    loadCharacterRelationData,
+    dismissAffinityNotification,
+    clearAffinityNotifications
   }
 })

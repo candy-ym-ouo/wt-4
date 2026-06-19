@@ -112,5 +112,86 @@
     "requiredMaterials": ["snowflake", "scarf", "heart"],
     "emotionTarget": 100,
     "scenes": ["scene4_1", "scene4_2", "scene4_3"]
+  },
+  {
+    "id": "chapter_she",
+    "title": "她的记忆",
+    "subtitle": "樱树下的约定",
+    "description": "那些只属于你们的回忆，在好感度足够时悄然浮现...",
+    "teaser": null,
+    "background": "#fce7f3",
+    "unlocked": false,
+    "hidden": true,
+    "hiddenHint": "当对她的好感达到「亲密」时，一段被遗忘的约定将重新浮现……",
+    "unlockConditions": [
+      {
+        "type": "affinity_reached",
+        "characterId": "she",
+        "value": 60,
+        "description": "对「她」的好感度达到 60（亲密）"
+      },
+      {
+        "type": "chapter_completed",
+        "target": "chapter2",
+        "description": "完成「盛夏光年」"
+      }
+    ],
+    "requiredMaterials": ["flower", "heart", "letter"],
+    "emotionTarget": 80,
+    "scenes": ["scene_she_1", "scene_she_2", "scene_she_3"]
+  },
+  {
+    "id": "chapter_time",
+    "title": "时光回廊",
+    "subtitle": "与时光的对话",
+    "description": "当你足够理解时光的意义，它将向你展示那些被遗忘的瞬间...",
+    "teaser": null,
+    "background": "#ede9fe",
+    "unlocked": false,
+    "hidden": true,
+    "hiddenHint": "当与时光的羁绊达到「共生」时，时光将为你打开回廊之门……",
+    "unlockConditions": [
+      {
+        "type": "affinity_reached",
+        "characterId": "time",
+        "value": 60,
+        "description": "对「时光」的好感度达到 60（共生）"
+      },
+      {
+        "type": "chapter_completed",
+        "target": "chapter3",
+        "description": "完成「秋日私语」"
+      }
+    ],
+    "requiredMaterials": ["clock", "photo", "music"],
+    "emotionTarget": 80,
+    "scenes": ["scene_time_1", "scene_time_2", "scene_time_3"]
+  },
+  {
+    "id": "chapter_self",
+    "title": "镜中之我",
+    "subtitle": "与自己的和解",
+    "description": "当内心的勇气足够强大，你终于可以直面那个一直回避的自己...",
+    "teaser": null,
+    "background": "#fef9c3",
+    "unlocked": false,
+    "hidden": true,
+    "hiddenHint": "当与自己的好感达到「觉醒」时，镜中的门扉将缓缓开启……",
+    "unlockConditions": [
+      {
+        "type": "affinity_reached",
+        "characterId": "self",
+        "value": 60,
+        "description": "对「自己」的好感度达到 60（觉醒）"
+      },
+      {
+        "type": "chapter_completed",
+        "target": "chapter4",
+        "description": "完成「冬日暖阳」"
+      }
+    ],
+    "requiredMaterials": ["mirror", "candle", "key"],
+    "emotionTarget": 90,
+    "scenes": ["scene_self_1", "scene_self_2", "scene_self_3"]
   }
 ]

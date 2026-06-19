@@ -191,6 +191,9 @@
       <button class="btn btn-ghost" @click="goToMemoryGallery">
         📚 回忆图鉴
       </button>
+      <button class="btn btn-ghost" @click="goToCharacterRelation">
+        💕 角色关系
+      </button>
       <button class="btn btn-ghost" @click="goToEditor">
         📝 剧情编辑器
       </button>
@@ -676,6 +679,10 @@ const goToEditor = () => {
 
 const goToMemoryGallery = () => {
   router.push('/memory-gallery')
+}
+
+const goToCharacterRelation = () => {
+  router.push('/character-relation')
 }
 
 const handleTutorialClose = () => {

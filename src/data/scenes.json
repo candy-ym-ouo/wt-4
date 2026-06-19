@@ -1350,5 +1350,466 @@
       }
     ],
     "nextScene": null
+  },
+  "scene_she_1": {
+    "id": "scene_she_1",
+    "chapter": "chapter_she",
+    "background": "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)",
+        "ambience": "romantic",
+        "dialogueTone": "温柔"
+      }
+    },
+    "dialogues": [
+      {
+        "id": "d_she_1_1",
+        "speaker": "旁白",
+        "text": "樱花树下的风，带着那个春天的味道。",
+        "emotionChange": 3,
+        "trigger": null,
+        "characterAffinity": { "she": 2 }
+      },
+      {
+        "id": "d_she_1_2",
+        "speaker": "她",
+        "text": "你来了...我等了好久呢。",
+        "emotionChange": 4,
+        "trigger": null,
+        "characterAffinity": { "she": 3 }
+      },
+      {
+        "id": "d_she_1_3",
+        "speaker": "你",
+        "text": "对不起，让你等了这么久...",
+        "emotionChange": 3,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d_she_1_4",
+        "speaker": "她",
+        "text": "没关系，只要你记得那个约定就好。",
+        "emotionChange": 5,
+        "trigger": null,
+        "characterAffinity": { "she": 4 }
+      },
+      {
+        "id": "d_she_1_5",
+        "speaker": "旁白",
+        "text": "她微笑着，眼中映着漫天飞舞的樱花。",
+        "emotionChange": 4,
+        "trigger": "set_environment",
+        "environment": { "timeOfDay": "dusk", "weather": "clear" },
+        "characterAffinity": { "she": 2 }
+      }
+    ],
+    "materialSlots": [
+      { "id": "slot_she_1_1", "requiredMaterial": "flower", "perfectZone": 0.25 }
+    ],
+    "combos": [],
+    "nextScene": "scene_she_2"
+  },
+  "scene_she_2": {
+    "id": "scene_she_2",
+    "chapter": "chapter_she",
+    "background": "linear-gradient(135deg, #fecdd3 0%, #fda4af 100%)",
+    "timeOfDay": "dusk",
+    "weather": "clear",
+    "variants": {
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #fecdd3 0%, #fda4af 100%)",
+        "ambience": "warm",
+        "dialogueTone": "温馨"
+      }
+    },
+    "dialogues": [
+      {
+        "id": "d_she_2_1",
+        "speaker": "她",
+        "text": "你还记得那封信吗？你写给我的那封...",
+        "emotionChange": 3,
+        "trigger": null,
+        "characterAffinity": { "she": 2 }
+      },
+      {
+        "id": "d_she_2_2",
+        "speaker": "你",
+        "text": "当然记得...每一个字都记得。",
+        "emotionChange": 4,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d_she_2_3",
+        "speaker": "她",
+        "text": "那封信里，你说过要带我去看海的。",
+        "emotionChange": 3,
+        "trigger": null,
+        "characterAffinity": { "she": 3 }
+      },
+      {
+        "id": "d_she_2_4",
+        "speaker": "旁白",
+        "text": "夕阳将她的侧脸镀上一层金色的光芒，你的心跳漏了一拍。",
+        "emotionChange": 5,
+        "trigger": null,
+        "characterAffinity": { "she": 3 }
+      }
+    ],
+    "materialSlots": [
+      { "id": "slot_she_2_1", "requiredMaterial": "letter", "perfectZone": 0.2 }
+    ],
+    "combos": [],
+    "nextScene": "scene_she_3"
+  },
+  "scene_she_3": {
+    "id": "scene_she_3",
+    "chapter": "chapter_she",
+    "background": "linear-gradient(135deg, #fbcfe8 0%, #f9a8d4 50%, #f472b6 100%)",
+    "timeOfDay": "night",
+    "weather": "star",
+    "variants": {
+      "night_star": {
+        "background": "linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #7c3aed 100%)",
+        "ambience": "dreamy",
+        "dialogueTone": "梦幻"
+      }
+    },
+    "dialogues": [
+      {
+        "id": "d_she_3_1",
+        "speaker": "她",
+        "text": "谢谢你，一直没有忘记我。",
+        "emotionChange": 5,
+        "trigger": null,
+        "characterAffinity": { "she": 5 }
+      },
+      {
+        "id": "d_she_3_2",
+        "speaker": "你",
+        "text": "怎么会忘记...你是我最珍贵的人。",
+        "emotionChange": 6,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d_she_3_3",
+        "speaker": "旁白",
+        "text": "星光洒落在你们之间，时间仿佛在这一刻停止了。",
+        "emotionChange": 5,
+        "trigger": null,
+        "characterAffinity": { "she": 3 }
+      },
+      {
+        "id": "d_she_3_4",
+        "speaker": "她",
+        "text": "那么...下次见面的时候，我们一起去看海吧？",
+        "emotionChange": 6,
+        "trigger": null,
+        "characterAffinity": { "she": 5 }
+      }
+    ],
+    "materialSlots": [
+      { "id": "slot_she_3_1", "requiredMaterial": "heart", "perfectZone": 0.15 }
+    ],
+    "combos": [],
+    "nextScene": null
+  },
+  "scene_time_1": {
+    "id": "scene_time_1",
+    "chapter": "chapter_time",
+    "background": "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)",
+    "timeOfDay": "day",
+    "weather": "cloudy",
+    "variants": {
+      "day_cloudy": {
+        "background": "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)",
+        "ambience": "nostalgic",
+        "dialogueTone": "怀旧"
+      }
+    },
+    "dialogues": [
+      {
+        "id": "d_time_1_1",
+        "speaker": "时光",
+        "text": "你终于愿意停下脚步，回头看看了。",
+        "emotionChange": 3,
+        "trigger": null,
+        "characterAffinity": { "time": 3 }
+      },
+      {
+        "id": "d_time_1_2",
+        "speaker": "你",
+        "text": "我好像...一直都在逃避。",
+        "emotionChange": 2,
+        "trigger": null,
+        "characterAffinity": { "time": 2 }
+      },
+      {
+        "id": "d_time_1_3",
+        "speaker": "时光",
+        "text": "没关系。每个人都需要时间，来学会面对自己。",
+        "emotionChange": 4,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d_time_1_4",
+        "speaker": "旁白",
+        "text": "时钟的指针缓缓转动，仿佛在诉说着什么。",
+        "emotionChange": 3,
+        "trigger": null,
+        "characterAffinity": { "time": 2 }
+      }
+    ],
+    "materialSlots": [
+      { "id": "slot_time_1_1", "requiredMaterial": "clock", "perfectZone": 0.2 }
+    ],
+    "combos": [],
+    "nextScene": "scene_time_2"
+  },
+  "scene_time_2": {
+    "id": "scene_time_2",
+    "chapter": "chapter_time",
+    "background": "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+    "timeOfDay": "dusk",
+    "weather": "clear",
+    "variants": {
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+        "ambience": "contemplative",
+        "dialogueTone": "沉思"
+      }
+    },
+    "dialogues": [
+      {
+        "id": "d_time_2_1",
+        "speaker": "时光",
+        "text": "看，这些照片里的你，每一刻都是真实的。",
+        "emotionChange": 3,
+        "trigger": null,
+        "characterAffinity": { "time": 2 }
+      },
+      {
+        "id": "d_time_2_2",
+        "speaker": "你",
+        "text": "有些照片，我都不敢再看第二眼...",
+        "emotionChange": 2,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d_time_2_3",
+        "speaker": "时光",
+        "text": "可是你留着它们，不是吗？因为每张照片背后，都有一段不愿遗忘的时光。",
+        "emotionChange": 5,
+        "trigger": null,
+        "characterAffinity": { "time": 4 }
+      }
+    ],
+    "materialSlots": [
+      { "id": "slot_time_2_1", "requiredMaterial": "photo", "perfectZone": 0.2 }
+    ],
+    "combos": [],
+    "nextScene": "scene_time_3"
+  },
+  "scene_time_3": {
+    "id": "scene_time_3",
+    "chapter": "chapter_time",
+    "background": "linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%)",
+    "timeOfDay": "night",
+    "weather": "star",
+    "variants": {
+      "night_star": {
+        "background": "linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #7c3aed 100%)",
+        "ambience": "ethereal",
+        "dialogueTone": "空灵"
+      }
+    },
+    "dialogues": [
+      {
+        "id": "d_time_3_1",
+        "speaker": "时光",
+        "text": "音乐响起了...那是你最爱的旋律。",
+        "emotionChange": 4,
+        "trigger": null,
+        "characterAffinity": { "time": 3 }
+      },
+      {
+        "id": "d_time_3_2",
+        "speaker": "你",
+        "text": "原来，时光从来都不是敌人。",
+        "emotionChange": 5,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d_time_3_3",
+        "speaker": "时光",
+        "text": "我是你最忠实的陪伴者。你走的每一步，我都记得。",
+        "emotionChange": 6,
+        "trigger": null,
+        "characterAffinity": { "time": 5 }
+      }
+    ],
+    "materialSlots": [
+      { "id": "slot_time_3_1", "requiredMaterial": "music", "perfectZone": 0.15 }
+    ],
+    "combos": [],
+    "nextScene": null
+  },
+  "scene_self_1": {
+    "id": "scene_self_1",
+    "chapter": "chapter_self",
+    "background": "linear-gradient(135deg, #fef9c3 0%, #fde68a 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #fef9c3 0%, #fde68a 100%)",
+        "ambience": "reflective",
+        "dialogueTone": "自省"
+      }
+    },
+    "dialogues": [
+      {
+        "id": "d_self_1_1",
+        "speaker": "自己",
+        "text": "你终于愿意正视我了。",
+        "emotionChange": 2,
+        "trigger": null,
+        "characterAffinity": { "self": 2 }
+      },
+      {
+        "id": "d_self_1_2",
+        "speaker": "你",
+        "text": "我...我不敢看你。",
+        "emotionChange": 1,
+        "trigger": null,
+        "characterAffinity": { "self": 1 }
+      },
+      {
+        "id": "d_self_1_3",
+        "speaker": "自己",
+        "text": "没关系，慢慢来。我们有一辈子的时间。",
+        "emotionChange": 4,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d_self_1_4",
+        "speaker": "旁白",
+        "text": "镜中的倒影微微一笑，眼神中是理解而非责备。",
+        "emotionChange": 3,
+        "trigger": null,
+        "characterAffinity": { "self": 3 }
+      }
+    ],
+    "materialSlots": [
+      { "id": "slot_self_1_1", "requiredMaterial": "mirror", "perfectZone": 0.2 }
+    ],
+    "combos": [],
+    "nextScene": "scene_self_2"
+  },
+  "scene_self_2": {
+    "id": "scene_self_2",
+    "chapter": "chapter_self",
+    "background": "linear-gradient(135deg, #fde68a 0%, #fbbf24 100%)",
+    "timeOfDay": "dusk",
+    "weather": "clear",
+    "variants": {
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #fde68a 0%, #fbbf24 100%)",
+        "ambience": "courage",
+        "dialogueTone": "勇气"
+      }
+    },
+    "dialogues": [
+      {
+        "id": "d_self_2_1",
+        "speaker": "自己",
+        "text": "你知道你比自己想象的更勇敢吗？",
+        "emotionChange": 3,
+        "trigger": null,
+        "characterAffinity": { "self": 3 }
+      },
+      {
+        "id": "d_self_2_2",
+        "speaker": "你",
+        "text": "我总觉得自己不够好...",
+        "emotionChange": 2,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d_self_2_3",
+        "speaker": "自己",
+        "text": "不够好？你走到了这里，你面对了所有的回忆。这已经是最勇敢的事了。",
+        "emotionChange": 6,
+        "trigger": null,
+        "characterAffinity": { "self": 4 }
+      },
+      {
+        "id": "d_self_2_4",
+        "speaker": "旁白",
+        "text": "蜡烛的光芒映照着你的眼睛，那里面有泪光，也有希望。",
+        "emotionChange": 4,
+        "trigger": null,
+        "characterAffinity": { "self": 3 }
+      }
+    ],
+    "materialSlots": [
+      { "id": "slot_self_2_1", "requiredMaterial": "candle", "perfectZone": 0.2 }
+    ],
+    "combos": [],
+    "nextScene": "scene_self_3"
+  },
+  "scene_self_3": {
+    "id": "scene_self_3",
+    "chapter": "chapter_self",
+    "background": "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)",
+    "timeOfDay": "night",
+    "weather": "clear",
+    "variants": {
+      "night_clear": {
+        "background": "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #fbbf24 100%)",
+        "ambience": "awakening",
+        "dialogueTone": "觉醒"
+      }
+    },
+    "dialogues": [
+      {
+        "id": "d_self_3_1",
+        "speaker": "自己",
+        "text": "这把钥匙，一直都在你手里。",
+        "emotionChange": 4,
+        "trigger": null,
+        "characterAffinity": { "self": 3 }
+      },
+      {
+        "id": "d_self_3_2",
+        "speaker": "你",
+        "text": "原来...打开心门的钥匙，从来都不在外面。",
+        "emotionChange": 6,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d_self_3_3",
+        "speaker": "自己",
+        "text": "欢迎回来。欢迎回到真正的自己。",
+        "emotionChange": 7,
+        "trigger": null,
+        "characterAffinity": { "self": 5 }
+      },
+      {
+        "id": "d_self_3_4",
+        "speaker": "旁白",
+        "text": "镜中的你和你融为一体，内心深处的门终于打开了。",
+        "emotionChange": 6,
+        "trigger": null,
+        "characterAffinity": { "self": 4 }
+      }
+    ],
+    "materialSlots": [
+      { "id": "slot_self_3_1", "requiredMaterial": "key", "perfectZone": 0.15 }
+    ],
+    "combos": [],
+    "nextScene": null
   }
 }
