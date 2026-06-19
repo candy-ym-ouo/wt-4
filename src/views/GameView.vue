@@ -41,13 +41,13 @@
 
       <div v-if="currentSceneCombos.length > 0" class="combo-progress-bar">
         <div class="combo-progress-header">
-          <span class="combo-progress-title">🎯 组合收集进度</span>
-          <span class="combo-progress-count">{{ triggeredCombos.length }} / {{ currentSceneCombos.length }}</span>
+          <span class="combo-progress-title">🎯 本场景组合收集进度</span>
+          <span class="combo-progress-count">{{ currentSceneTriggeredCombos.length }} / {{ currentSceneCombos.length }}</span>
         </div>
         <div class="combo-progress-track">
           <div 
             class="combo-progress-fill" 
-            :style="{ width: (triggeredCombos.length / currentSceneCombos.length * 100) + '%' }"
+            :style="{ width: (currentSceneTriggeredCombos.length / currentSceneCombos.length * 100) + '%' }"
           ></div>
         </div>
       </div>
@@ -221,6 +221,7 @@ const recoveryData = computed(() => gameStore.recoveryData)
 const lastAutoSaveTime = computed(() => gameStore.lastAutoSaveTime)
 const hasChapterSnapshot = computed(() => gameStore.hasChapterSnapshot())
 const triggeredCombos = computed(() => gameStore.triggeredCombos)
+const currentSceneTriggeredCombos = computed(() => gameStore.currentSceneTriggeredCombos)
 const currentSceneCombos = computed(() => gameStore.currentSceneCombos)
 const comboBonusTotal = computed(() => gameStore.comboBonusTotal)
 const sceneBackgroundOverride = computed(() => gameStore.sceneBackgroundOverride)

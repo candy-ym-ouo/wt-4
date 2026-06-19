@@ -79,16 +79,23 @@ export const useGameStore = defineStore('game', () => {
   })
 
   const availableMaterials = computed(() => {
-    if (!currentChapter.value) return []
-    const chapterMaterials = currentChapter.value.requiredMaterials || []
-    const sceneOptionals = currentScene.value?.optionalMaterials || []
-    const allIds = [...new Set([...chapterMaterials, ...sceneOptionals])]
+    if (!currentScene.value) return []
+    const requiredMat = currentScene.value.requiredMaterial
+    const sceneOptionals = currentScene.value.optionalMaterials || []
+    const allIds = [...new Set([requiredMat, ...sceneOptionals])]
     return materials.value.filter(m => allIds.includes(m.id))
   })
 
   const currentSceneCombos = computed(() => {
     if (!currentScene.value?.materialCombos) return []
     return currentScene.value.materialCombos
+  })
+
+  const currentSceneTriggeredCombos = computed(() => {
+    if (!currentSceneCombos.value.length) return []
+    return currentSceneCombos.value.filter(combo => 
+      triggeredCombos.value.includes(combo.id)
+    )
   })
 
   const currentSceneOptionalMaterials = computed(() => {
@@ -229,16 +236,20 @@ export const useGameStore = defineStore('game', () => {
   const checkMaterialCombos = () => {
     if (!currentScene.value?.materialCombos) return []
 
-    const allPlacedIds = [
-      ...placedMaterials.value.map(p => p.id),
-      ...optionalMaterialsPlaced.value.map(p => p.id)
-    ]
+    const scenePlacedIds = []
+    if (requiredMaterialPlaced.value && currentScene.value.requiredMaterial) {
+      scenePlacedIds.push(currentScene.value.requiredMaterial)
+    }
+    optionalMaterialsPlaced.value.forEach(p => {
+      scenePlacedIds.push(p.id)
+    })
+
     const triggered = []
 
     for (const combo of currentScene.value.materialCombos) {
       if (triggeredCombos.value.includes(combo.id)) continue
 
-      const allMaterialsPresent = combo.materials.every(matId => allPlacedIds.includes(matId))
+      const allMaterialsPresent = combo.materials.every(matId => scenePlacedIds.includes(matId))
       if (allMaterialsPresent) {
         triggered.push(combo)
       }
@@ -1075,6 +1086,7 @@ export const useGameStore = defineStore('game', () => {
     currentDialogue,
     availableMaterials,
     currentSceneCombos,
+    currentSceneTriggeredCombos,
     currentSceneOptionalMaterials,
     availableOptionalMaterials,
     canPlaceOptionalMaterial,

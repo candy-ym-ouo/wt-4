@@ -190,7 +190,7 @@
       }
     ],
     "requiredMaterial": "letter",
-    "optionalMaterials": ["heart", "star", "flower"],
+    "optionalMaterials": ["heart", "star", "flower", "butterfly"],
     "materialCombos": [
       {
         "id": "combo1_love_letter",
@@ -443,7 +443,7 @@
       }
     ],
     "requiredMaterial": "book",
-    "optionalMaterials": ["sun", "heart", "music"],
+    "optionalMaterials": ["sun", "heart", "music", "cicada"],
     "materialCombos": [
       {
         "id": "combo2_book_sun",
@@ -696,7 +696,7 @@
       }
     ],
     "requiredMaterial": "watch",
-    "optionalMaterials": ["leaf", "star", "heart"],
+    "optionalMaterials": ["leaf", "star", "heart", "coffee"],
     "materialCombos": [
       {
         "id": "combo3_watch_leaf",
@@ -949,7 +949,7 @@
       }
     ],
     "requiredMaterial": "heart",
-    "optionalMaterials": ["star", "snowflake", "scarf", "flower"],
+    "optionalMaterials": ["star", "snowflake", "scarf", "flower", "sun", "leaf"],
     "materialCombos": [
       {
         "id": "combo4_heart_star",

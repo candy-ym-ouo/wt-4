@@ -15,10 +15,10 @@
         v-for="combo in currentSceneCombos" 
         :key="combo.id" 
         class="combo-hint-item"
-        :class="{ triggered: triggeredCombos.includes(combo.id) }"
+        :class="{ triggered: isComboTriggered(combo.id) }"
       >
         <div class="combo-status">
-          <span v-if="triggeredCombos.includes(combo.id)" class="combo-done">✓ 已解锁</span>
+          <span v-if="isComboTriggered(combo.id)" class="combo-done">✓ 已解锁</span>
           <span v-else class="combo-locked">🔒 未解锁</span>
         </div>
         <div class="combo-info">
@@ -80,13 +80,13 @@ const gameStore = useGameStore()
 const availableMaterials = computed(() => gameStore.availableMaterials)
 const isWaitingForMaterial = computed(() => gameStore.isWaitingForMaterial)
 const requiredMaterialId = computed(() => gameStore.requiredMaterialId)
-const placedMaterials = computed(() => gameStore.placedMaterials)
 const optionalMaterialsPlaced = computed(() => gameStore.optionalMaterialsPlaced)
 const requiredMaterialPlaced = computed(() => gameStore.requiredMaterialPlaced)
 const canPlaceOptionalMaterial = computed(() => gameStore.canPlaceOptionalMaterial)
 const currentSceneCombos = computed(() => gameStore.currentSceneCombos)
-const triggeredCombos = computed(() => gameStore.triggeredCombos)
+const currentSceneTriggeredCombos = computed(() => gameStore.currentSceneTriggeredCombos)
 const currentSceneOptionalMaterials = computed(() => gameStore.currentSceneOptionalMaterials)
+const currentScene = computed(() => gameStore.currentScene)
 
 const requiredMaterialName = computed(() => {
   if (!requiredMaterialId.value) return ''
@@ -95,8 +95,10 @@ const requiredMaterialName = computed(() => {
 })
 
 const isMaterialUsed = (materialId) => {
-  return placedMaterials.value.some(p => p.id === materialId) ||
-         optionalMaterialsPlaced.value.some(p => p.id === materialId)
+  if (materialId === requiredMaterialId.value) {
+    return requiredMaterialPlaced.value
+  }
+  return optionalMaterialsPlaced.value.some(p => p.id === materialId)
 }
 
 const isOptionalMaterial = (materialId) => {
@@ -114,6 +116,10 @@ const isMaterialSelectable = (material) => {
 const isMaterialAvailable = (materialId) => {
   const material = availableMaterials.value.find(m => m.id === materialId)
   return !!material && !isMaterialUsed(materialId)
+}
+
+const isComboTriggered = (comboId) => {
+  return currentSceneTriggeredCombos.value.some(c => c.id === comboId)
 }
 
 const getMaterialName = (materialId) => {
