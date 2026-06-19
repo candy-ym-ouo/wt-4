@@ -141,21 +141,134 @@ export const useGameStore = defineStore('game', () => {
     return materials
   })
 
-  const currentChapterRecommendedMaterials = computed(() => {
-    if (!currentChapter.value) return []
-    const seasonMap = {
-      chapter1: 'spring',
-      chapter2: 'summer',
-      chapter3: 'autumn',
-      chapter4: 'winter'
+  const scenePlacedMaterialIds = computed(() => {
+    const ids = []
+    if (requiredMaterialPlaced.value && currentScene.value?.requiredMaterial) {
+      ids.push(currentScene.value.requiredMaterial)
     }
-    const season = seasonMap[currentChapter.value.id] || 'all'
-    return availableMaterials.value.filter(m => 
-      m.tags.includes(season) || m.tags.includes('all')
-    ).map(m => ({
-      ...m,
-      isRecommended: true
-    }))
+    optionalMaterialsPlaced.value.forEach(p => ids.push(p.id))
+    return ids
+  })
+
+  const sceneRecommendedMaterials = computed(() => {
+    if (!currentScene.value) return { required: [], hiddenCombo: [], normalCombo: [], optional: [] }
+
+    const result = {
+      required: [],
+      hiddenCombo: [],
+      normalCombo: [],
+      optional: []
+    }
+
+    const placedIds = scenePlacedMaterialIds.value
+    const allSceneMaterialIds = new Set([
+      currentScene.value.requiredMaterial,
+      ...(currentScene.value.optionalMaterials || [])
+    ])
+
+    if (!requiredMaterialPlaced.value && currentScene.value.requiredMaterial) {
+      const mat = getMaterialById(currentScene.value.requiredMaterial)
+      if (mat) {
+        result.required.push({
+          ...mat,
+          priority: 1,
+          priorityLabel: '主线必放',
+          reason: '推进剧情必需素材'
+        })
+      }
+    }
+
+    const untriggeredCombos = (currentScene.value.materialCombos || []).filter(
+      combo => !triggeredCombos.value.includes(combo.id)
+    )
+
+    const addedHiddenIds = new Set()
+    const addedNormalIds = new Set()
+
+    for (const combo of untriggeredCombos) {
+      const missingMaterials = combo.materials.filter(
+        matId => !placedIds.includes(matId) && allSceneMaterialIds.has(matId)
+      )
+
+      if (missingMaterials.length === 0) continue
+
+      for (const matId of missingMaterials) {
+        const mat = getMaterialById(matId)
+        if (!mat) continue
+        if (placedIds.includes(matId)) continue
+
+        if (combo.hiddenDialogue) {
+          if (!addedHiddenIds.has(matId)) {
+            result.hiddenCombo.push({
+              ...mat,
+              priority: 2,
+              priorityLabel: '隐藏组合',
+              reason: `可解锁「${combo.name}」隐藏对话`,
+              comboName: combo.name,
+              emotionBonus: combo.emotionBonus
+            })
+            addedHiddenIds.add(matId)
+          }
+        } else {
+          if (!addedNormalIds.has(matId) && !addedHiddenIds.has(matId)) {
+            result.normalCombo.push({
+              ...mat,
+              priority: 3,
+              priorityLabel: '普通组合',
+              reason: `可解锁「${combo.name}」`,
+              comboName: combo.name,
+              emotionBonus: combo.emotionBonus
+            })
+            addedNormalIds.add(matId)
+          }
+        }
+      }
+    }
+
+    if (requiredMaterialPlaced.value && currentScene.value.optionalMaterials) {
+      for (const matId of currentScene.value.optionalMaterials) {
+        if (placedIds.includes(matId)) continue
+        if (addedHiddenIds.has(matId) || addedNormalIds.has(matId)) continue
+
+        const mat = getMaterialById(matId)
+        if (mat) {
+          result.optional.push({
+            ...mat,
+            priority: 4,
+            priorityLabel: '可选素材',
+            reason: '额外情绪加成素材',
+            emotionBonus: mat.emotion
+          })
+        }
+      }
+    }
+
+    result.hiddenCombo.sort((a, b) => (b.emotionBonus || 0) - (a.emotionBonus || 0))
+    result.normalCombo.sort((a, b) => (b.emotionBonus || 0) - (a.emotionBonus || 0))
+    result.optional.sort((a, b) => (b.emotion || 0) - (a.emotion || 0))
+
+    return result
+  })
+
+  const allRecommendedMaterialIds = computed(() => {
+    const rec = sceneRecommendedMaterials.value
+    const ids = new Set()
+    rec.required.forEach(m => ids.add(m.id))
+    rec.hiddenCombo.forEach(m => ids.add(m.id))
+    rec.normalCombo.forEach(m => ids.add(m.id))
+    rec.optional.forEach(m => ids.add(m.id))
+    return ids
+  })
+
+  const getMaterialPriorityInfo = (materialId) => {
+    const rec = sceneRecommendedMaterials.value
+    const all = [...rec.required, ...rec.hiddenCombo, ...rec.normalCombo, ...rec.optional]
+    return all.find(m => m.id === materialId) || null
+  }
+
+  const hasPendingRecommendations = computed(() => {
+    const rec = sceneRecommendedMaterials.value
+    return rec.required.length > 0 || rec.hiddenCombo.length > 0 || rec.normalCombo.length > 0
   })
 
   const getMaterialUsageCount = (materialId) => {
@@ -1413,7 +1526,11 @@ export const useGameStore = defineStore('game', () => {
     materialTags,
     activeMaterialFilter,
     materialUsageHistory,
-    currentChapterRecommendedMaterials,
+    sceneRecommendedMaterials,
+    scenePlacedMaterialIds,
+    allRecommendedMaterialIds,
+    getMaterialPriorityInfo,
+    hasPendingRecommendations,
     setMaterialFilter,
     resetMaterialFilter,
     getMaterialUsageCount,
