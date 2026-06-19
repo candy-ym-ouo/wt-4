@@ -746,6 +746,11 @@ export const useGameStore = defineStore('game', () => {
       ending = endings.value.find(e => e.type === 'good')
     }
 
+    const summary = generatePlaySummary(finalScore, completedChapterCount, perfectRate)
+    const materialReview = generateMaterialReview()
+    const branchStatus = generateBranchStatus()
+    const nextGoals = generateNextGoals(finalScore, completedChapterCount, branchStatus)
+
     if (ending) {
       ending = {
         ...ending,
@@ -756,12 +761,279 @@ export const useGameStore = defineStore('game', () => {
           placedMaterials: placedCount,
           perfectPlacements: perfectPlacementCount.value,
           positiveBonus: positiveBonus.value
-        }
+        },
+        summary,
+        materialReview,
+        branchStatus,
+        nextGoals
       }
     }
 
     currentEnding.value = ending
     autoSave()
+  }
+
+  const generatePlaySummary = (finalScore, completedChapterCount, perfectRate) => {
+    const totalCombos = getAllCombosCount()
+    const triggeredCount = triggeredCombos.value.length
+
+    let performance
+    if (finalScore >= 90) performance = 'S'
+    else if (finalScore >= 75) performance = 'A'
+    else if (finalScore >= 60) performance = 'B'
+    else if (finalScore >= 40) performance = 'C'
+    else performance = 'D'
+
+    const performanceLabels = {
+      S: '完美通关',
+      A: '出色表现',
+      B: '中规中矩',
+      C: '尚有不足',
+      D: '需要努力'
+    }
+
+    const highlights = []
+    if (perfectRate >= 0.6) highlights.push('精准放置大师')
+    if (completedChapterCount === 4) highlights.push('全章节通关')
+    if (triggeredCount >= totalCombos * 0.8 && totalCombos > 0) highlights.push('组合探索达人')
+    if (emotionValue.value >= 200) highlights.push('情感收集家')
+    if (positiveBonus.value >= 10) highlights.push('幸运之星')
+
+    const playedChapters = completedChapterCount >= 1 ? chapters.value.slice(0, completedChapterCount) : []
+    const chapterScoreSummary = playedChapters.map(ch => {
+      const scoreData = chapterScoreData.value[ch.id]
+      return {
+        chapterId: ch.id,
+        title: ch.title,
+        totalEmotion: scoreData?.totalEmotion || 0,
+        triggeredCombos: scoreData?.triggeredComboCount || 0,
+        totalCombos: scoreData?.totalComboCount || 0,
+        emotionTarget: ch.emotionTarget || 0,
+        reached: scoreData ? scoreData.totalEmotion >= (ch.emotionTarget || 0) : false
+      }
+    })
+
+    return {
+      performance,
+      performanceLabel: performanceLabels[performance],
+      highlights,
+      chapterScoreSummary,
+      totalCombos,
+      triggeredCombos: triggeredCount,
+      perfectRate: Math.round(perfectRate * 100),
+      playTime: totalDialogueCount.value
+    }
+  }
+
+  const getAllCombosCount = () => {
+    let count = 0
+    Object.values(scenes.value).forEach(scene => {
+      if (scene.materialCombos) {
+        count += scene.materialCombos.length
+      }
+    })
+    return count
+  }
+
+  const generateMaterialReview = () => {
+    const reviewItems = []
+
+    Object.values(scenes.value).forEach(scene => {
+      if (!scene.materialCombos) return
+      scene.materialCombos.forEach(combo => {
+        const isTriggered = triggeredCombos.value.includes(combo.id)
+        const matNames = combo.materials.map(mId => {
+          const mat = getMaterialById(mId)
+          return mat ? mat.name : mId
+        })
+
+        reviewItems.push({
+          comboId: combo.id,
+          comboName: combo.name,
+          description: combo.description,
+          materials: matNames,
+          materialIds: combo.materials,
+          emotionBonus: combo.emotionBonus || 0,
+          hasHiddenDialogue: !!combo.hiddenDialogue,
+          hiddenDialoguePreview: isTriggered && combo.hiddenDialogue ? combo.hiddenDialogue.text.slice(0, 30) + '...' : null,
+          triggered: isTriggered,
+          sceneId: scene.id,
+          chapterId: scene.chapter
+        })
+      })
+    })
+
+    const keyMaterials = []
+    const usedIds = new Set()
+    Object.values(materialUsageHistory.value).forEach((count, idx) => {
+      const matId = Object.keys(materialUsageHistory.value)[idx]
+      if (count > 0 && !usedIds.has(matId)) {
+        const mat = getMaterialById(matId)
+        if (mat) {
+          keyMaterials.push({
+            id: mat.id,
+            name: mat.name,
+            shape: mat.shape,
+            color: mat.color,
+            rarity: mat.rarity,
+            usageCount: count,
+            emotion: mat.emotion
+          })
+          usedIds.add(matId)
+        }
+      }
+    })
+    keyMaterials.sort((a, b) => b.usageCount - a.usageCount || b.emotion - a.emotion)
+
+    const legendaryFound = keyMaterials.filter(m => m.rarity === 'legendary')
+    const rareFound = keyMaterials.filter(m => m.rarity === 'rare')
+
+    return {
+      combos: reviewItems,
+      keyMaterials,
+      totalPlaced: keyMaterials.reduce((sum, m) => sum + m.usageCount, 0),
+      legendaryFound,
+      rareFound
+    }
+  }
+
+  const generateBranchStatus = () => {
+    const branches = []
+
+    chapters.value.forEach(chapter => {
+      const scoreData = chapterScoreData.value[chapter.id]
+      const isCompleted = completedChapters.value.includes(chapter.id) || currentChapterId.value === chapter.id
+
+      const totalCombos = getChapterTotalCombos(chapter.id)
+      const triggeredInChapter = scoreData?.allCombos?.filter(c => c.triggered).length || 0
+      const totalHidden = getChapterTotalHiddenDialogues(chapter.id)
+      const triggeredHidden = scoreData?.allCombos?.filter(c => c.triggered && c.hasHiddenDialogue).length || 0
+
+      const missedCombos = scoreData?.allCombos?.filter(c => !c.triggered).map(c => ({
+        comboId: c.id,
+        name: c.name,
+        hasHiddenDialogue: c.hasHiddenDialogue,
+        hint: c.hasHiddenDialogue ? '含隐藏对话' : '普通组合'
+      })) || []
+
+      let unplayedSceneCombos = []
+      if (!isCompleted || !scoreData) {
+        chapter.scenes.forEach(sceneId => {
+          const scene = scenes.value[sceneId]
+          if (scene?.materialCombos) {
+            scene.materialCombos.forEach(combo => {
+              if (!triggeredCombos.value.includes(combo.id)) {
+                unplayedSceneCombos.push({
+                  comboId: combo.id,
+                  name: combo.name,
+                  hasHiddenDialogue: !!combo.hiddenDialogue,
+                  hint: combo.hiddenDialogue ? '含隐藏对话' : '普通组合'
+                })
+              }
+            })
+          }
+        })
+      }
+
+      branches.push({
+        chapterId: chapter.id,
+        title: chapter.title,
+        subtitle: chapter.subtitle,
+        completed: isCompleted,
+        emotionReached: scoreData ? scoreData.totalEmotion >= (chapter.emotionTarget || 0) : false,
+        emotionTarget: chapter.emotionTarget || 0,
+        totalCombos,
+        triggeredCombos: triggeredInChapter,
+        totalHidden,
+        triggeredHidden,
+        missedCombos: missedCombos.length > 0 ? missedCombos : unplayedSceneCombos,
+        completionPercent: totalCombos > 0 ? Math.round((triggeredInChapter / totalCombos) * 100) : 0
+      })
+    })
+
+    const totalCombosAll = branches.reduce((s, b) => s + b.totalCombos, 0)
+    const totalTriggered = branches.reduce((s, b) => s + b.triggeredCombos, 0)
+    const totalHiddenAll = branches.reduce((s, b) => s + b.totalHidden, 0)
+    const totalHiddenTriggered = branches.reduce((s, b) => s + b.triggeredHidden, 0)
+
+    return {
+      branches,
+      overallComboRate: totalCombosAll > 0 ? Math.round((totalTriggered / totalCombosAll) * 100) : 0,
+      overallHiddenRate: totalHiddenAll > 0 ? Math.round((totalHiddenTriggered / totalHiddenAll) * 100) : 0,
+      allBranchesCompleted: branches.every(b => b.completionPercent === 100)
+    }
+  }
+
+  const generateNextGoals = (finalScore, completedChapterCount, branchStatus) => {
+    const goals = []
+
+    if (completedChapterCount < 4) {
+      const nextChapter = chapters.value[completedChapterCount]
+      if (nextChapter) {
+        goals.push({
+          type: 'chapter',
+          icon: '📖',
+          title: `挑战下一章：${nextChapter.title}`,
+          description: nextChapter.teaser || nextChapter.description,
+          target: nextChapter.id,
+          priority: 1
+        })
+      }
+    }
+
+    if (finalScore < 65) {
+      goals.push({
+        type: 'score',
+        icon: '⬆️',
+        title: '提升综合评分至65分以上',
+        description: '尝试更多组合搭配和精准放置来获取更高分数',
+        priority: 2
+      })
+    } else if (finalScore < 90) {
+      goals.push({
+        type: 'score',
+        icon: '🌟',
+        title: '冲击完美评分90分以上',
+        description: '提升情绪值收集与放置精准度，解锁隐藏结局',
+        priority: 2
+      })
+    }
+
+    const incompleteBranches = branchStatus.branches.filter(b => b.completionPercent < 100)
+    if (incompleteBranches.length > 0) {
+      const target = incompleteBranches.sort((a, b) => a.completionPercent - b.completionPercent)[0]
+      goals.push({
+        type: 'combo',
+        icon: '🔮',
+        title: `补全「${target.title}」的素材组合`,
+        description: `当前完成 ${target.completionPercent}%，还差 ${target.totalCombos - target.triggeredCombos} 个组合`,
+        target: target.chapterId,
+        priority: 3
+      })
+    }
+
+    const missedHidden = branchStatus.branches.filter(b => b.triggeredHidden < b.totalHidden)
+    if (missedHidden.length > 0) {
+      goals.push({
+        type: 'hidden',
+        icon: '💎',
+        title: '收集未发现的隐藏对话',
+        description: `还有 ${missedHidden.reduce((s, b) => s + (b.totalHidden - b.triggeredHidden), 0)} 段隐藏对话等你解锁`,
+        priority: 4
+      })
+    }
+
+    if (finalScore >= 90 && completedChapterCount === 4 && branchStatus.allBranchesCompleted) {
+      goals.push({
+        type: 'completionist',
+        icon: '👑',
+        title: '已达成全部目标！',
+        description: '你已完美通关，可以尝试不同的选择路径发现更多故事',
+        priority: 0
+      })
+    }
+
+    return goals.sort((a, b) => a.priority - b.priority)
   }
 
   const saveGame = (slotIndex) => {
