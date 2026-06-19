@@ -7,6 +7,9 @@
     "teaser": "🌸 樱花飞舞的季节，是谁在树下微笑？",
     "background": "#fef3c7",
     "unlocked": true,
+    "hidden": false,
+    "hiddenHint": null,
+    "unlockConditions": [],
     "requiredMaterials": ["flower", "butterfly", "letter"],
     "emotionTarget": 50,
     "scenes": ["scene1_1", "scene1_2", "scene1_3"]
@@ -19,6 +22,21 @@
     "teaser": "☀️ 图书馆的角落里，藏着谁的心事？",
     "background": "#d1fae5",
     "unlocked": false,
+    "hidden": false,
+    "hiddenHint": null,
+    "unlockConditions": [
+      {
+        "type": "chapter_completed",
+        "target": "chapter1",
+        "description": "完成「春日序章」"
+      },
+      {
+        "type": "emotion_reached",
+        "target": "chapter1",
+        "value": 50,
+        "description": "在「春日序章」中情绪值达到 50"
+      }
+    ],
     "requiredMaterials": ["sun", "cicada", "book"],
     "emotionTarget": 70,
     "scenes": ["scene2_1", "scene2_2", "scene2_3"]
@@ -31,6 +49,27 @@
     "teaser": "🍂 咖啡香气弥漫的街角，时间仿佛静止了...",
     "background": "#fed7aa",
     "unlocked": false,
+    "hidden": false,
+    "hiddenHint": null,
+    "unlockConditions": [
+      {
+        "type": "chapter_completed",
+        "target": "chapter2",
+        "description": "完成「盛夏光年」"
+      },
+      {
+        "type": "emotion_reached",
+        "target": "chapter2",
+        "value": 70,
+        "description": "在「盛夏光年」中情绪值达到 70"
+      },
+      {
+        "type": "combo_triggered",
+        "target": "chapter2",
+        "minCount": 1,
+        "description": "在「盛夏光年」中触发至少 1 个素材组合"
+      }
+    ],
     "requiredMaterials": ["leaf", "coffee", "watch"],
     "emotionTarget": 80,
     "scenes": ["scene3_1", "scene3_2", "scene3_3"]
@@ -43,6 +82,33 @@
     "teaser": "❄️ 初雪飘落的那天，所有的答案都会揭晓...",
     "background": "#dbeafe",
     "unlocked": false,
+    "hidden": true,
+    "hiddenHint": "听说只有在四季走过三季后，才会出现的最终章……",
+    "unlockConditions": [
+      {
+        "type": "chapter_completed",
+        "target": "chapter3",
+        "description": "完成「秋日私语」"
+      },
+      {
+        "type": "emotion_reached",
+        "target": "chapter3",
+        "value": 80,
+        "description": "在「秋日私语」中情绪值达到 80"
+      },
+      {
+        "type": "combo_triggered",
+        "target": "chapter3",
+        "minCount": 2,
+        "description": "在「秋日私语」中触发至少 2 个素材组合"
+      },
+      {
+        "type": "hidden_dialogue_found",
+        "target": "chapter3",
+        "minCount": 1,
+        "description": "在「秋日私语」中发现至少 1 段隐藏对话"
+      }
+    ],
     "requiredMaterials": ["snowflake", "scarf", "heart"],
     "emotionTarget": 100,
     "scenes": ["scene4_1", "scene4_2", "scene4_3"]

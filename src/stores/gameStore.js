@@ -846,13 +846,7 @@ export const useGameStore = defineStore('game', () => {
 
     saveChapterScoreData()
 
-    const nextChapterIndex = chapters.value.findIndex(c => c.id === chapter.id) + 1
-    if (nextChapterIndex < chapters.value.length) {
-      const nextChapter = chapters.value[nextChapterIndex]
-      if (!unlockedChapters.value.includes(nextChapter.id)) {
-        unlockedChapters.value.push(nextChapter.id)
-      }
-    }
+    checkAndUnlockChapters()
   }
 
   const completeGame = () => {
@@ -1488,6 +1482,7 @@ export const useGameStore = defineStore('game', () => {
     comboJustTriggered.value = null
     gameCompleted.value = false
     currentEnding.value = null
+    checkAndUnlockChapters()
     return true
   }
 
@@ -1659,6 +1654,146 @@ export const useGameStore = defineStore('game', () => {
     const uncollected = total - triggered
     if (uncollected === 0) return null
     return uncollected
+  }
+
+  const isChapterConditionMet = (chapterId, condition) => {
+    if (!condition) return true
+    const { type, target, value, minCount } = condition
+
+    switch (type) {
+      case 'chapter_completed':
+        return completedChapters.value.includes(target)
+
+      case 'emotion_reached': {
+        const scoreData = chapterScoreData.value[target]
+        if (!scoreData) return false
+        return scoreData.totalEmotion >= (value || 0)
+      }
+
+      case 'combo_triggered': {
+        const scoreData = chapterScoreData.value[target]
+        if (!scoreData?.allCombos) return false
+        const triggeredCount = scoreData.allCombos.filter(c => c.triggered).length
+        return triggeredCount >= (minCount || 1)
+      }
+
+      case 'hidden_dialogue_found': {
+        const scoreData = chapterScoreData.value[target]
+        if (!scoreData?.allCombos) return false
+        const hiddenCount = scoreData.allCombos.filter(c => c.triggered && c.hasHiddenDialogue).length
+        return hiddenCount >= (minCount || 1)
+      }
+
+      default:
+        return true
+    }
+  }
+
+  const getUnmetConditions = (chapterId) => {
+    const chapter = getChapterById(chapterId)
+    if (!chapter?.unlockConditions) return []
+
+    return chapter.unlockConditions
+      .filter(condition => !isChapterConditionMet(chapterId, condition))
+      .map(condition => ({
+        ...condition,
+        met: false,
+        progress: getConditionProgress(chapterId, condition)
+      }))
+  }
+
+  const getMetConditions = (chapterId) => {
+    const chapter = getChapterById(chapterId)
+    if (!chapter?.unlockConditions) return []
+
+    return chapter.unlockConditions
+      .filter(condition => isChapterConditionMet(chapterId, condition))
+      .map(condition => ({
+        ...condition,
+        met: true
+      }))
+  }
+
+  const getConditionProgress = (chapterId, condition) => {
+    const { type, target, value, minCount } = condition
+
+    switch (type) {
+      case 'chapter_completed':
+        return completedChapters.value.includes(target) ? 1 : 0
+
+      case 'emotion_reached': {
+        const scoreData = chapterScoreData.value[target]
+        if (!scoreData) return 0
+        return Math.min(1, scoreData.totalEmotion / (value || 1))
+      }
+
+      case 'combo_triggered': {
+        const scoreData = chapterScoreData.value[target]
+        if (!scoreData?.allCombos) return 0
+        const triggeredCount = scoreData.allCombos.filter(c => c.triggered).length
+        return Math.min(1, triggeredCount / (minCount || 1))
+      }
+
+      case 'hidden_dialogue_found': {
+        const scoreData = chapterScoreData.value[target]
+        if (!scoreData?.allCombos) return 0
+        const hiddenCount = scoreData.allCombos.filter(c => c.triggered && c.hasHiddenDialogue).length
+        return Math.min(1, hiddenCount / (minCount || 1))
+      }
+
+      default:
+        return 1
+    }
+  }
+
+  const isChapterVisible = (chapterId) => {
+    const chapter = getChapterById(chapterId)
+    if (!chapter) return false
+    if (!chapter.hidden) return true
+    if (unlockedChapters.value.includes(chapterId)) return true
+    if (completedChapters.value.includes(chapterId)) return true
+
+    if (chapter.unlockConditions && chapter.unlockConditions.length > 0) {
+      const anyMet = chapter.unlockConditions.some(condition =>
+        isChapterConditionMet(chapterId, condition)
+      )
+      if (anyMet) return true
+
+      const previousChapterIndex = chapters.value.findIndex(c => c.id === chapterId) - 1
+      if (previousChapterIndex >= 0) {
+        const prevChapter = chapters.value[previousChapterIndex]
+        if (completedChapters.value.includes(prevChapter.id)) return true
+      }
+    }
+
+    return false
+  }
+
+  const areAllConditionsMet = (chapterId) => {
+    const chapter = getChapterById(chapterId)
+    if (!chapter?.unlockConditions || chapter.unlockConditions.length === 0) return true
+    return chapter.unlockConditions.every(condition =>
+      isChapterConditionMet(chapterId, condition)
+    )
+  }
+
+  const checkAndUnlockChapters = () => {
+    let newlyUnlocked = []
+
+    chapters.value.forEach(chapter => {
+      if (unlockedChapters.value.includes(chapter.id)) return
+      if (!areAllConditionsMet(chapter.id)) return
+
+      unlockedChapters.value.push(chapter.id)
+      newlyUnlocked.push(chapter)
+    })
+
+    if (newlyUnlocked.length > 0) {
+      const names = newlyUnlocked.map(c => `「${c.title}」`).join('、')
+      showNotification(`新章节解锁：${names}`, 'success', 3000)
+    }
+
+    return newlyUnlocked
   }
 
   const backupSaveSlots = () => {
@@ -1874,6 +2009,7 @@ export const useGameStore = defineStore('game', () => {
   loadChapterSnapshots()
   loadAutoSave()
   loadChapterScoreData()
+  checkAndUnlockChapters()
 
   const startChapterWithTracking = (chapterId) => {
     const chapter = getChapterById(chapterId)
@@ -2029,6 +2165,13 @@ export const useGameStore = defineStore('game', () => {
     getChapterCompletion,
     getChapterUncollectedCombos,
     getChapterCollectedHint,
+    isChapterConditionMet,
+    getUnmetConditions,
+    getMetConditions,
+    getConditionProgress,
+    isChapterVisible,
+    areAllConditionsMet,
+    checkAndUnlockChapters,
     saveChapterScoreData,
     loadChapterScoreData,
     backupSaveSlots,

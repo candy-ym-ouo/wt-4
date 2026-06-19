@@ -6,97 +6,136 @@
     </div>
 
     <div class="chapters-grid">
-      <div
-        v-for="(chapter, index) in chapters"
-        :key="chapter.id"
-        class="chapter-card fade-in"
-        :style="{ 
-          background: chapter.background,
-          animationDelay: (index * 0.1) + 's',
-          opacity: isChapterUnlocked(chapter.id) ? 1 : 0.5
-        }"
-        @click="selectChapter(chapter)"
-      >
-        <div class="washi-tape" :class="getTapeClass(index)"></div>
-        <div class="chapter-content">
-          <div class="chapter-number handwriting">{{ index + 1 }}</div>
-          <h2 class="chapter-title handwriting">{{ chapter.title }}</h2>
-          <p class="chapter-subtitle">{{ chapter.subtitle }}</p>
-          <p class="chapter-description">{{ chapter.description }}</p>
-          
-          <div class="chapter-status">
-            <span v-if="isChapterCompleted(chapter.id)" class="status-completed">
-              ✓ 已完成
-            </span>
-            <span v-else-if="isChapterUnlocked(chapter.id)" class="status-unlocked">
-              点击开始
-            </span>
-            <span v-else class="status-locked">
-              🔒 未解锁
-            </span>
-            <button
-              v-if="isChapterCompleted(chapter.id) && hasChapterScoreData(chapter.id)"
-              class="score-detail-btn"
-              @click.stop="viewScoreDetail(chapter.id)"
-            >
-              📊 评分明细
-            </button>
-          </div>
-
-          <div class="chapter-materials">
-            <span class="materials-label">所需素材：</span>
-            <span 
-              v-for="matId in chapter.requiredMaterials" 
-              :key="matId"
-              class="material-dot"
-              :style="{ background: getMaterialColor(matId) }"
-              :title="getMaterialName(matId)"
-            ></span>
-          </div>
-
-          <div v-if="hasChapterSnapshot(chapter.id)" class="chapter-progress">
-            <span class="progress-indicator">📌 有存档点</span>
-          </div>
-
-          <div v-if="isChapterCompleted(chapter.id)" class="chapter-completion">
-            <div class="completion-header">
-              <span class="completion-label">收集进度</span>
-              <span class="completion-percent">{{ getChapterCompletion(chapter.id) }}%</span>
-            </div>
-            <div class="completion-bar">
-              <div 
-                class="completion-fill" 
-                :style="{ width: getChapterCompletion(chapter.id) + '%' }"
-              ></div>
-            </div>
-            <div class="completion-stats">
-              <span class="stat-badge">
-                ✨ {{ getChapterTriggeredCombos(chapter.id) }}/{{ getChapterTotalCombos(chapter.id) }} 组合
+      <template v-for="(chapter, index) in chapters" :key="chapter.id">
+        <div
+          v-if="isChapterVisible(chapter.id)"
+          class="chapter-card fade-in"
+          :class="{
+            'chapter-hidden': chapter.hidden && !isChapterUnlocked(chapter.id),
+            'chapter-locked': !isChapterUnlocked(chapter.id) && !chapter.hidden
+          }"
+          :style="{ 
+            background: chapter.background,
+            animationDelay: (index * 0.1) + 's',
+            opacity: isChapterUnlocked(chapter.id) ? 1 : 0.7
+          }"
+          @click="selectChapter(chapter)"
+        >
+          <div class="washi-tape" :class="getTapeClass(index)"></div>
+          <div class="chapter-content">
+            <div class="chapter-number handwriting">{{ index + 1 }}</div>
+            <h2 class="chapter-title handwriting">{{ chapter.title }}</h2>
+            <p class="chapter-subtitle">{{ chapter.subtitle }}</p>
+            <p class="chapter-description">{{ chapter.description }}</p>
+            
+            <div class="chapter-status">
+              <span v-if="isChapterCompleted(chapter.id)" class="status-completed">
+                ✓ 已完成
               </span>
-              <span class="stat-badge">
-                💬 {{ getChapterTriggeredHiddenDialogues(chapter.id) }}/{{ getChapterTotalHiddenDialogues(chapter.id) }} 隐藏对话
+              <span v-else-if="isChapterUnlocked(chapter.id)" class="status-unlocked">
+                点击开始
               </span>
-            </div>
-            <div v-if="getChapterCollectedHint(chapter.id)" class="uncollected-hint">
-              <span class="hint-icon">🔍</span>
-              <span class="hint-text">
-                还有 {{ getChapterCollectedHint(chapter.id) }} 个隐藏组合等你发现
+              <span v-else class="status-locked">
+                🔒 未解锁
               </span>
+              <button
+                v-if="isChapterCompleted(chapter.id) && hasChapterScoreData(chapter.id)"
+                class="score-detail-btn"
+                @click.stop="viewScoreDetail(chapter.id)"
+              >
+                📊 评分明细
+              </button>
             </div>
-            <div v-else class="completed-badge">
-              🏆 完美通关
-            </div>
-          </div>
 
-          <div v-else-if="!isChapterUnlocked(chapter.id)" class="chapter-teaser">
-            <div class="teaser-icon">❓</div>
-            <p class="teaser-text">{{ chapter.teaser }}</p>
-            <div class="teaser-unlock-hint">
-              完成上一章解锁
+            <div class="chapter-materials">
+              <span class="materials-label">所需素材：</span>
+              <span 
+                v-for="matId in chapter.requiredMaterials" 
+                :key="matId"
+                class="material-dot"
+                :style="{ background: getMaterialColor(matId) }"
+                :title="getMaterialName(matId)"
+              ></span>
+            </div>
+
+            <div v-if="hasChapterSnapshot(chapter.id)" class="chapter-progress">
+              <span class="progress-indicator">📌 有存档点</span>
+            </div>
+
+            <div v-if="isChapterCompleted(chapter.id)" class="chapter-completion">
+              <div class="completion-header">
+                <span class="completion-label">收集进度</span>
+                <span class="completion-percent">{{ getChapterCompletion(chapter.id) }}%</span>
+              </div>
+              <div class="completion-bar">
+                <div 
+                  class="completion-fill" 
+                  :style="{ width: getChapterCompletion(chapter.id) + '%' }"
+                ></div>
+              </div>
+              <div class="completion-stats">
+                <span class="stat-badge">
+                  ✨ {{ getChapterTriggeredCombos(chapter.id) }}/{{ getChapterTotalCombos(chapter.id) }} 组合
+                </span>
+                <span class="stat-badge">
+                  💬 {{ getChapterTriggeredHiddenDialogues(chapter.id) }}/{{ getChapterTotalHiddenDialogues(chapter.id) }} 隐藏对话
+                </span>
+              </div>
+              <div v-if="getChapterCollectedHint(chapter.id)" class="uncollected-hint">
+                <span class="hint-icon">🔍</span>
+                <span class="hint-text">
+                  还有 {{ getChapterCollectedHint(chapter.id) }} 个隐藏组合等你发现
+                </span>
+              </div>
+              <div v-else class="completed-badge">
+                🏆 完美通关
+              </div>
+            </div>
+
+            <div v-else-if="!isChapterUnlocked(chapter.id)" class="chapter-locked-info">
+              <div v-if="chapter.hidden" class="hidden-chapter-hint">
+                <div class="hidden-icon">🔮</div>
+                <p class="hidden-hint-text">{{ chapter.hiddenHint }}</p>
+              </div>
+              <div v-if="chapter.teaser && !chapter.hidden" class="chapter-teaser">
+                <div class="teaser-icon">❓</div>
+                <p class="teaser-text">{{ chapter.teaser }}</p>
+              </div>
+              <div class="unlock-conditions">
+                <div class="conditions-header">
+                  <span class="conditions-label">🔓 解锁条件</span>
+                  <span class="conditions-progress">{{ getMetConditions(chapter.id).length }}/{{ chapter.unlockConditions?.length || 0 }}</span>
+                </div>
+                <div class="conditions-list">
+                  <div
+                    v-for="(condition, ci) in chapter.unlockConditions"
+                    :key="ci"
+                    class="condition-item"
+                    :class="{ 'condition-met': isChapterConditionMet(chapter.id, condition), 'condition-unmet': !isChapterConditionMet(chapter.id, condition) }"
+                  >
+                    <span class="condition-icon">{{ isChapterConditionMet(chapter.id, condition) ? '✅' : '⬜' }}</span>
+                    <span class="condition-text">{{ condition.description }}</span>
+                    <div v-if="!isChapterConditionMet(chapter.id, condition) && getConditionProgress(chapter.id, condition) > 0" class="condition-progress-bar">
+                      <div class="condition-progress-fill" :style="{ width: (getConditionProgress(chapter.id, condition) * 100) + '%' }"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+
+        <div
+          v-else-if="chapter.hidden"
+          class="chapter-card chapter-mystery fade-in"
+          :style="{ animationDelay: (index * 0.1) + 's' }"
+        >
+          <div class="chapter-content mystery-content">
+            <div class="mystery-icon">❓</div>
+            <p class="mystery-text">更多章节正在书写中……</p>
+          </div>
+        </div>
+      </template>
     </div>
 
     <div class="actions">
@@ -242,6 +281,26 @@ const getChapterTriggeredHiddenDialogues = (chapterId) => {
 
 const getChapterCollectedHint = (chapterId) => {
   return gameStore.getChapterCollectedHint(chapterId)
+}
+
+const isChapterVisible = (chapterId) => {
+  return gameStore.isChapterVisible(chapterId)
+}
+
+const isChapterConditionMet = (chapterId, condition) => {
+  return gameStore.isChapterConditionMet(chapterId, condition)
+}
+
+const getMetConditions = (chapterId) => {
+  return gameStore.getMetConditions(chapterId)
+}
+
+const getUnmetConditions = (chapterId) => {
+  return gameStore.getUnmetConditions(chapterId)
+}
+
+const getConditionProgress = (chapterId, condition) => {
+  return gameStore.getConditionProgress(chapterId, condition)
 }
 
 const viewScoreDetail = (chapterId) => {
@@ -614,6 +673,172 @@ onMounted(() => {
   text-align: center;
   backdrop-filter: blur(5px);
   border: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.chapter-locked-info {
+  margin-top: 12px;
+}
+
+.hidden-chapter-hint {
+  padding: 15px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(168, 85, 247, 0.12));
+  border-radius: 10px;
+  text-align: center;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  margin-bottom: 12px;
+}
+
+.hidden-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  animation: mysteryPulse 3s ease-in-out infinite;
+}
+
+@keyframes mysteryPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+.hidden-hint-text {
+  font-size: 0.9rem;
+  color: #7c3aed;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.unlock-conditions {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.conditions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.conditions-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.conditions-progress {
+  font-size: 0.8rem;
+  color: var(--accent-purple);
+  font-weight: 600;
+  padding: 2px 8px;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 10px;
+}
+
+.conditions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.condition-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  transition: background 0.2s ease;
+}
+
+.condition-met {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.condition-unmet {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.condition-icon {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.condition-text {
+  flex: 1;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.condition-met .condition-text {
+  color: #059669;
+  text-decoration: line-through;
+  text-decoration-color: rgba(5, 150, 105, 0.3);
+}
+
+.condition-progress-bar {
+  width: 60px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.condition-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-pink), var(--accent-purple));
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.chapter-mystery {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%) !important;
+  cursor: default;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(0, 0, 0, 0.1);
+}
+
+.chapter-mystery:hover {
+  transform: none;
+  box-shadow: var(--shadow-md);
+}
+
+.mystery-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.mystery-icon {
+  font-size: 3rem;
+  opacity: 0.3;
+  margin-bottom: 12px;
+  animation: mysteryFloat 4s ease-in-out infinite;
+}
+
+@keyframes mysteryFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.mystery-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  opacity: 0.5;
+}
+
+.chapter-card.chapter-hidden {
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  box-shadow: var(--shadow-md), 0 0 20px rgba(139, 92, 246, 0.1);
+}
+
+.chapter-card.chapter-locked {
+  border: 1px solid rgba(239, 68, 68, 0.1);
 }
 
 .teaser-icon {
