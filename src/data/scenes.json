@@ -34,6 +34,47 @@
       }
     ],
     "requiredMaterial": "flower",
+    "optionalMaterials": ["cloud", "star"],
+    "materialCombos": [
+      {
+        "id": "combo1_spring_sky",
+        "name": "春日晴空",
+        "materials": ["flower", "cloud"],
+        "hiddenDialogue": {
+          "id": "hd1_1_1",
+          "speaker": "回忆",
+          "text": "那天的云也像棉花糖一样，你笑着说，要把整个春天都装进口袋里。",
+          "emotionChange": 4,
+          "isHidden": true
+        },
+        "emotionBonus": 5,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "petals",
+          "backgroundShift": "linear-gradient(135deg, #fef9c3 0%, #fde68a 50%, #e0e7ff 100%)"
+        },
+        "description": "樱花+云朵：忆起初见那天的晴空"
+      },
+      {
+        "id": "combo1_starlight",
+        "name": "星光寄语",
+        "materials": ["flower", "star"],
+        "hiddenDialogue": {
+          "id": "hd1_1_2",
+          "speaker": "内心",
+          "text": "原来从相遇的那一刻起，你就已经是我心中最亮的星。",
+          "emotionChange": 5,
+          "isHidden": true
+        },
+        "emotionBonus": 6,
+        "sceneFeedback": {
+          "type": "glow",
+          "effect": "sparkle",
+          "backgroundShift": "linear-gradient(135deg, #fef3c7 0%, #fef9c3 50%, #fde68a 100%)"
+        },
+        "description": "樱花+星星：你是心中最亮的星"
+      }
+    ],
     "nextScene": "scene1_2"
   },
   "scene1_2": {
@@ -71,6 +112,47 @@
       }
     ],
     "requiredMaterial": "butterfly",
+    "optionalMaterials": ["flower", "music"],
+    "materialCombos": [
+      {
+        "id": "combo1_butterfly_flower",
+        "name": "蝶恋花",
+        "materials": ["butterfly", "flower"],
+        "hiddenDialogue": {
+          "id": "hd1_2_1",
+          "speaker": "回忆",
+          "text": "她指着花丛中翻飞的蝴蝶说：「你看，它们也在为春天跳舞呢。」",
+          "emotionChange": 5,
+          "isHidden": true
+        },
+        "emotionBonus": 7,
+        "sceneFeedback": {
+          "type": "animation",
+          "effect": "flutter",
+          "backgroundShift": "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #fef3c7 100%)"
+        },
+        "description": "蝴蝶+樱花：春日最美的舞蹈"
+      },
+      {
+        "id": "combo1_melody",
+        "name": "春之旋律",
+        "materials": ["butterfly", "music"],
+        "hiddenDialogue": {
+          "id": "hd1_2_2",
+          "speaker": "内心",
+          "text": "远处飘来的旋律，和她的笑声一起，成了那年春天最美的BGM。",
+          "emotionChange": 4,
+          "isHidden": true
+        },
+        "emotionBonus": 5,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "notes",
+          "backgroundShift": null
+        },
+        "description": "蝴蝶+音符：春天的专属旋律"
+      }
+    ],
     "nextScene": "scene1_3"
   },
   "scene1_3": {
@@ -108,6 +190,66 @@
       }
     ],
     "requiredMaterial": "letter",
+    "optionalMaterials": ["heart", "star", "flower"],
+    "materialCombos": [
+      {
+        "id": "combo1_love_letter",
+        "name": "情书",
+        "materials": ["letter", "heart"],
+        "hiddenDialogue": {
+          "id": "hd1_3_1",
+          "speaker": "回忆",
+          "text": "信的最后，画着一颗小小的心。你当时红了好久的脸，她笑了好久好久。",
+          "emotionChange": 6,
+          "isHidden": true
+        },
+        "emotionBonus": 8,
+        "sceneFeedback": {
+          "type": "glow",
+          "effect": "hearts",
+          "backgroundShift": "linear-gradient(135deg, #fef9c3 0%, #fce7f3 50%, #fef08a 100%)"
+        },
+        "description": "信笺+心：字里行间都是心动"
+      },
+      {
+        "id": "combo1_star_promise",
+        "name": "星空下的约定",
+        "materials": ["letter", "star"],
+        "hiddenDialogue": {
+          "id": "hd1_3_2",
+          "speaker": "内心",
+          "text": "她在信里写：「就算分开，我们也在同一片星空下。」这句话，陪你度过了很多个夜晚。",
+          "emotionChange": 5,
+          "isHidden": true
+        },
+        "emotionBonus": 7,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "stars",
+          "backgroundShift": null
+        },
+        "description": "信笺+星星：同一片星空下的约定"
+      },
+      {
+        "id": "combo1_full_spring",
+        "name": "完整的春天",
+        "materials": ["letter", "flower", "butterfly"],
+        "hiddenDialogue": {
+          "id": "hd1_3_3",
+          "speaker": "回忆",
+          "text": "樱花、蝴蝶、还有这封信...原来那个春天，你给了我一整个季节的温柔。",
+          "emotionChange": 8,
+          "isHidden": true
+        },
+        "emotionBonus": 12,
+        "sceneFeedback": {
+          "type": "animation",
+          "effect": "bloom",
+          "backgroundShift": "linear-gradient(135deg, #fdf2f8 0%, #fef3c7 50%, #fce7f3 100%)"
+        },
+        "description": "集齐春日三件套：樱花+蝴蝶+信笺"
+      }
+    ],
     "nextScene": null
   },
   "scene2_1": {
@@ -145,6 +287,47 @@
       }
     ],
     "requiredMaterial": "sun",
+    "optionalMaterials": ["cloud", "cicada"],
+    "materialCombos": [
+      {
+        "id": "combo2_sun_cloud",
+        "name": "夏日流云",
+        "materials": ["sun", "cloud"],
+        "hiddenDialogue": {
+          "id": "hd2_1_1",
+          "speaker": "回忆",
+          "text": "她指着天上的云说：「你看那朵，好像棉花糖！」那天的风，都是甜的。",
+          "emotionChange": 4,
+          "isHidden": true
+        },
+        "emotionBonus": 5,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "clouds",
+          "backgroundShift": "linear-gradient(135deg, #dbeafe 0%, #d1fae5 50%, #a7f3d0 100%)"
+        },
+        "description": "太阳+云朵：夏日天空的小确幸"
+      },
+      {
+        "id": "combo2_sun_cicada",
+        "name": "盛夏序曲",
+        "materials": ["sun", "cicada"],
+        "hiddenDialogue": {
+          "id": "hd2_1_2",
+          "speaker": "内心",
+          "text": "蝉鸣声中，她的笑容比阳光还要耀眼。那是属于夏天的心动时刻。",
+          "emotionChange": 5,
+          "isHidden": true
+        },
+        "emotionBonus": 6,
+        "sceneFeedback": {
+          "type": "glow",
+          "effect": "sunshine",
+          "backgroundShift": null
+        },
+        "description": "太阳+蝉：盛夏的主旋律"
+      }
+    ],
     "nextScene": "scene2_2"
   },
   "scene2_2": {
@@ -182,6 +365,47 @@
       }
     ],
     "requiredMaterial": "cicada",
+    "optionalMaterials": ["music", "book", "star"],
+    "materialCombos": [
+      {
+        "id": "combo2_cicada_music",
+        "name": "夏之协奏曲",
+        "materials": ["cicada", "music"],
+        "hiddenDialogue": {
+          "id": "hd2_2_1",
+          "speaker": "回忆",
+          "text": "她小声哼起了歌，蝉鸣仿佛也跟着节拍。这是只属于你们的夏日协奏曲。",
+          "emotionChange": 5,
+          "isHidden": true
+        },
+        "emotionBonus": 6,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "notes",
+          "backgroundShift": null
+        },
+        "description": "蝉+音符：夏日的专属BGM"
+      },
+      {
+        "id": "combo2_cicada_book",
+        "name": "书页间的夏天",
+        "materials": ["cicada", "book"],
+        "hiddenDialogue": {
+          "id": "hd2_2_2",
+          "speaker": "内心",
+          "text": "多年后翻开那本书，耳边仿佛还能听见那天的蝉鸣，和她写字的沙沙声。",
+          "emotionChange": 6,
+          "isHidden": true
+        },
+        "emotionBonus": 7,
+        "sceneFeedback": {
+          "type": "animation",
+          "effect": "pages",
+          "backgroundShift": "linear-gradient(135deg, #bbf7d0 0%, #fef3c7 50%, #86efac 100%)"
+        },
+        "description": "蝉+书本：记忆中的书香与蝉鸣"
+      }
+    ],
     "nextScene": "scene2_3"
   },
   "scene2_3": {
@@ -219,6 +443,66 @@
       }
     ],
     "requiredMaterial": "book",
+    "optionalMaterials": ["sun", "heart", "music"],
+    "materialCombos": [
+      {
+        "id": "combo2_book_sun",
+        "name": "阳光下的故事",
+        "materials": ["book", "sun"],
+        "hiddenDialogue": {
+          "id": "hd2_3_1",
+          "speaker": "回忆",
+          "text": "阳光透过窗户洒在书页上，她的侧脸被镀上一层金边。你假装在看书，其实一直在看她。",
+          "emotionChange": 7,
+          "isHidden": true
+        },
+        "emotionBonus": 8,
+        "sceneFeedback": {
+          "type": "glow",
+          "effect": "sunshine",
+          "backgroundShift": "linear-gradient(135deg, #fef9c3 0%, #a7f3d0 50%, #6ee7b7 100%)"
+        },
+        "description": "书本+太阳：青春里最暖的画面"
+      },
+      {
+        "id": "combo2_book_heart",
+        "name": "爱的注解",
+        "materials": ["book", "heart"],
+        "hiddenDialogue": {
+          "id": "hd2_3_2",
+          "speaker": "内心",
+          "text": "书里夹着的便签上，她画了一颗小小的心。那是你收到过最含蓄也最直接的告白。",
+          "emotionChange": 8,
+          "isHidden": true
+        },
+        "emotionBonus": 9,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "hearts",
+          "backgroundShift": null
+        },
+        "description": "书本+心：字里行间都是喜欢"
+      },
+      {
+        "id": "combo2_full_summer",
+        "name": "盛夏光年",
+        "materials": ["book", "sun", "cicada"],
+        "hiddenDialogue": {
+          "id": "hd2_3_3",
+          "speaker": "回忆",
+          "text": "阳光、蝉鸣、还有那本一起读过的书...原来夏天的意义，就是遇见你。",
+          "emotionChange": 10,
+          "isHidden": true
+        },
+        "emotionBonus": 15,
+        "sceneFeedback": {
+          "type": "animation",
+          "effect": "bloom",
+          "backgroundShift": "linear-gradient(135deg, #fef9c3 0%, #d1fae5 50%, #a7f3d0 100%)"
+        },
+        "description": "集齐盛夏三件套：太阳+蝉+书本"
+      }
+    ],
     "nextScene": null
   },
   "scene3_1": {
@@ -256,6 +540,47 @@
       }
     ],
     "requiredMaterial": "leaf",
+    "optionalMaterials": ["coffee", "star", "music"],
+    "materialCombos": [
+      {
+        "id": "combo3_leaf_coffee",
+        "name": "秋日下午茶",
+        "materials": ["leaf", "coffee"],
+        "hiddenDialogue": {
+          "id": "hd3_1_1",
+          "speaker": "回忆",
+          "text": "「这片叶子当书签正好！」她把落叶夹进书里，咖啡的香气漫了整个下午。",
+          "emotionChange": 5,
+          "isHidden": true
+        },
+        "emotionBonus": 6,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "leaves",
+          "backgroundShift": "linear-gradient(135deg, #fed7aa 0%, #fef3c7 50%, #fdba74 100%)"
+        },
+        "description": "落叶+咖啡：秋天最惬意的搭配"
+      },
+      {
+        "id": "combo3_leaf_music",
+        "name": "秋风中的旋律",
+        "materials": ["leaf", "music"],
+        "hiddenDialogue": {
+          "id": "hd3_1_2",
+          "speaker": "内心",
+          "text": "耳机里的那首歌，和秋风、落叶一起，成了你对秋天全部的记忆。",
+          "emotionChange": 4,
+          "isHidden": true
+        },
+        "emotionBonus": 5,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "notes",
+          "backgroundShift": null
+        },
+        "description": "落叶+音符：秋风里的BGM"
+      }
+    ],
     "nextScene": "scene3_2"
   },
   "scene3_2": {
@@ -293,6 +618,47 @@
       }
     ],
     "requiredMaterial": "coffee",
+    "optionalMaterials": ["watch", "heart", "cloud"],
+    "materialCombos": [
+      {
+        "id": "combo3_coffee_watch",
+        "name": "慢时光",
+        "materials": ["coffee", "watch"],
+        "hiddenDialogue": {
+          "id": "hd3_2_1",
+          "speaker": "回忆",
+          "text": "「时间慢点走就好了。」她看着窗外说。那杯咖啡，你们喝了整整一个下午。",
+          "emotionChange": 6,
+          "isHidden": true
+        },
+        "emotionBonus": 7,
+        "sceneFeedback": {
+          "type": "glow",
+          "effect": "warm",
+          "backgroundShift": "linear-gradient(135deg, #fef3c7 0%, #fdba74 50%, #fb923c 100%)"
+        },
+        "description": "咖啡+怀表：想让时间停在这一刻"
+      },
+      {
+        "id": "combo3_coffee_heart",
+        "name": "拉花心意",
+        "materials": ["coffee", "heart"],
+        "hiddenDialogue": {
+          "id": "hd3_2_2",
+          "speaker": "内心",
+          "text": "咖啡师在她的那杯上画了一颗心，她红着脸偷偷看了你一眼。",
+          "emotionChange": 6,
+          "isHidden": true
+        },
+        "emotionBonus": 8,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "hearts",
+          "backgroundShift": null
+        },
+        "description": "咖啡+心：不小心泄露的心意"
+      }
+    ],
     "nextScene": "scene3_3"
   },
   "scene3_3": {
@@ -330,6 +696,66 @@
       }
     ],
     "requiredMaterial": "watch",
+    "optionalMaterials": ["leaf", "star", "heart"],
+    "materialCombos": [
+      {
+        "id": "combo3_watch_leaf",
+        "name": "季节的指针",
+        "materials": ["watch", "leaf"],
+        "hiddenDialogue": {
+          "id": "hd3_3_1",
+          "speaker": "内心",
+          "text": "怀表的指针转了一圈又一圈，落叶黄了一年又一年，但有些事，永远不会变。",
+          "emotionChange": 7,
+          "isHidden": true
+        },
+        "emotionBonus": 8,
+        "sceneFeedback": {
+          "type": "animation",
+          "effect": "time",
+          "backgroundShift": "linear-gradient(135deg, #fed7aa 0%, #fb923c 50%, #f97316 100%)"
+        },
+        "description": "怀表+落叶：记录每个季节的思念"
+      },
+      {
+        "id": "combo3_watch_star",
+        "name": "永恒星辰",
+        "materials": ["watch", "star"],
+        "hiddenDialogue": {
+          "id": "hd3_3_2",
+          "speaker": "回忆",
+          "text": "「时间会流逝，但星星不会。」她指着夜空说，「就像我喜欢你一样。」",
+          "emotionChange": 8,
+          "isHidden": true
+        },
+        "emotionBonus": 10,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "stars",
+          "backgroundShift": null
+        },
+        "description": "怀表+星星：永恒不变的承诺"
+      },
+      {
+        "id": "combo3_full_autumn",
+        "name": "秋日私语",
+        "materials": ["watch", "leaf", "coffee"],
+        "hiddenDialogue": {
+          "id": "hd3_3_3",
+          "speaker": "回忆",
+          "text": "落叶、咖啡、还有滴答作响的怀表...原来整个秋天，都在诉说着我喜欢你。",
+          "emotionChange": 10,
+          "isHidden": true
+        },
+        "emotionBonus": 15,
+        "sceneFeedback": {
+          "type": "animation",
+          "effect": "bloom",
+          "backgroundShift": "linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fdba74 100%)"
+        },
+        "description": "集齐秋日三件套：落叶+咖啡+怀表"
+      }
+    ],
     "nextScene": null
   },
   "scene4_1": {
@@ -367,6 +793,47 @@
       }
     ],
     "requiredMaterial": "snowflake",
+    "optionalMaterials": ["star", "cloud", "scarf"],
+    "materialCombos": [
+      {
+        "id": "combo4_snow_star",
+        "name": "雪夜星光",
+        "materials": ["snowflake", "star"],
+        "hiddenDialogue": {
+          "id": "hd4_1_1",
+          "speaker": "回忆",
+          "text": "「你说，雪花是不是星星掉下来变成的？」她认真的样子，比雪景还要好看。",
+          "emotionChange": 6,
+          "isHidden": true
+        },
+        "emotionBonus": 7,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "stars",
+          "backgroundShift": "linear-gradient(135deg, #e0e7ff 0%, #dbeafe 50%, #bfdbfe 100%)"
+        },
+        "description": "雪花+星星：来自天空的礼物"
+      },
+      {
+        "id": "combo4_snow_scarf",
+        "name": "温暖初雪",
+        "materials": ["snowflake", "scarf"],
+        "hiddenDialogue": {
+          "id": "hd4_1_2",
+          "speaker": "内心",
+          "text": "雪下得很大，但她围的那条红围巾，像一团火，温暖了整个冬天。",
+          "emotionChange": 6,
+          "isHidden": true
+        },
+        "emotionBonus": 8,
+        "sceneFeedback": {
+          "type": "glow",
+          "effect": "warm",
+          "backgroundShift": "linear-gradient(135deg, #fee2e2 0%, #dbeafe 50%, #bfdbfe 100%)"
+        },
+        "description": "雪花+围巾：冬天里的温暖"
+      }
+    ],
     "nextScene": "scene4_2"
   },
   "scene4_2": {
@@ -404,6 +871,47 @@
       }
     ],
     "requiredMaterial": "scarf",
+    "optionalMaterials": ["heart", "snowflake", "music"],
+    "materialCombos": [
+      {
+        "id": "combo4_scarf_heart",
+        "name": "红色的心意",
+        "materials": ["scarf", "heart"],
+        "hiddenDialogue": {
+          "id": "hd4_2_1",
+          "speaker": "回忆",
+          "text": "「这条围巾，是我织了一个月的...」她的声音很小，但你听得很清楚，心跳也漏了一拍。",
+          "emotionChange": 8,
+          "isHidden": true
+        },
+        "emotionBonus": 10,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "hearts",
+          "backgroundShift": "linear-gradient(135deg, #fecaca 0%, #bfdbfe 50%, #93c5fd 100%)"
+        },
+        "description": "围巾+心：一针一线都是心意"
+      },
+      {
+        "id": "combo4_scarf_music",
+        "name": "冬日恋歌",
+        "materials": ["scarf", "music"],
+        "hiddenDialogue": {
+          "id": "hd4_2_2",
+          "speaker": "内心",
+          "text": "你们共戴着一条耳机，雪地里的脚印一深一浅，那首歌循环了一遍又一遍。",
+          "emotionChange": 6,
+          "isHidden": true
+        },
+        "emotionBonus": 7,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "notes",
+          "backgroundShift": null
+        },
+        "description": "围巾+音符：属于冬天的情歌"
+      }
+    ],
     "nextScene": "scene4_3"
   },
   "scene4_3": {
@@ -441,6 +949,66 @@
       }
     ],
     "requiredMaterial": "heart",
+    "optionalMaterials": ["star", "snowflake", "scarf", "flower"],
+    "materialCombos": [
+      {
+        "id": "combo4_heart_star",
+        "name": "星辰为证",
+        "materials": ["heart", "star"],
+        "hiddenDialogue": {
+          "id": "hd4_3_1",
+          "speaker": "回忆",
+          "text": "「让星星作证，我喜欢你，是真的。」她看着你的眼睛，认真得像在宣誓。",
+          "emotionChange": 10,
+          "isHidden": true
+        },
+        "emotionBonus": 12,
+        "sceneFeedback": {
+          "type": "particle",
+          "effect": "stars",
+          "backgroundShift": "linear-gradient(135deg, #fef3c7 0%, #fce7f3 50%, #fbcfe8 100%)"
+        },
+        "description": "心+星星：最浪漫的誓言"
+      },
+      {
+        "id": "combo4_heart_scarf",
+        "name": "温暖的归宿",
+        "materials": ["heart", "scarf"],
+        "hiddenDialogue": {
+          "id": "hd4_3_2",
+          "speaker": "内心",
+          "text": "她把你拉近，围巾裹住两个人。原来冬天再冷，也抵不过一个拥抱的温度。",
+          "emotionChange": 10,
+          "isHidden": true
+        },
+        "emotionBonus": 12,
+        "sceneFeedback": {
+          "type": "glow",
+          "effect": "warm",
+          "backgroundShift": "linear-gradient(135deg, #fee2e2 0%, #fce7f3 50%, #fbcfe8 100%)"
+        },
+        "description": "心+围巾：最好的礼物是你"
+      },
+      {
+        "id": "combo4_full_four_seasons",
+        "name": "四季有你",
+        "materials": ["heart", "flower", "sun", "leaf", "snowflake"],
+        "hiddenDialogue": {
+          "id": "hd4_3_3",
+          "speaker": "回忆",
+          "text": "春樱、夏日、秋叶、冬雪...还有你。原来最美的四季，就是有你的每一天。",
+          "emotionChange": 15,
+          "isHidden": true
+        },
+        "emotionBonus": 25,
+        "sceneFeedback": {
+          "type": "animation",
+          "effect": "rainbow_bloom",
+          "backgroundShift": "linear-gradient(135deg, #fef3c7 0%, #d1fae5 25%, #fed7aa 50%, #dbeafe 75%, #fce7f3 100%)"
+        },
+        "description": "终极彩蛋：集齐四季元素+心，解锁「四季有你」"
+      }
+    ],
     "nextScene": null
   }
 }

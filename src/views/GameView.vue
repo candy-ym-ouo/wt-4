@@ -39,7 +39,20 @@
     <div class="game-content">
       <EmotionMeter />
 
-      <div class="canvas-wrapper">
+      <div v-if="currentSceneCombos.length > 0" class="combo-progress-bar">
+        <div class="combo-progress-header">
+          <span class="combo-progress-title">🎯 组合收集进度</span>
+          <span class="combo-progress-count">{{ triggeredCombos.length }} / {{ currentSceneCombos.length }}</span>
+        </div>
+        <div class="combo-progress-track">
+          <div 
+            class="combo-progress-fill" 
+            :style="{ width: (triggeredCombos.length / currentSceneCombos.length * 100) + '%' }"
+          ></div>
+        </div>
+      </div>
+
+      <div class="canvas-wrapper" :class="{ 'scene-shift': sceneBackgroundOverride }">
         <Canvas 
           ref="canvasRef"
           :background="currentScene?.background"
@@ -55,6 +68,11 @@
       <MaterialPanel 
         @select="handleMaterialSelect"
       />
+
+      <div v-if="comboBonusTotal > 0" class="combo-stats-chip">
+        <span class="chip-icon">🎁</span>
+        <span class="chip-text">组合加成 +{{ comboBonusTotal }} 💕</span>
+      </div>
     </div>
 
     <SaveLoadModal
@@ -75,6 +93,35 @@
       <div v-if="notification" class="notification-wrapper">
         <div class="notification slide-down" :class="'notification-' + notification.type">
           {{ notification.message }}
+        </div>
+      </div>
+    </Transition>
+
+    <Transition name="combo-achievement">
+      <div v-if="showComboAchievement" class="combo-achievement-overlay">
+        <div class="combo-achievement-card">
+          <div class="achievement-confetti">
+            <span v-for="i in 12" :key="i" class="confetti-piece" :style="getConfettiStyle(i)">🎉</span>
+          </div>
+          <div class="achievement-badge">
+            <span class="achievement-icon">🏆</span>
+          </div>
+          <div class="achievement-label">组合解锁</div>
+          <div class="achievement-name">{{ latestCombo?.name }}</div>
+          <div class="achievement-desc">{{ latestCombo?.description }}</div>
+          <div class="achievement-rewards">
+            <div class="reward-item">
+              <span class="reward-icon">💕</span>
+              <span class="reward-value">+{{ latestCombo?.emotionBonus }} 情绪加成</span>
+            </div>
+            <div v-if="latestCombo?.hiddenDialogue" class="reward-item">
+              <span class="reward-icon">🔮</span>
+              <span class="reward-value">隐藏对白解锁</span>
+            </div>
+          </div>
+          <button class="btn btn-primary achievement-close" @click="closeComboAchievement">
+            继续回忆 ✨
+          </button>
         </div>
       </div>
     </Transition>
@@ -160,6 +207,9 @@ const showSaveModal = ref(false)
 const showLoadModal = ref(false)
 const showChapterComplete = ref(false)
 const showRollbackConfirm = ref(false)
+const showComboAchievement = ref(false)
+const latestCombo = ref(null)
+const comboQueue = ref([])
 
 const currentChapter = computed(() => gameStore.currentChapter)
 const currentScene = computed(() => gameStore.currentScene)
@@ -170,6 +220,11 @@ const showRecoveryModal = computed(() => gameStore.showRecoveryModal)
 const recoveryData = computed(() => gameStore.recoveryData)
 const lastAutoSaveTime = computed(() => gameStore.lastAutoSaveTime)
 const hasChapterSnapshot = computed(() => gameStore.hasChapterSnapshot())
+const triggeredCombos = computed(() => gameStore.triggeredCombos)
+const currentSceneCombos = computed(() => gameStore.currentSceneCombos)
+const comboBonusTotal = computed(() => gameStore.comboBonusTotal)
+const sceneBackgroundOverride = computed(() => gameStore.sceneBackgroundOverride)
+const comboJustTriggered = computed(() => gameStore.comboJustTriggered)
 
 const currentSceneBackground = computed(() => {
   if (currentScene.value?.background) {
@@ -212,8 +267,52 @@ const handleMaterialSelect = (material) => {
   }
 }
 
-const handleMaterialPlaced = (material) => {
-  console.log('Material placed:', material)
+const handleMaterialPlaced = (data) => {
+  console.log('Material placed:', data)
+  if (data?.result?.combosTriggered && data.result.combosTriggered.length > 0) {
+    data.result.combosTriggered.forEach((combo, idx) => {
+      const fullCombo = currentSceneCombos.value.find(c => c.name === combo.name)
+      if (fullCombo) {
+        setTimeout(() => {
+          comboQueue.value.push(fullCombo)
+          if (!showComboAchievement.value) {
+            showNextComboAchievement()
+          }
+        }, idx * 500)
+      }
+    })
+  }
+}
+
+const showNextComboAchievement = () => {
+  if (comboQueue.value.length === 0) return
+  latestCombo.value = comboQueue.value.shift()
+  showComboAchievement.value = true
+}
+
+const closeComboAchievement = () => {
+  showComboAchievement.value = false
+  setTimeout(() => {
+    if (comboQueue.value.length > 0) {
+      showNextComboAchievement()
+    }
+  }, 300)
+}
+
+const getConfettiStyle = (i) => {
+  const colors = ['#ec4899', '#8b5cf6', '#f59e0b', '#10b981', '#3b82f6', '#ef4444']
+  const left = (i * 8.3) + Math.random() * 5
+  const delay = Math.random() * 0.5
+  const duration = 1.5 + Math.random() * 1.5
+  const color = colors[i % colors.length]
+  const size = 16 + Math.random() * 12
+  return {
+    left: `${left}%`,
+    animationDelay: `${delay}s`,
+    animationDuration: `${duration}s`,
+    fontSize: `${size}px`,
+    color: color
+  }
 }
 
 const openSaveModal = () => {
@@ -428,8 +527,308 @@ onUnmounted(() => {
   gap: 20px;
 }
 
+.combo-progress-bar {
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid #e9d5ff;
+}
+
+.combo-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.combo-progress-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+.combo-progress-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.combo-progress-track {
+  height: 8px;
+  background: #f3e8ff;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.combo-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ec4899, #8b5cf6, #f59e0b);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: progressGlow 2s ease infinite;
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes progressGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 .canvas-wrapper {
   position: relative;
+  transition: transform 0.6s ease, filter 0.6s ease;
+}
+
+.canvas-wrapper.scene-shift {
+  animation: sceneShift 1s ease;
+}
+
+@keyframes sceneShift {
+  0% { transform: scale(0.98); filter: brightness(0.9); }
+  50% { transform: scale(1.02); filter: brightness(1.1); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.combo-stats-chip {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.35);
+  z-index: 100;
+  animation: chipFloat 3s ease-in-out infinite;
+}
+
+@keyframes chipFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.chip-icon {
+  font-size: 1.1rem;
+}
+
+.chip-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.combo-achievement-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  backdrop-filter: blur(8px);
+}
+
+.combo-achievement-card {
+  position: relative;
+  background: white;
+  border-radius: 24px;
+  padding: 40px 35px;
+  text-align: center;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  border: 3px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(135deg, #ec4899, #8b5cf6, #f59e0b);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.achievement-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  animation: confettiFall linear infinite;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  100% {
+    transform: translateY(500px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.achievement-badge {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 15px;
+  background: linear-gradient(135deg, #fef3c7, #fce7f3, #ede9fe);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(236, 72, 153, 0.25);
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 8px 25px rgba(236, 72, 153, 0.25); }
+  50% { transform: scale(1.08); box-shadow: 0 12px 35px rgba(139, 92, 246, 0.4); }
+}
+
+.achievement-icon {
+  font-size: 2.5rem;
+  animation: iconBounce 1.5s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(10deg); }
+}
+
+.achievement-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #8b5cf6;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.achievement-name {
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+
+.achievement-desc {
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.achievement-rewards {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+}
+
+.reward-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #fef3c7, #fce7f3);
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+.reward-icon {
+  font-size: 1.1rem;
+}
+
+.reward-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #9d174d;
+}
+
+.achievement-close {
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  border: none;
+  padding: 12px 32px;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.achievement-close:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+}
+
+.combo-achievement-enter-active {
+  animation: achievementIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.combo-achievement-leave-active {
+  animation: achievementOut 0.3s ease;
+}
+
+@keyframes achievementIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes achievementOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.combo-achievement-enter-active .combo-achievement-card {
+  animation: cardIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.combo-achievement-leave-active .combo-achievement-card {
+  animation: cardOut 0.3s ease forwards;
+}
+
+@keyframes cardIn {
+  0% {
+    transform: scale(0.5) translateY(50px) rotate(-5deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05) translateY(-10px) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) translateY(0) rotate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes cardOut {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9) translateY(-30px);
+    opacity: 0;
+  }
 }
 
 .notification-wrapper {
@@ -661,6 +1060,49 @@ onUnmounted(() => {
   .recovery-actions,
   .rollback-actions {
     flex-direction: column;
+  }
+
+  .combo-stats-chip {
+    bottom: 12px;
+    right: 12px;
+    padding: 8px 14px;
+  }
+
+  .chip-text {
+    font-size: 0.75rem;
+  }
+
+  .combo-achievement-card {
+    padding: 30px 22px;
+  }
+
+  .achievement-badge {
+    width: 64px;
+    height: 64px;
+  }
+
+  .achievement-icon {
+    font-size: 2rem;
+  }
+
+  .achievement-name {
+    font-size: 1.4rem;
+  }
+
+  .achievement-desc {
+    font-size: 0.8rem;
+  }
+
+  .achievement-rewards {
+    gap: 10px;
+  }
+
+  .reward-item {
+    padding: 6px 12px;
+  }
+
+  .reward-value {
+    font-size: 0.75rem;
   }
 }
 </style>

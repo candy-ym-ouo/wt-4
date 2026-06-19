@@ -1,5 +1,6 @@
 <template>
-  <div class="canvas-container" ref="containerRef">
+  <div class="canvas-container" ref="containerRef" :class="{ 'has-overlay': activeSceneFeedback }">
+    <div v-if="sceneBackgroundOverride" class="bg-transition-layer" :style="{ background: sceneBackgroundOverride }"></div>
     <v-stage
       ref="stageRef"
       :config="stageConfig"
@@ -20,27 +21,29 @@
         />
 
         <v-group
-          v-for="(placed, index) in placedMaterials"
-          :key="`${placed.id}-${index}`"
+          v-for="(placed, index) in allPlacedMaterials"
+          :key="`${placed.id}-${index}-${placed.isOptional ? 'opt' : 'req'}`"
           :config="{
             x: placed.x,
             y: placed.y,
             rotation: placed.rotation || 0,
-            draggable: true,
+            draggable: !placed.isOptional,
             offsetX: 30,
             offsetY: 30
           }"
-          @dragend="(e) => handleDragEnd(e, index)"
+          @dragend="(e) => handleDragEnd(e, index, placed.isOptional)"
         >
           <component
             :is="getShapeComponent(placed.id)"
             :material="getMaterialById(placed.id)"
             :index="index"
+            :is-optional="placed.isOptional"
+            :is-perfect="placed.isPerfect"
           />
         </v-group>
 
         <v-group
-          v-if="selectedMaterial && isWaitingForMaterial"
+          v-if="selectedMaterial && (isWaitingForMaterial || canPlaceOptionalMaterial)"
           :config="{
             x: mousePos.x,
             y: mousePos.y,
@@ -64,6 +67,11 @@
       <span class="hint-text">请放置「{{ requiredMaterial.name }}」（放在画面中央有加成哦～）</span>
     </div>
 
+    <div v-else-if="canPlaceOptionalMaterial && availableOptionalMaterials.length > 0" class="material-hint optional-hint pulse">
+      <span class="hint-icon">🎨</span>
+      <span class="hint-text">可放置额外素材：{{ availableOptionalMaterialNames }}，尝试解锁组合！</span>
+    </div>
+
     <transition name="feedback">
       <div
         v-if="placementFeedback"
@@ -73,6 +81,25 @@
         {{ placementFeedback.message }}
       </div>
     </transition>
+
+    <transition name="combo-overlay">
+      <div v-if="comboJustTriggered" class="combo-trigger-overlay">
+        <div class="combo-glow"></div>
+        <div class="combo-card">
+          <div class="combo-burst">🌟</div>
+          <div class="combo-label">组合解锁</div>
+          <div class="combo-name">{{ comboJustTriggered.name }}</div>
+          <div class="combo-desc">{{ comboJustTriggered.description }}</div>
+          <div class="combo-reward">+{{ comboJustTriggered.emotionBonus }} 💕 额外情绪加成</div>
+        </div>
+      </div>
+    </transition>
+
+    <div v-if="activeSceneFeedback" class="scene-effects-layer" :class="activeSceneFeedback.type">
+      <div v-for="i in particleCount" :key="i" class="particle" :style="getParticleStyle(i)">
+        {{ getParticleEmoji(activeSceneFeedback.effect) }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -99,14 +126,30 @@ const stageHeight = ref(450)
 const mousePos = ref({ x: 0, y: 0 })
 const selectedMaterial = ref(null)
 const placementFeedback = ref(null)
+const particleCount = ref(15)
 
 const placedMaterials = computed(() => gameStore.placedMaterials)
+const optionalMaterialsPlaced = computed(() => gameStore.optionalMaterialsPlaced)
 const isWaitingForMaterial = computed(() => gameStore.isWaitingForMaterial)
 const requiredMaterialId = computed(() => gameStore.requiredMaterialId)
+const canPlaceOptionalMaterial = computed(() => gameStore.canPlaceOptionalMaterial)
+const availableOptionalMaterials = computed(() => gameStore.availableOptionalMaterials)
+const sceneBackgroundOverride = computed(() => gameStore.sceneBackgroundOverride)
+const activeSceneFeedback = computed(() => gameStore.activeSceneFeedback)
+const comboJustTriggered = computed(() => gameStore.comboJustTriggered)
+
+const allPlacedMaterials = computed(() => [
+  ...placedMaterials.value,
+  ...optionalMaterialsPlaced.value
+])
 
 const requiredMaterial = computed(() => {
   if (!requiredMaterialId.value) return null
   return gameStore.getMaterialById(requiredMaterialId.value)
+})
+
+const availableOptionalMaterialNames = computed(() => {
+  return availableOptionalMaterials.value.map(m => m.name).join('、')
 })
 
 const stageConfig = computed(() => ({
@@ -115,7 +158,8 @@ const stageConfig = computed(() => ({
 }))
 
 const gradientColors = computed(() => {
-  const colors = props.background.match(/#[a-fA-F0-9]{6}/g) || ['#fef3c7', '#fde68a']
+  const bg = sceneBackgroundOverride.value || props.background
+  const colors = bg.match(/#[a-fA-F0-9]{6}/g) || ['#fef3c7', '#fde68a']
   return [0, colors[0], 1, colors[1] || colors[0]]
 })
 
@@ -148,44 +192,61 @@ const getShapeComponent = (materialId) => {
 }
 
 const handleStageClick = (e) => {
-  if (!isWaitingForMaterial.value || !selectedMaterial.value) return
+  if (!selectedMaterial.value) return
+  if (!isWaitingForMaterial.value && !canPlaceOptionalMaterial.value) return
 
   const stage = e.target.getStage()
   const pos = stage.getPointerPosition()
 
-  if (selectedMaterial.value.id === requiredMaterialId.value) {
-    const result = gameStore.placeMaterial(
-      selectedMaterial.value.id,
-      pos,
-      stageWidth.value,
-      stageHeight.value
-    )
-    if (result && result.success) {
-      if (result.isPerfect) {
-        placementFeedback.value = {
-          type: 'perfect',
-          message: `完美放置！+${result.bonus} 情绪加成 ✨`,
-          x: pos.x,
-          y: pos.y
-        }
-      } else {
-        placementFeedback.value = {
-          type: 'normal',
-          message: '放置成功',
-          x: pos.x,
-          y: pos.y
-        }
-      }
-      setTimeout(() => {
-        placementFeedback.value = null
-      }, 1500)
-      emit('materialPlaced', selectedMaterial.value)
-      selectedMaterial.value = null
+  if (isWaitingForMaterial.value) {
+    if (selectedMaterial.value.id !== requiredMaterialId.value) return
+  } else if (canPlaceOptionalMaterial.value) {
+    if (!availableOptionalMaterials.value.some(m => m.id === selectedMaterial.value.id)) return
+  }
+
+  const result = gameStore.placeMaterial(
+    selectedMaterial.value.id,
+    pos,
+    stageWidth.value,
+    stageHeight.value
+  )
+
+  if (result && result.success) {
+    let feedbackType = result.isPerfect ? 'perfect' : 'normal'
+    let feedbackMsg = result.isPerfect
+      ? `完美放置！+${result.bonus} 情绪加成 ✨`
+      : '放置成功'
+
+    if (result.combosTriggered && result.combosTriggered.length > 0) {
+      feedbackType = 'combo'
+      const comboNames = result.combosTriggered.map(c => c.name).join('、')
+      const totalBonus = result.combosTriggered.reduce((sum, c) => sum + (c.bonus || 0), 0)
+      feedbackMsg = `🎉 组合「${comboNames}」解锁！共 +${totalBonus} 额外加成`
+    } else if (result.isOptional) {
+      feedbackType = 'optional'
+      feedbackMsg = result.isPerfect
+        ? `额外素材完美放置！+${result.bonus} ✨`
+        : '额外素材放置成功'
     }
+
+    placementFeedback.value = {
+      type: feedbackType,
+      message: feedbackMsg,
+      x: pos.x,
+      y: pos.y
+    }
+
+    setTimeout(() => {
+      placementFeedback.value = null
+    }, result.combosTriggered?.length > 0 ? 2500 : 1500)
+
+    emit('materialPlaced', { material: selectedMaterial.value, result })
+    selectedMaterial.value = null
   }
 }
 
-const handleDragEnd = (e, index) => {
+const handleDragEnd = (e, index, isOptional) => {
+  if (isOptional) return
   const node = e.target
   const newX = node.x()
   const newY = node.y()
@@ -212,7 +273,7 @@ const handleMouseMove = (e) => {
 }
 
 const selectMaterial = (material) => {
-  if (!isWaitingForMaterial.value) return
+  if (!isWaitingForMaterial.value && !canPlaceOptionalMaterial.value) return
   selectedMaterial.value = material
 }
 
@@ -228,8 +289,44 @@ const handleResize = () => {
   stageHeight.value = Math.min(450, width * 0.75)
 }
 
+const getParticleEmoji = (effect) => {
+  const emojiMap = {
+    petals: '🌸',
+    sparkle: '✨',
+    flutter: '🦋',
+    notes: '🎵',
+    hearts: '💖',
+    stars: '⭐',
+    sunshine: '☀️',
+    clouds: '☁️',
+    leaves: '🍂',
+    pages: '📖',
+    warm: '💫',
+    time: '⏰',
+    bloom: '🌺',
+    rainbow_bloom: '🌈'
+  }
+  return emojiMap[effect] || '✨'
+}
+
+const getParticleStyle = (i) => {
+  const seed = i * 37
+  const left = (seed * 7.3) % 100
+  const delay = (seed * 0.13) % 5
+  const duration = 3 + ((seed * 0.21) % 4)
+  const size = 18 + ((seed % 5) * 6)
+  const rotate = ((seed * 17) % 360)
+  return {
+    left: `${left}%`,
+    animationDelay: `${delay}s`,
+    animationDuration: `${duration}s`,
+    fontSize: `${size}px`,
+    transform: `rotate(${rotate}deg)`
+  }
+}
+
 const FlowerShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-circle', {
@@ -277,6 +374,27 @@ const FlowerShape = {
           opacity: 0.9
         }
       }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 38,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.4,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 36,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.3
+        }
+      }) : null,
       h('v-shadow', {
         config: {
           color: 'black',
@@ -290,7 +408,7 @@ const FlowerShape = {
 }
 
 const ButterflyShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-ellipse', {
@@ -346,6 +464,27 @@ const ButterflyShape = {
           fill: '#4b5563'
         }
       }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 38,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.4,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 36,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.3
+        }
+      }) : null,
       h('v-shadow', {
         config: {
           color: 'black',
@@ -359,7 +498,7 @@ const ButterflyShape = {
 }
 
 const RectangleShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-rect', {
@@ -403,13 +542,38 @@ const RectangleShape = {
           stroke: '#d1d5db',
           strokeWidth: 1
         }
-      })
+      }),
+      props.isPerfect ? h('v-rect', {
+        config: {
+          x: -29,
+          y: -34,
+          width: 58,
+          height: 68,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.5,
+          cornerRadius: 4,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-rect', {
+        config: {
+          x: -28,
+          y: -33,
+          width: 56,
+          height: 66,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.35,
+          cornerRadius: 4
+        }
+      }) : null
     ])
   }
 }
 
 const CircleShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-circle', {
@@ -431,13 +595,34 @@ const CircleShape = {
           radius: 8,
           fill: 'rgba(255,255,255,0.4)'
         }
-      })
+      }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 36,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.45,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 34,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.35
+        }
+      }) : null
     ])
   }
 }
 
 const CicadaShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-ellipse', {
@@ -483,13 +668,34 @@ const CicadaShape = {
           opacity: 0.6,
           rotation: 15
         }
-      })
+      }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 38,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.4,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 36,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.3
+        }
+      }) : null
     ])
   }
 }
 
 const BookShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-rect', {
@@ -550,13 +756,38 @@ const BookShape = {
           stroke: '#9ca3af',
           strokeWidth: 1
         }
-      })
+      }),
+      props.isPerfect ? h('v-rect', {
+        config: {
+          x: -32,
+          y: -24,
+          width: 64,
+          height: 48,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.45,
+          cornerRadius: 3,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-rect', {
+        config: {
+          x: -30,
+          y: -22,
+          width: 60,
+          height: 44,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.35,
+          cornerRadius: 3
+        }
+      }) : null
     ])
   }
 }
 
 const LeafShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-path', {
@@ -617,13 +848,34 @@ const LeafShape = {
           stroke: 'rgba(0,0,0,0.15)',
           strokeWidth: 1
         }
-      })
+      }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 40,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.4,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 38,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.3
+        }
+      }) : null
     ])
   }
 }
 
 const CupShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-path', {
@@ -686,13 +938,34 @@ const CupShape = {
           strokeWidth: 2,
           fill: null
         }
-      })
+      }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 42,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.4,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 40,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.3
+        }
+      }) : null
     ])
   }
 }
 
 const SnowflakeShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-line', {
@@ -762,13 +1035,34 @@ const SnowflakeShape = {
           radius: 4,
           fill: props.material.color
         }
-      })
+      }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 38,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.4,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 36,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.3
+        }
+      }) : null
     ])
   }
 }
 
 const ScarfShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-rect', {
@@ -825,13 +1119,38 @@ const ScarfShape = {
           fill: 'rgba(255,255,255,0.3)',
           cornerRadius: 2
         }
-      })
+      }),
+      props.isPerfect ? h('v-rect', {
+        config: {
+          x: -30,
+          y: -16,
+          width: 60,
+          height: 60,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.4,
+          cornerRadius: 6,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-rect', {
+        config: {
+          x: -28,
+          y: -14,
+          width: 56,
+          height: 56,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.35,
+          cornerRadius: 6
+        }
+      }) : null
     ])
   }
 }
 
 const HeartShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-path', {
@@ -853,13 +1172,34 @@ const HeartShape = {
           fill: 'rgba(255,255,255,0.4)',
           rotation: -30
         }
-      })
+      }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: -5,
+          radius: 42,
+          stroke: '#fbbf24',
+          strokeWidth: 2.5,
+          opacity: 0.5,
+          dash: [6, 4]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: -5,
+          radius: 40,
+          stroke: '#8b5cf6',
+          strokeWidth: 2,
+          opacity: 0.4
+        }
+      }) : null
     ])
   }
 }
 
 const CloudShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-circle', {
@@ -898,13 +1238,34 @@ const CloudShape = {
           radiusY: 10,
           fill: props.material.color
         }
-      })
+      }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 38,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.4,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 36,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.3
+        }
+      }) : null
     ])
   }
 }
 
 const StarShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     const outerRadius = 25
     const innerRadius = 10
@@ -933,13 +1294,34 @@ const StarShape = {
           radius: 4,
           fill: 'rgba(255,255,255,0.5)'
         }
-      })
+      }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 38,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.5,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 36,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.35
+        }
+      }) : null
     ])
   }
 }
 
 const NoteShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
     return () => h('v-group', {}, [
       h('v-ellipse', {
@@ -987,30 +1369,80 @@ const NoteShape = {
           strokeWidth: 3,
           lineCap: 'round'
         }
-      })
+      }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 40,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.4,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 38,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.3
+        }
+      }) : null
     ])
   }
 }
 
 const MaterialShape = {
-  props: ['material', 'index'],
+  props: ['material', 'index', 'isOptional', 'isPerfect'],
   setup(props) {
-    return () => h('v-circle', {
-      config: {
-        x: 0,
-        y: 0,
-        radius: 25,
-        fill: props.material?.color || '#ccc',
-        shadowColor: 'black',
-        shadowBlur: 5,
-        shadowOffset: { x: 2, y: 2 },
-        shadowOpacity: 0.2
-      }
-    })
+    return () => h('v-group', {}, [
+      h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 25,
+          fill: props.material?.color || '#ccc',
+          shadowColor: 'black',
+          shadowBlur: 5,
+          shadowOffset: { x: 2, y: 2 },
+          shadowOpacity: 0.2
+        }
+      }),
+      props.isPerfect ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 34,
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 0.45,
+          dash: [5, 5]
+        }
+      }) : null,
+      props.isOptional ? h('v-circle', {
+        config: {
+          x: 0,
+          y: 0,
+          radius: 32,
+          stroke: '#8b5cf6',
+          strokeWidth: 1.5,
+          opacity: 0.35
+        }
+      }) : null
+    ])
   }
 }
 
 watch(() => props.background, () => {
+  if (layerRef.value) {
+    layerRef.value.getLayer().batchDraw()
+  }
+})
+
+watch(sceneBackgroundOverride, () => {
   if (layerRef.value) {
     layerRef.value.getLayer().batchDraw()
   }
@@ -1021,6 +1453,20 @@ watch(() => gameStore.placedMaterials, () => {
     layerRef.value.getLayer().batchDraw()
   }
 }, { deep: true })
+
+watch(optionalMaterialsPlaced, () => {
+  if (layerRef.value) {
+    layerRef.value.getLayer().batchDraw()
+  }
+}, { deep: true })
+
+watch(comboJustTriggered, (val) => {
+  if (val && layerRef.value) {
+    setTimeout(() => {
+      layerRef.value.getLayer().batchDraw()
+    }, 100)
+  }
+})
 
 onMounted(() => {
   handleResize()
@@ -1048,6 +1494,27 @@ defineExpose({
   border-radius: 12px;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
+  transition: box-shadow 0.4s ease;
+}
+
+.canvas-container.has-overlay {
+  box-shadow: 0 10px 40px rgba(244, 114, 182, 0.25), 0 0 0 1px rgba(244, 114, 182, 0.1);
+}
+
+.bg-transition-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 1s ease;
+  animation: bgFadeIn 1s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes bgFadeIn {
+  to {
+    opacity: 1;
+  }
 }
 
 .material-hint {
@@ -1065,6 +1532,13 @@ defineExpose({
   z-index: 10;
   font-weight: 500;
   color: var(--accent-pink);
+  max-width: 90%;
+}
+
+.material-hint.optional-hint {
+  background: linear-gradient(135deg, rgba(250, 245, 255, 0.98), rgba(245, 243, 255, 0.98));
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
 .hint-icon {
@@ -1072,7 +1546,10 @@ defineExpose({
 }
 
 .hint-text {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .placement-feedback {
@@ -1081,7 +1558,7 @@ defineExpose({
   padding: 8px 16px;
   border-radius: 20px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   z-index: 20;
   pointer-events: none;
   white-space: nowrap;
@@ -1097,6 +1574,20 @@ defineExpose({
   background: rgba(255, 255, 255, 0.95);
   color: #4b5563;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.placement-feedback.optional {
+  background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+  color: white;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
+}
+
+.placement-feedback.combo {
+  background: linear-gradient(135deg, #ec4899, #f472b6, #8b5cf6);
+  color: white;
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+  font-size: 0.9rem;
+  padding: 10px 20px;
 }
 
 .feedback-enter-active {
@@ -1126,6 +1617,197 @@ defineExpose({
   to {
     opacity: 0;
     transform: translate(-50%, -50%) translateY(-30px);
+  }
+}
+
+.combo-trigger-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%);
+}
+
+.combo-glow {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.4) 0%, rgba(139, 92, 246, 0.2) 40%, transparent 70%);
+  animation: glowPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+.combo-card {
+  position: relative;
+  background: white;
+  border-radius: 20px;
+  padding: 28px 32px;
+  text-align: center;
+  max-width: 85%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: comboCardIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 2px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(135deg, #ec4899, #8b5cf6, #f59e0b);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+@keyframes comboCardIn {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-10deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+.combo-burst {
+  font-size: 3rem;
+  margin-bottom: 8px;
+  animation: burstSpin 2s linear infinite;
+  display: inline-block;
+}
+
+@keyframes burstSpin {
+  0%, 100% {
+    transform: rotate(-10deg) scale(1);
+  }
+  50% {
+    transform: rotate(10deg) scale(1.1);
+  }
+}
+
+.combo-label {
+  font-size: 0.8rem;
+  color: #8b5cf6;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.combo-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+
+.combo-desc {
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.combo-reward {
+  display: inline-block;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.combo-overlay-enter-active {
+  animation: comboOverlayIn 0.3s ease;
+}
+
+.combo-overlay-leave-active {
+  animation: comboOverlayOut 0.5s ease;
+}
+
+@keyframes comboOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes comboOverlayOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+  100% {
+    .combo-card {
+      transform: scale(1.1) translateY(-20px);
+    }
+  }
+}
+
+.scene-effects-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 15;
+}
+
+.particle {
+  position: absolute;
+  top: -50px;
+  opacity: 0;
+  animation: particleFall linear infinite;
+}
+
+@keyframes particleFall {
+  0% {
+    transform: translateY(-50px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(600px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .material-hint {
+    top: 12px;
+    padding: 10px 18px;
+  }
+
+  .hint-text {
+    font-size: 0.8rem;
+  }
+
+  .combo-card {
+    padding: 22px 24px;
+  }
+
+  .combo-name {
+    font-size: 1.3rem;
+  }
+
+  .combo-desc {
+    font-size: 0.8rem;
+  }
+
+  .particle {
+    font-size: 14px !important;
   }
 }
 </style>

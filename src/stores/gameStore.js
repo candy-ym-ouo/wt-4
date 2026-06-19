@@ -38,6 +38,16 @@ export const useGameStore = defineStore('game', () => {
   const gameCompleted = ref(false)
   const currentEnding = ref(null)
 
+  const triggeredCombos = ref([])
+  const pendingHiddenDialogues = ref([])
+  const isShowingHiddenDialogue = ref(false)
+  const sceneBackgroundOverride = ref(null)
+  const activeSceneFeedback = ref(null)
+  const comboBonusTotal = ref(0)
+  const optionalMaterialsPlaced = ref([])
+  const requiredMaterialPlaced = ref(false)
+  const comboJustTriggered = ref(null)
+
   const autoSaveEnabled = ref(true)
   const lastAutoSaveTime = ref(null)
   const autoSaveData = ref(null)
@@ -58,16 +68,43 @@ export const useGameStore = defineStore('game', () => {
     return scenes.value[currentSceneId.value] || null
   })
 
+  const activeHiddenDialogue = ref(null)
+
   const currentDialogue = computed(() => {
+    if (activeHiddenDialogue.value) {
+      return activeHiddenDialogue.value
+    }
     if (!currentScene.value) return null
     return currentScene.value.dialogues[currentDialogueIndex.value] || null
   })
 
   const availableMaterials = computed(() => {
     if (!currentChapter.value) return []
-    return materials.value.filter(m => 
-      currentChapter.value.requiredMaterials.includes(m.id)
+    const chapterMaterials = currentChapter.value.requiredMaterials || []
+    const sceneOptionals = currentScene.value?.optionalMaterials || []
+    const allIds = [...new Set([...chapterMaterials, ...sceneOptionals])]
+    return materials.value.filter(m => allIds.includes(m.id))
+  })
+
+  const currentSceneCombos = computed(() => {
+    if (!currentScene.value?.materialCombos) return []
+    return currentScene.value.materialCombos
+  })
+
+  const currentSceneOptionalMaterials = computed(() => {
+    if (!currentScene.value?.optionalMaterials) return []
+    return materials.value.filter(m => currentScene.value.optionalMaterials.includes(m.id))
+  })
+
+  const availableOptionalMaterials = computed(() => {
+    if (!requiredMaterialPlaced.value) return []
+    return currentSceneOptionalMaterials.value.filter(m => 
+      !optionalMaterialsPlaced.value.some(p => p.id === m.id)
     )
+  })
+
+  const canPlaceOptionalMaterial = computed(() => {
+    return requiredMaterialPlaced.value && isWaitingForMaterial.value === false && availableOptionalMaterials.value.length > 0
   })
 
   const canProceed = computed(() => {
@@ -100,6 +137,16 @@ export const useGameStore = defineStore('game', () => {
     requiredMaterialId.value = null
     gameCompleted.value = false
     currentEnding.value = null
+    triggeredCombos.value = []
+    pendingHiddenDialogues.value = []
+    isShowingHiddenDialogue.value = false
+    sceneBackgroundOverride.value = null
+    activeSceneFeedback.value = null
+    comboBonusTotal.value = 0
+    optionalMaterialsPlaced.value = []
+    requiredMaterialPlaced.value = false
+    comboJustTriggered.value = null
+    activeHiddenDialogue.value = null
   }
 
   const resetStats = () => {
@@ -110,6 +157,22 @@ export const useGameStore = defineStore('game', () => {
 
   const nextDialogue = () => {
     if (!currentScene.value) return
+
+    if (activeHiddenDialogue.value) {
+      activeHiddenDialogue.value = null
+      isShowingHiddenDialogue.value = false
+      if (pendingHiddenDialogues.value.length > 0) {
+        const nextHidden = pendingHiddenDialogues.value.shift()
+        showHiddenDialogue(nextHidden)
+      }
+      return
+    }
+
+    if (pendingHiddenDialogues.value.length > 0) {
+      const hiddenDialogue = pendingHiddenDialogues.value.shift()
+      showHiddenDialogue(hiddenDialogue)
+      return
+    }
 
     const dialogue = currentDialogue.value
     if (!dialogue) return
@@ -126,6 +189,7 @@ export const useGameStore = defineStore('game', () => {
     if (dialogue.trigger === 'material_required') {
       isWaitingForMaterial.value = true
       requiredMaterialId.value = currentScene.value.requiredMaterial
+      requiredMaterialPlaced.value = false
       return
     } else if (dialogue.trigger === 'chapter_complete') {
       completeChapter()
@@ -140,11 +204,134 @@ export const useGameStore = defineStore('game', () => {
     } else if (currentScene.value.nextScene) {
       currentSceneId.value = currentScene.value.nextScene
       currentDialogueIndex.value = 0
+      sceneBackgroundOverride.value = null
+      activeSceneFeedback.value = null
+      optionalMaterialsPlaced.value = []
+      requiredMaterialPlaced.value = false
+      comboJustTriggered.value = null
+    }
+  }
+
+  const showHiddenDialogue = (hiddenDialogue) => {
+    activeHiddenDialogue.value = { ...hiddenDialogue }
+    isShowingHiddenDialogue.value = true
+
+    const baseEmotion = hiddenDialogue.emotionChange || 0
+    const randomFluctuation = Math.floor(Math.random() * 3)
+    const finalEmotion = Math.max(0, baseEmotion + randomFluctuation)
+    emotionValue.value += finalEmotion
+    totalDialogueCount.value++
+    if (randomFluctuation > 0) {
+      positiveBonus.value += randomFluctuation
+    }
+  }
+
+  const checkMaterialCombos = () => {
+    if (!currentScene.value?.materialCombos) return []
+
+    const allPlacedIds = [
+      ...placedMaterials.value.map(p => p.id),
+      ...optionalMaterialsPlaced.value.map(p => p.id)
+    ]
+    const triggered = []
+
+    for (const combo of currentScene.value.materialCombos) {
+      if (triggeredCombos.value.includes(combo.id)) continue
+
+      const allMaterialsPresent = combo.materials.every(matId => allPlacedIds.includes(matId))
+      if (allMaterialsPresent) {
+        triggered.push(combo)
+      }
+    }
+
+    return triggered
+  }
+
+  const triggerCombo = (combo) => {
+    if (triggeredCombos.value.includes(combo.id)) return null
+
+    triggeredCombos.value.push(combo.id)
+    comboBonusTotal.value += combo.emotionBonus || 0
+    emotionValue.value += combo.emotionBonus || 0
+
+    if (combo.hiddenDialogue) {
+      pendingHiddenDialogues.value.push({ ...combo.hiddenDialogue })
+    }
+
+    if (combo.sceneFeedback) {
+      activeSceneFeedback.value = combo.sceneFeedback
+      if (combo.sceneFeedback.backgroundShift) {
+        sceneBackgroundOverride.value = combo.sceneFeedback.backgroundShift
+      }
+    }
+
+    comboJustTriggered.value = combo
+
+    setTimeout(() => {
+      if (comboJustTriggered.value?.id === combo.id) {
+        comboJustTriggered.value = null
+      }
+    }, 4000)
+
+    return {
+      name: combo.name,
+      bonus: combo.emotionBonus,
+      description: combo.description
+    }
+  }
+
+  const placeOptionalMaterial = (materialId, position, stageWidth = 800, stageHeight = 500) => {
+    if (!canPlaceOptionalMaterial.value) return false
+    if (optionalMaterialsPlaced.value.some(p => p.id === materialId)) return false
+
+    const material = getMaterialById(materialId)
+    if (!material) return false
+
+    const centerX = stageWidth / 2
+    const centerY = stageHeight / 2
+    const distance = Math.sqrt(
+      Math.pow(position.x - centerX, 2) +
+      Math.pow(position.y - centerY, 2)
+    )
+    const maxDistance = Math.sqrt(
+      Math.pow(centerX, 2) + Math.pow(centerY, 2)
+    )
+    const distanceRatio = distance / maxDistance
+    const isPerfect = distanceRatio < 0.4
+    const placementBonus = isPerfect ? Math.ceil(material.emotion * 0.3) : 0
+
+    optionalMaterialsPlaced.value.push({
+      id: materialId,
+      x: position.x,
+      y: position.y,
+      rotation: Math.random() * 20 - 10,
+      isPerfect: isPerfect,
+      isOptional: true
+    })
+
+    emotionValue.value += material.emotion + placementBonus
+    if (isPerfect) {
+      perfectPlacementCount.value++
+    }
+
+    const newlyTriggered = checkMaterialCombos()
+    const comboResults = newlyTriggered.map(combo => triggerCombo(combo)).filter(Boolean)
+
+    return {
+      success: true,
+      isOptional: true,
+      isPerfect: isPerfect,
+      bonus: placementBonus,
+      combosTriggered: comboResults
     }
   }
 
   const placeMaterial = (materialId, position, stageWidth = 800, stageHeight = 500) => {
-    if (!isWaitingForMaterial.value || requiredMaterialId.value !== materialId) return false
+    if (!isWaitingForMaterial.value) {
+      return placeOptionalMaterial(materialId, position, stageWidth, stageHeight)
+    }
+
+    if (requiredMaterialId.value !== materialId) return false
 
     const material = getMaterialById(materialId)
     if (!material) return false
@@ -175,17 +362,35 @@ export const useGameStore = defineStore('game', () => {
       perfectPlacementCount.value++
     }
 
+    requiredMaterialPlaced.value = true
     isWaitingForMaterial.value = false
     requiredMaterialId.value = null
+
+    const newlyTriggered = checkMaterialCombos()
+    const comboResults = newlyTriggered.map(combo => triggerCombo(combo)).filter(Boolean)
 
     if (currentDialogueIndex.value < currentScene.value.dialogues.length - 1) {
       currentDialogueIndex.value++
     } else if (currentScene.value.nextScene) {
       currentSceneId.value = currentScene.value.nextScene
       currentDialogueIndex.value = 0
+      sceneBackgroundOverride.value = null
+      activeSceneFeedback.value = null
+      optionalMaterialsPlaced.value = []
+      requiredMaterialPlaced.value = false
+      comboJustTriggered.value = null
     }
 
-    return { success: true, isPerfect: isPerfect, bonus: placementBonus }
+    return {
+      success: true,
+      isPerfect: isPerfect,
+      bonus: placementBonus,
+      combosTriggered: comboResults
+    }
+  }
+
+  const dismissComboNotification = () => {
+    comboJustTriggered.value = null
   }
 
   const completeChapter = () => {
@@ -388,6 +593,15 @@ export const useGameStore = defineStore('game', () => {
       perfectPlacementCount: perfectPlacementCount.value,
       totalDialogueCount: totalDialogueCount.value,
       positiveBonus: positiveBonus.value,
+      triggeredCombos: triggeredCombos.value,
+      pendingHiddenDialogues: pendingHiddenDialogues.value,
+      isShowingHiddenDialogue: isShowingHiddenDialogue.value,
+      sceneBackgroundOverride: sceneBackgroundOverride.value,
+      activeSceneFeedback: activeSceneFeedback.value,
+      comboBonusTotal: comboBonusTotal.value,
+      optionalMaterialsPlaced: optionalMaterialsPlaced.value,
+      requiredMaterialPlaced: requiredMaterialPlaced.value,
+      activeHiddenDialogue: activeHiddenDialogue.value,
       timestamp: Date.now()
     }
     return {
@@ -485,6 +699,16 @@ export const useGameStore = defineStore('game', () => {
     perfectPlacementCount.value = saveData.perfectPlacementCount || 0
     totalDialogueCount.value = saveData.totalDialogueCount || 0
     positiveBonus.value = saveData.positiveBonus || 0
+    triggeredCombos.value = saveData.triggeredCombos || []
+    pendingHiddenDialogues.value = saveData.pendingHiddenDialogues || []
+    isShowingHiddenDialogue.value = saveData.isShowingHiddenDialogue || false
+    sceneBackgroundOverride.value = saveData.sceneBackgroundOverride || null
+    activeSceneFeedback.value = saveData.activeSceneFeedback || null
+    comboBonusTotal.value = saveData.comboBonusTotal || 0
+    optionalMaterialsPlaced.value = saveData.optionalMaterialsPlaced || []
+    requiredMaterialPlaced.value = saveData.requiredMaterialPlaced || false
+    activeHiddenDialogue.value = saveData.activeHiddenDialogue || null
+    comboJustTriggered.value = null
     gameCompleted.value = false
     currentEnding.value = null
     return true
@@ -828,6 +1052,16 @@ export const useGameStore = defineStore('game', () => {
     saveSlots,
     gameCompleted,
     currentEnding,
+    triggeredCombos,
+    pendingHiddenDialogues,
+    isShowingHiddenDialogue,
+    sceneBackgroundOverride,
+    activeSceneFeedback,
+    comboBonusTotal,
+    optionalMaterialsPlaced,
+    requiredMaterialPlaced,
+    comboJustTriggered,
+    activeHiddenDialogue,
     autoSaveEnabled,
     lastAutoSaveTime,
     autoSaveData,
@@ -840,6 +1074,10 @@ export const useGameStore = defineStore('game', () => {
     currentScene,
     currentDialogue,
     availableMaterials,
+    currentSceneCombos,
+    currentSceneOptionalMaterials,
+    availableOptionalMaterials,
+    canPlaceOptionalMaterial,
     canProceed,
     emotionPercentage,
     getMaterialById,
@@ -848,6 +1086,10 @@ export const useGameStore = defineStore('game', () => {
     startChapterWithTracking,
     nextDialogue,
     placeMaterial,
+    placeOptionalMaterial,
+    checkMaterialCombos,
+    triggerCombo,
+    dismissComboNotification,
     completeChapter,
     completeGame,
     saveGame,
