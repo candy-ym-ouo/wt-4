@@ -1,7 +1,7 @@
 <template>
   <div 
     class="game-view page-container"
-    :class="'emotion-tier-' + currentEmotionTier.id"
+    :class="['emotion-tier-' + currentEmotionTier.id, 'time-' + currentEnvironment.timeOfDay, 'weather-' + currentEnvironment.weather]"
     :style="{ background: currentSceneBackground }"
   >
     <div class="emotion-tint-overlay" :style="{ background: emotionSceneTint }"></div>
@@ -54,16 +54,22 @@
         </div>
       </div>
 
-      <div class="canvas-wrapper" :class="{ 'scene-shift': sceneBackgroundOverride }">
+      <div class="canvas-wrapper" :class="[
+        { 'scene-shift': sceneBackgroundOverride },
+        'time-' + currentEnvironment.timeOfDay,
+        'weather-' + currentEnvironment.weather
+      ]">
         <Canvas 
           ref="canvasRef"
           :background="currentScene?.background"
+          :environment="currentEnvironment"
           @materialPlaced="handleMaterialPlaced"
         />
       </div>
 
       <DialogueBox 
         :dialogue="currentDialogue"
+        :environment="currentEnvironment"
         @next="handleNext"
       />
 
@@ -234,6 +240,7 @@ const comboJustTriggered = computed(() => gameStore.comboJustTriggered)
 const currentEmotionTier = computed(() => gameStore.currentEmotionTier)
 const emotionSceneTint = computed(() => gameStore.emotionSceneTint)
 const chapterEmotionProgress = computed(() => gameStore.chapterEmotionProgress)
+const currentEnvironment = computed(() => gameStore.currentEnvironmentInfo)
 
 const chapterCompleteMessage = computed(() => {
   const newlyUnlocked = gameStore.chapters.filter(c =>
@@ -256,10 +263,7 @@ const hasNextUnlockedChapter = computed(() => {
 })
 
 const currentSceneBackground = computed(() => {
-  if (currentScene.value?.background) {
-    return currentScene.value.background
-  }
-  return currentChapter.value?.background || 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
+  return gameStore.effectiveSceneBackground
 })
 
 const formatLastAutoSave = computed(() => {

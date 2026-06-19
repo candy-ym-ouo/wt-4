@@ -39,6 +39,8 @@ export const useGameStore = defineStore('game', () => {
   const saveSlots = ref([null, null, null])
   const gameCompleted = ref(false)
   const currentEnding = ref(null)
+  const currentTimeOfDay = ref('day')
+  const currentWeather = ref('clear')
 
   const triggeredCombos = ref([])
   const pendingHiddenDialogues = ref([])
@@ -86,6 +88,28 @@ export const useGameStore = defineStore('game', () => {
 
   const currentScene = computed(() => {
     return scenes.value[currentSceneId.value] || null
+  })
+
+  const currentEnvironmentVariant = computed(() => {
+    if (!currentScene.value?.variants) return null
+    const variantKey = `${currentTimeOfDay.value}_${currentWeather.value}`
+    return currentScene.value.variants[variantKey] || null
+  })
+
+  const effectiveSceneBackground = computed(() => {
+    if (sceneBackgroundOverride.value) return sceneBackgroundOverride.value
+    if (currentEnvironmentVariant.value?.background) return currentEnvironmentVariant.value.background
+    return currentScene.value?.background || 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
+  })
+
+  const currentEnvironmentInfo = computed(() => {
+    return {
+      timeOfDay: currentTimeOfDay.value,
+      weather: currentWeather.value,
+      ambience: currentEnvironmentVariant.value?.ambience || 'neutral',
+      dialogueTone: currentEnvironmentVariant.value?.dialogueTone || '平静',
+      variant: currentEnvironmentVariant.value
+    }
   })
 
   const activeHiddenDialogue = ref(null)
@@ -447,6 +471,39 @@ export const useGameStore = defineStore('game', () => {
     return chapters.value.find(c => c.id === id)
   }
 
+  const setEnvironment = (timeOfDay, weather) => {
+    if (timeOfDay) currentTimeOfDay.value = timeOfDay
+    if (weather) currentWeather.value = weather
+
+    addEmotionLog('environment_change', 0, {
+      timeOfDay: currentTimeOfDay.value,
+      weather: currentWeather.value,
+      sceneId: currentSceneId.value
+    })
+
+    showNotification(`环境变化：${getTimeOfDayLabel(currentTimeOfDay.value)} · ${getWeatherLabel(currentWeather.value)}`, 'info', 2000)
+  }
+
+  const getTimeOfDayLabel = (timeOfDay) => {
+    const labels = {
+      day: '白天',
+      dusk: '黄昏',
+      night: '夜晚'
+    }
+    return labels[timeOfDay] || timeOfDay
+  }
+
+  const getWeatherLabel = (weather) => {
+    const labels = {
+      clear: '晴朗',
+      cloudy: '多云',
+      rain: '雨天',
+      snow: '下雪',
+      star: '星空'
+    }
+    return labels[weather] || weather
+  }
+
   const addEmotionLog = (type, amount, detail = {}) => {
     currentChapterLog.value.push({
       type,
@@ -764,6 +821,15 @@ export const useGameStore = defineStore('game', () => {
     dialogueHistory.value = []
     activeMaterialFilter.value = 'all'
     currentPathSequence.value = []
+
+    const firstScene = scenes.value[chapter.scenes[0]]
+    if (firstScene) {
+      currentTimeOfDay.value = firstScene.timeOfDay || 'day'
+      currentWeather.value = firstScene.weather || 'clear'
+    } else {
+      currentTimeOfDay.value = 'day'
+      currentWeather.value = 'clear'
+    }
   }
 
   const addToDialogueHistory = (dialogue) => {
@@ -836,6 +902,8 @@ export const useGameStore = defineStore('game', () => {
     } else if (dialogue.trigger === 'game_complete') {
       completeGame()
       return
+    } else if (dialogue.trigger === 'set_environment' && dialogue.environment) {
+      setEnvironment(dialogue.environment.timeOfDay, dialogue.environment.weather)
     }
 
     if (currentDialogueIndex.value < currentScene.value.dialogues.length - 1) {
@@ -849,6 +917,13 @@ export const useGameStore = defineStore('game', () => {
       optionalMaterialsPlaced.value = []
       requiredMaterialPlaced.value = false
       comboJustTriggered.value = null
+
+      const nextScene = scenes.value[currentScene.value.nextScene]
+      if (nextScene) {
+        currentTimeOfDay.value = nextScene.timeOfDay || 'day'
+        currentWeather.value = nextScene.weather || 'clear'
+      }
+
       recordSceneTransition(prevSceneId, currentScene.value.nextScene)
     }
   }
@@ -921,6 +996,10 @@ export const useGameStore = defineStore('game', () => {
       if (combo.sceneFeedback.backgroundShift) {
         sceneBackgroundOverride.value = combo.sceneFeedback.backgroundShift
       }
+    }
+
+    if (combo.environmentChange) {
+      setEnvironment(combo.environmentChange.timeOfDay, combo.environmentChange.weather)
     }
 
     recordBranchChoice('combo', {
@@ -1091,6 +1170,13 @@ export const useGameStore = defineStore('game', () => {
       optionalMaterialsPlaced.value = []
       requiredMaterialPlaced.value = false
       comboJustTriggered.value = null
+
+      const nextScene = scenes.value[currentScene.value.nextScene]
+      if (nextScene) {
+        currentTimeOfDay.value = nextScene.timeOfDay || 'day'
+        currentWeather.value = nextScene.weather || 'clear'
+      }
+
       recordSceneTransition(prevSceneId, currentScene.value.nextScene)
     }
 
@@ -1604,6 +1690,8 @@ export const useGameStore = defineStore('game', () => {
     activeMaterialFilter.value = 'all'
     materialUsageHistory.value = {}
     currentPathSequence.value = []
+    currentTimeOfDay.value = 'day'
+    currentWeather.value = 'clear'
     resetStats()
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('journal_game_saves')
@@ -1738,6 +1826,8 @@ export const useGameStore = defineStore('game', () => {
       activeMaterialFilter: activeMaterialFilter.value,
       materialUsageHistory: materialUsageHistory.value,
       currentPathSequence: currentPathSequence.value,
+      currentTimeOfDay: currentTimeOfDay.value,
+      currentWeather: currentWeather.value,
       thumbnail,
       timestamp: Date.now()
     }
@@ -1868,6 +1958,8 @@ export const useGameStore = defineStore('game', () => {
     activeMaterialFilter.value = saveData.activeMaterialFilter || 'all'
     materialUsageHistory.value = saveData.materialUsageHistory || {}
     currentPathSequence.value = saveData.currentPathSequence || []
+    currentTimeOfDay.value = saveData.currentTimeOfDay || 'day'
+    currentWeather.value = saveData.currentWeather || 'clear'
     comboJustTriggered.value = null
     gameCompleted.value = false
     currentEnding.value = null
@@ -2504,6 +2596,11 @@ export const useGameStore = defineStore('game', () => {
     materialUsageHistory,
     branchStats,
     currentPathSequence,
+    currentTimeOfDay,
+    currentWeather,
+    currentEnvironmentVariant,
+    effectiveSceneBackground,
+    currentEnvironmentInfo,
     sceneRecommendedMaterials,
     scenePlacedMaterialIds,
     allRecommendedMaterialIds,
@@ -2522,6 +2619,7 @@ export const useGameStore = defineStore('game', () => {
     chapterEmotionProgress,
     getMaterialById,
     getChapterById,
+    setEnvironment,
     startChapter,
     startChapterWithTracking,
     nextDialogue,

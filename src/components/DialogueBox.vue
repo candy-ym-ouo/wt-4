@@ -2,7 +2,10 @@
   <div class="dialogue-wrapper">
     <div v-if="dialogue" class="dialogue-box fade-in" :class="[
       { 'hidden-dialogue': isHidden, 'combo-dialogue': isHidden },
-      'emotion-tier-' + emotionTier.id
+      'emotion-tier-' + emotionTier.id,
+      'time-' + environment.timeOfDay,
+      'weather-' + environment.weather,
+      'ambience-' + environment.ambience
     ]">
       <div v-if="isHidden" class="hidden-badge">
         <span class="hidden-icon">🔮</span>
@@ -11,7 +14,12 @@
       
       <div class="emotion-tone-badge">
         <span class="tone-icon">{{ emotionTier.icon }}</span>
-        <span class="tone-text">{{ emotionTier.dialogueTone }}语气</span>
+        <span class="tone-text">{{ environment.dialogueTone || emotionTier.dialogueTone }}语气</span>
+      </div>
+
+      <div v-if="environment.ambience !== 'neutral'" class="ambience-badge">
+        <span class="ambience-icon">{{ ambienceIcon }}</span>
+        <span class="ambience-text">{{ ambienceLabel }}</span>
       </div>
       
       <div class="dialogue-header">
@@ -140,6 +148,15 @@ const props = defineProps({
   dialogue: {
     type: Object,
     default: null
+  },
+  environment: {
+    type: Object,
+    default: () => ({
+      timeOfDay: 'day',
+      weather: 'clear',
+      ambience: 'neutral',
+      dialogueTone: '平静'
+    })
   }
 })
 
@@ -156,6 +173,32 @@ const historyListRef = ref(null)
 const dialogueHistory = computed(() => gameStore.dialogueHistory)
 const typingSpeed = computed(() => gameStore.typingSpeed)
 const emotionTier = computed(() => gameStore.currentEmotionTier)
+
+const ambienceIcon = computed(() => {
+  const iconMap = {
+    warm: '☀️',
+    romantic: '🌅',
+    dreamy: '🌙',
+    melancholy: '🌧️',
+    serene: '🍃',
+    nostalgic: '📖',
+    cozy: '🔥'
+  }
+  return iconMap[props.environment?.ambience] || '✨'
+})
+
+const ambienceLabel = computed(() => {
+  const labelMap = {
+    warm: '温暖',
+    romantic: '浪漫',
+    dreamy: '梦幻',
+    melancholy: '忧伤',
+    serene: '宁静',
+    nostalgic: '怀旧',
+    cozy: '温馨'
+  }
+  return labelMap[props.environment?.ambience] || ''
+})
 
 const speedPresets = [
   { label: '很慢', value: 120 },
@@ -469,6 +512,210 @@ onUnmounted(() => {
 
 .tone-text {
   letter-spacing: 0.3px;
+}
+
+.ambience-badge {
+  position: absolute;
+  top: -12px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  z-index: 5;
+  transition: all 0.3s ease;
+}
+
+.ambience-warm .ambience-badge {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-color: #fbbf24;
+  color: #92400e;
+}
+
+.ambience-romantic .ambience-badge {
+  background: linear-gradient(135deg, #fed7aa, #fdba74);
+  border-color: #f97316;
+  color: #9a3412;
+}
+
+.ambience-dreamy .ambience-badge {
+  background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+  border-color: #6366f1;
+  color: #3730a3;
+}
+
+.ambience-melancholy .ambience-badge {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  border-color: #6366f1;
+  color: #3730a3;
+}
+
+.ambience-serene .ambience-badge {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  border-color: #22c55e;
+  color: #166534;
+}
+
+.ambience-nostalgic .ambience-badge {
+  background: linear-gradient(135deg, #fef3c7, #fed7aa);
+  border-color: #d97706;
+  color: #78350f;
+}
+
+.ambience-cozy .ambience-badge {
+  background: linear-gradient(135deg, #ffedd5, #fed7aa);
+  border-color: #ea580c;
+  color: #9a3412;
+}
+
+.ambience-icon {
+  font-size: 0.85rem;
+}
+
+.ambience-text {
+  letter-spacing: 0.3px;
+}
+
+.dialogue-box.time-dusk {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%);
+}
+
+.dialogue-box.time-night {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: #e2e8f0;
+}
+
+.dialogue-box.time-night .speaker {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dialogue-box.time-night .speaker-narrator {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+.dialogue-box.time-night .speaker-you {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(96, 165, 250, 0.3));
+  color: #bfdbfe;
+}
+
+.dialogue-box.time-night .speaker-memory {
+  background: linear-gradient(135deg, rgba(244, 114, 182, 0.3), rgba(236, 72, 153, 0.3));
+  color: #fbcfe8;
+}
+
+.dialogue-box.time-night .speaker-inner {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.3), rgba(139, 92, 246, 0.3));
+  color: #ddd6fe;
+}
+
+.dialogue-box.time-night .dialogue-text {
+  color: #e2e8f0;
+}
+
+.dialogue-box.time-night .emotion-tier-calm .dialogue-text {
+  color: #cbd5e1;
+}
+
+.dialogue-box.time-night .emotion-tier-warm .dialogue-text {
+  color: #fde68a;
+}
+
+.dialogue-box.time-night .emotion-tier-tender .dialogue-text {
+  color: #fbcfe8;
+}
+
+.dialogue-box.time-night .emotion-tier-heartbeat .dialogue-text {
+  color: #fecdd3;
+}
+
+.dialogue-box.time-night .emotion-tier-touching .dialogue-text {
+  color: #ddd6fe;
+}
+
+.dialogue-box.time-night .emotion-tier-overflow .dialogue-text {
+  background: linear-gradient(135deg, #fde68a, #fbcfe8, #ddd6fe);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dialogue-box.time-night .hint {
+  color: #94a3b8;
+}
+
+.dialogue-box.time-night .typing-cursor {
+  color: #f9a8d4;
+}
+
+.dialogue-box.weather-rain {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%);
+}
+
+.dialogue-box.weather-snow {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+}
+
+.dialogue-box.weather-star {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+  color: #e0e7ff;
+}
+
+.dialogue-box.weather-star .dialogue-text {
+  color: #e0e7ff;
+  text-shadow: 0 0 8px rgba(165, 180, 252, 0.3);
+}
+
+.dialogue-box.weather-star .speaker {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dialogue-box.weather-star .speaker-narrator {
+  background: rgba(148, 163, 184, 0.15);
+  color: #c7d2fe;
+}
+
+.dialogue-box.weather-star .speaker-you {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(96, 165, 250, 0.25));
+  color: #bfdbfe;
+}
+
+.dialogue-box.weather-star .speaker-memory {
+  background: linear-gradient(135deg, rgba(244, 114, 182, 0.25), rgba(236, 72, 153, 0.25));
+  color: #fbcfe8;
+}
+
+.dialogue-box.weather-star .speaker-inner {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(139, 92, 246, 0.25));
+  color: #ddd6fe;
+}
+
+.dialogue-box.weather-star .hint {
+  color: #a5b4fc;
+}
+
+.dialogue-box.weather-star .typing-cursor {
+  color: #c4b5fd;
+}
+
+.dialogue-box.ambience-dreamy .dialogue-text {
+  font-style: italic;
+  letter-spacing: 0.5px;
+}
+
+.dialogue-box.ambience-romantic .dialogue-text {
+  letter-spacing: 0.3px;
+}
+
+.dialogue-box.ambience-melancholy .dialogue-text {
+  font-style: italic;
+  opacity: 0.9;
 }
 
 .dialogue-box.emotion-tier-calm::before {

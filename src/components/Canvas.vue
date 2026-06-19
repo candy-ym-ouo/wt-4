@@ -264,6 +264,16 @@
         {{ getParticleEmoji(activeSceneFeedback.effect) }}
       </div>
     </div>
+
+    <div v-if="showWeatherEffect" class="weather-effects-layer" :class="'weather-' + environment.weather + ' time-' + environment.timeOfDay">
+      <div v-for="i in weatherParticleCount" :key="'w-' + i" class="weather-particle" :style="getWeatherParticleStyle(i)">
+        {{ getWeatherParticleEmoji() }}
+      </div>
+    </div>
+
+    <div v-if="showNightStars" class="night-stars-layer">
+      <div v-for="i in starCount" :key="'s-' + i" class="night-star" :style="getStarStyle(i)">✦</div>
+    </div>
   </div>
 </template>
 
@@ -275,6 +285,15 @@ const props = defineProps({
   background: {
     type: String,
     default: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
+  },
+  environment: {
+    type: Object,
+    default: () => ({
+      timeOfDay: 'day',
+      weather: 'clear',
+      ambience: 'neutral',
+      dialogueTone: '平静'
+    })
   }
 })
 
@@ -464,6 +483,27 @@ const requiredMaterial = computed(() => {
 
 const availableOptionalMaterialNames = computed(() => {
   return availableOptionalMaterials.value.map(m => m.name).join('、')
+})
+
+const showWeatherEffect = computed(() => {
+  return ['rain', 'snow', 'cloudy'].includes(props.environment?.weather)
+})
+
+const showNightStars = computed(() => {
+  return props.environment?.weather === 'star' || props.environment?.timeOfDay === 'night'
+})
+
+const weatherParticleCount = computed(() => {
+  const counts = {
+    rain: 50,
+    snow: 40,
+    cloudy: 8
+  }
+  return counts[props.environment?.weather] || 0
+})
+
+const starCount = computed(() => {
+  return props.environment?.weather === 'star' ? 40 : 15
 })
 
 const stageConfig = computed(() => ({
@@ -669,6 +709,76 @@ const getParticleStyle = (i) => {
     animationDuration: `${duration}s`,
     fontSize: `${size}px`,
     transform: `rotate(${rotate}deg)`
+  }
+}
+
+const getWeatherParticleEmoji = () => {
+  const emojiMap = {
+    rain: '💧',
+    snow: '❄️',
+    cloudy: '☁️'
+  }
+  return emojiMap[props.environment?.weather] || '✨'
+}
+
+const getWeatherParticleStyle = (i) => {
+  const seed = i * 53
+  const weather = props.environment?.weather
+  const left = (seed * 6.7) % 100
+  const delay = (seed * 0.09) % 8
+
+  if (weather === 'rain') {
+    const duration = 0.8 + ((seed * 0.05) % 0.8)
+    const size = 12 + ((seed % 3) * 4)
+    return {
+      left: `${left}%`,
+      animationDelay: `${delay}s`,
+      animationDuration: `${duration}s`,
+      fontSize: `${size}px`,
+      opacity: 0.7 + ((seed % 3) * 0.1)
+    }
+  } else if (weather === 'snow') {
+    const duration = 5 + ((seed * 0.25) % 5)
+    const size = 14 + ((seed % 4) * 5)
+    const drift = ((seed * 13) % 40) - 20
+    return {
+      left: `${left}%`,
+      animationDelay: `${delay}s`,
+      animationDuration: `${duration}s`,
+      fontSize: `${size}px`,
+      '--drift': `${drift}px`,
+      opacity: 0.8 + ((seed % 2) * 0.2)
+    }
+  } else if (weather === 'cloudy') {
+    const duration = 20 + ((seed * 0.5) % 15)
+    const size = 30 + ((seed % 4) * 10)
+    const top = ((seed * 7) % 30)
+    return {
+      left: `${left}%`,
+      top: `${top}%`,
+      animationDelay: `${delay}s`,
+      animationDuration: `${duration}s`,
+      fontSize: `${size}px`,
+      opacity: 0.3 + ((seed % 3) * 0.15)
+    }
+  }
+  return { left: `${left}%` }
+}
+
+const getStarStyle = (i) => {
+  const seed = i * 71
+  const left = (seed * 3.7) % 95
+  const top = (seed * 5.3) % 70
+  const delay = (seed * 0.11) % 4
+  const duration = 1.5 + ((seed * 0.13) % 2.5)
+  const size = props.environment?.weather === 'star' ? 12 + ((seed % 4) * 6) : 8 + ((seed % 3) * 4)
+  return {
+    left: `${left}%`,
+    top: `${top}%`,
+    animationDelay: `${delay}s`,
+    animationDuration: `${duration}s`,
+    fontSize: `${size}px`,
+    opacity: props.environment?.weather === 'star' ? 1 : 0.6
   }
 }
 
@@ -2136,6 +2246,108 @@ defineExpose({
   100% {
     transform: translateY(600px) rotate(720deg);
     opacity: 0;
+  }
+}
+
+.weather-effects-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 14;
+}
+
+.weather-particle {
+  position: absolute;
+  top: -30px;
+  opacity: 0;
+  will-change: transform;
+}
+
+.weather-effects-layer.weather-rain .weather-particle {
+  animation: rainFall linear infinite;
+}
+
+.weather-effects-layer.weather-snow .weather-particle {
+  animation: snowFall ease-in-out infinite;
+}
+
+.weather-effects-layer.weather-cloudy .weather-particle {
+  animation: cloudDrift linear infinite;
+  top: auto;
+}
+
+@keyframes rainFall {
+  0% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(500px);
+    opacity: 0.3;
+  }
+}
+
+@keyframes snowFall {
+  0% {
+    transform: translate(0, -30px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(var(--drift, 10px), 250px) rotate(180deg);
+  }
+  100% {
+    transform: translate(calc(var(--drift, 10px) * 2), 500px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes cloudDrift {
+  0% {
+    transform: translateX(-50px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(calc(100% + 50px));
+    opacity: 0;
+  }
+}
+
+.night-stars-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 5;
+}
+
+.night-star {
+  position: absolute;
+  color: #fef3c7;
+  text-shadow: 0 0 8px rgba(254, 243, 199, 0.8), 0 0 16px rgba(251, 191, 36, 0.5);
+  animation: starTwinkle ease-in-out infinite;
+}
+
+@keyframes starTwinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
   }
 }
 

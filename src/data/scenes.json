@@ -3,6 +3,35 @@
     "id": "scene1_1",
     "chapter": "chapter1",
     "background": "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+        "ambience": "warm",
+        "dialogueTone": "明媚"
+      },
+      "day_cloudy": {
+        "background": "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)",
+        "ambience": "soft",
+        "dialogueTone": "柔和"
+      },
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #fed7aa 0%, #fdba74 50%, #f97316 100%)",
+        "ambience": "romantic",
+        "dialogueTone": "温馨"
+      },
+      "night_clear": {
+        "background": "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)",
+        "ambience": "quiet",
+        "dialogueTone": "静谧"
+      },
+      "night_star": {
+        "background": "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)",
+        "ambience": "dreamy",
+        "dialogueTone": "梦幻"
+      }
+    },
     "dialogues": [
       {
         "id": "d1_1_1",
@@ -31,6 +60,36 @@
         "text": "那年春天，好像发生了很多事情呢...",
         "emotionChange": 2,
         "trigger": null
+      },
+      {
+        "id": "d1_1_5",
+        "speaker": "回忆",
+        "text": "「还记得吗？那天黄昏，樱花在夕阳下美得像一场梦。」",
+        "emotionChange": 3,
+        "trigger": "set_environment",
+        "environment": {
+          "timeOfDay": "dusk",
+          "weather": "clear"
+        }
+      },
+      {
+        "id": "d1_1_6",
+        "speaker": "旁白",
+        "text": "天色渐晚，回忆却愈发清晰...",
+        "emotionChange": 2,
+        "trigger": null
+      },
+      {
+        "id": "d1_1_7",
+        "speaker": "回忆",
+        "text": "「到了晚上，我们一起数星星，你说要把最亮的那颗摘下来给我。」",
+        "emotionChange": 4,
+        "isKeyLine": true,
+        "trigger": "set_environment",
+        "environment": {
+          "timeOfDay": "night",
+          "weather": "star"
+        }
       }
     ],
     "requiredMaterial": "flower",
@@ -53,6 +112,10 @@
           "effect": "petals",
           "backgroundShift": "linear-gradient(135deg, #fef9c3 0%, #fde68a 50%, #e0e7ff 100%)"
         },
+        "environmentChange": {
+          "timeOfDay": "day",
+          "weather": "cloudy"
+        },
         "description": "樱花+云朵：忆起初见那天的晴空"
       },
       {
@@ -70,7 +133,11 @@
         "sceneFeedback": {
           "type": "glow",
           "effect": "sparkle",
-          "backgroundShift": "linear-gradient(135deg, #fef3c7 0%, #fef9c3 50%, #fde68a 100%)"
+          "backgroundShift": "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)"
+        },
+        "environmentChange": {
+          "timeOfDay": "night",
+          "weather": "star"
         },
         "description": "樱花+星星：你是心中最亮的星"
       }
@@ -81,6 +148,25 @@
     "id": "scene1_2",
     "chapter": "chapter1",
     "background": "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)",
+        "ambience": "bright",
+        "dialogueTone": "欢快"
+      },
+      "day_rain": {
+        "background": "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #a5b4fc 100%)",
+        "ambience": "melancholy",
+        "dialogueTone": "惆怅"
+      },
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #fecdd3 0%, #fda4af 50%, #fb7185 100%)",
+        "ambience": "romantic",
+        "dialogueTone": "浪漫"
+      }
+    },
     "dialogues": [
       {
         "id": "d1_2_1",
@@ -159,6 +245,25 @@
     "id": "scene1_3",
     "chapter": "chapter1",
     "background": "linear-gradient(135deg, #fef9c3 0%, #fef08a 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #fef9c3 0%, #fef08a 100%)",
+        "ambience": "hopeful",
+        "dialogueTone": "期待"
+      },
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #fed7aa 0%, #fcd34d 50%, #f59e0b 100%)",
+        "ambience": "poetic",
+        "dialogueTone": "诗意"
+      },
+      "night_clear": {
+        "background": "linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%)",
+        "ambience": "emotional",
+        "dialogueTone": "深情"
+      }
+    },
     "dialogues": [
       {
         "id": "d1_3_1",
@@ -228,7 +333,11 @@
         "sceneFeedback": {
           "type": "particle",
           "effect": "stars",
-          "backgroundShift": null
+          "backgroundShift": "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)"
+        },
+        "environmentChange": {
+          "timeOfDay": "night",
+          "weather": "star"
         },
         "description": "信笺+星星：同一片星空下的约定"
       },
@@ -258,6 +367,30 @@
     "id": "scene2_1",
     "chapter": "chapter2",
     "background": "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)",
+        "ambience": "bright",
+        "dialogueTone": "明亮"
+      },
+      "day_cloudy": {
+        "background": "linear-gradient(135deg, #d1fae5 0%, #6ee7b7 50%, #a7f3d0 100%)",
+        "ambience": "cool",
+        "dialogueTone": "清爽"
+      },
+      "day_rain": {
+        "background": "linear-gradient(135deg, #94a3b8 0%, #cbd5e1 50%, #d1fae5 100%)",
+        "ambience": "refreshing",
+        "dialogueTone": "清新"
+      },
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #fed7aa 0%, #a7f3d0 50%, #6ee7b7 100%)",
+        "ambience": "lazy",
+        "dialogueTone": "慵懒"
+      }
+    },
     "dialogues": [
       {
         "id": "d2_1_1",
@@ -286,6 +419,17 @@
         "text": "窗外的太阳，照亮了两个人的身影。",
         "emotionChange": 2,
         "trigger": null
+      },
+      {
+        "id": "d2_1_5",
+        "speaker": "内心",
+        "text": "忽然间，天空飘来了几朵乌云，带来了一阵清凉的雨...",
+        "emotionChange": 2,
+        "trigger": "set_environment",
+        "environment": {
+          "timeOfDay": "day",
+          "weather": "rain"
+        }
       }
     ],
     "requiredMaterial": "sun",
@@ -307,6 +451,10 @@
           "type": "particle",
           "effect": "clouds",
           "backgroundShift": "linear-gradient(135deg, #dbeafe 0%, #d1fae5 50%, #a7f3d0 100%)"
+        },
+        "environmentChange": {
+          "timeOfDay": "day",
+          "weather": "cloudy"
         },
         "description": "太阳+云朵：夏日天空的小确幸"
       },
@@ -336,6 +484,20 @@
     "id": "scene2_2",
     "chapter": "chapter2",
     "background": "linear-gradient(135deg, #bbf7d0 0%, #86efac 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #bbf7d0 0%, #86efac 100%)",
+        "ambience": "quiet",
+        "dialogueTone": "安静"
+      },
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #fef3c7 0%, #bbf7d0 50%, #86efac 100%)",
+        "ambience": "warm",
+        "dialogueTone": "温暖"
+      }
+    },
     "dialogues": [
       {
         "id": "d2_2_1",
@@ -405,6 +567,10 @@
           "effect": "pages",
           "backgroundShift": "linear-gradient(135deg, #bbf7d0 0%, #fef3c7 50%, #86efac 100%)"
         },
+        "environmentChange": {
+          "timeOfDay": "dusk",
+          "weather": "clear"
+        },
         "description": "蝉+书本：记忆中的书香与蝉鸣"
       }
     ],
@@ -414,6 +580,25 @@
     "id": "scene2_3",
     "chapter": "chapter2",
     "background": "linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%)",
+        "ambience": "bright",
+        "dialogueTone": "明亮"
+      },
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #fef9c3 0%, #a7f3d0 50%, #6ee7b7 100%)",
+        "ambience": "nostalgic",
+        "dialogueTone": "怀旧"
+      },
+      "night_clear": {
+        "background": "linear-gradient(135deg, #0f766e 0%, #115e59 50%, #0f172a 100%)",
+        "ambience": "quiet",
+        "dialogueTone": "静谧"
+      }
+    },
     "dialogues": [
       {
         "id": "d2_3_1",
@@ -513,6 +698,25 @@
     "id": "scene3_1",
     "chapter": "chapter3",
     "background": "linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)",
+        "ambience": "autumn",
+        "dialogueTone": "秋意"
+      },
+      "day_rain": {
+        "background": "linear-gradient(135deg, #94a3b8 0%, #fed7aa 50%, #fdba74 100%)",
+        "ambience": "melancholy",
+        "dialogueTone": "惆怅"
+      },
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
+        "ambience": "poetic",
+        "dialogueTone": "诗意"
+      }
+    },
     "dialogues": [
       {
         "id": "d3_1_1",
@@ -591,6 +795,25 @@
     "id": "scene3_2",
     "chapter": "chapter3",
     "background": "linear-gradient(135deg, #fdba74 0%, #fb923c 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #fdba74 0%, #fb923c 100%)",
+        "ambience": "warm",
+        "dialogueTone": "温暖"
+      },
+      "dusk_clear": {
+        "background": "linear-gradient(135deg, #fef3c7 0%, #fdba74 50%, #fb923c 100%)",
+        "ambience": "cozy",
+        "dialogueTone": "惬意"
+      },
+      "night_clear": {
+        "background": "linear-gradient(135deg, #7c2d12 0%, #9a3412 50%, #1e1b4b 100%)",
+        "ambience": "quiet",
+        "dialogueTone": "静谧"
+      }
+    },
     "dialogues": [
       {
         "id": "d3_2_1",
@@ -619,6 +842,17 @@
         "text": "咖啡的香气，是秋天最温暖的味道...",
         "emotionChange": 2,
         "trigger": null
+      },
+      {
+        "id": "d3_2_5",
+        "speaker": "旁白",
+        "text": "不知不觉，窗外的天色已经暗了下来，街灯一盏盏亮起。",
+        "emotionChange": 2,
+        "trigger": "set_environment",
+        "environment": {
+          "timeOfDay": "night",
+          "weather": "clear"
+        }
       }
     ],
     "requiredMaterial": "coffee",
@@ -640,6 +874,10 @@
           "type": "glow",
           "effect": "warm",
           "backgroundShift": "linear-gradient(135deg, #fef3c7 0%, #fdba74 50%, #fb923c 100%)"
+        },
+        "environmentChange": {
+          "timeOfDay": "dusk",
+          "weather": "clear"
         },
         "description": "咖啡+怀表：想让时间停在这一刻"
       },
@@ -669,6 +907,20 @@
     "id": "scene3_3",
     "chapter": "chapter3",
     "background": "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+        "ambience": "emotional",
+        "dialogueTone": "动情"
+      },
+      "night_star": {
+        "background": "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #7c2d12 100%)",
+        "ambience": "romantic",
+        "dialogueTone": "浪漫"
+      }
+    },
     "dialogues": [
       {
         "id": "d3_3_1",
@@ -738,7 +990,11 @@
         "sceneFeedback": {
           "type": "particle",
           "effect": "stars",
-          "backgroundShift": null
+          "backgroundShift": "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #7c2d12 100%)"
+        },
+        "environmentChange": {
+          "timeOfDay": "night",
+          "weather": "star"
         },
         "description": "怀表+星星：永恒不变的承诺"
       },
@@ -768,6 +1024,30 @@
     "id": "scene4_1",
     "chapter": "chapter4",
     "background": "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+    "timeOfDay": "day",
+    "weather": "snow",
+    "variants": {
+      "day_snow": {
+        "background": "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+        "ambience": "serene",
+        "dialogueTone": "宁静"
+      },
+      "dusk_snow": {
+        "background": "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #ddd6fe 100%)",
+        "ambience": "warm",
+        "dialogueTone": "温暖"
+      },
+      "night_snow": {
+        "background": "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%)",
+        "ambience": "magical",
+        "dialogueTone": "梦幻"
+      },
+      "night_star": {
+        "background": "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)",
+        "ambience": "twinkling",
+        "dialogueTone": "闪烁"
+      }
+    },
     "dialogues": [
       {
         "id": "d4_1_1",
@@ -816,7 +1096,11 @@
         "sceneFeedback": {
           "type": "particle",
           "effect": "stars",
-          "backgroundShift": "linear-gradient(135deg, #e0e7ff 0%, #dbeafe 50%, #bfdbfe 100%)"
+          "backgroundShift": "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)"
+        },
+        "environmentChange": {
+          "timeOfDay": "night",
+          "weather": "star"
         },
         "description": "雪花+星星：来自天空的礼物"
       },
@@ -846,6 +1130,20 @@
     "id": "scene4_2",
     "chapter": "chapter4",
     "background": "linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%)",
+    "timeOfDay": "day",
+    "weather": "snow",
+    "variants": {
+      "day_snow": {
+        "background": "linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%)",
+        "ambience": "cold",
+        "dialogueTone": "清冷"
+      },
+      "night_snow": {
+        "background": "linear-gradient(135deg, #1e3a5f 0%, #1e40af 50%, #1d4ed8 100%)",
+        "ambience": "intimate",
+        "dialogueTone": "亲密"
+      }
+    },
     "dialogues": [
       {
         "id": "d4_2_1",
@@ -874,6 +1172,17 @@
         "text": "围巾的温度，是这个冬天最珍贵的礼物...",
         "emotionChange": 3,
         "trigger": null
+      },
+      {
+        "id": "d4_2_5",
+        "speaker": "旁白",
+        "text": "夜幕降临，雪还在下，路灯下的两个人影依偎在一起。",
+        "emotionChange": 3,
+        "trigger": "set_environment",
+        "environment": {
+          "timeOfDay": "night",
+          "weather": "snow"
+        }
       }
     ],
     "requiredMaterial": "scarf",
@@ -924,6 +1233,25 @@
     "id": "scene4_3",
     "chapter": "chapter4",
     "background": "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)",
+    "timeOfDay": "day",
+    "weather": "clear",
+    "variants": {
+      "day_clear": {
+        "background": "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)",
+        "ambience": "tender",
+        "dialogueTone": "温柔"
+      },
+      "night_star": {
+        "background": "linear-gradient(135deg, #fef3c7 0%, #fce7f3 30%, #1e1b4b 100%)",
+        "ambience": "magical",
+        "dialogueTone": "神奇"
+      },
+      "night_clear": {
+        "background": "linear-gradient(135deg, #fef3c7 0%, #fce7f3 50%, #f3e8ff 100%)",
+        "ambience": "final",
+        "dialogueTone": "终章"
+      }
+    },
     "dialogues": [
       {
         "id": "d4_3_1",
@@ -974,7 +1302,11 @@
         "sceneFeedback": {
           "type": "particle",
           "effect": "stars",
-          "backgroundShift": "linear-gradient(135deg, #fef3c7 0%, #fce7f3 50%, #fbcfe8 100%)"
+          "backgroundShift": "linear-gradient(135deg, #fef3c7 0%, #fce7f3 30%, #1e1b4b 100%)"
+        },
+        "environmentChange": {
+          "timeOfDay": "night",
+          "weather": "star"
         },
         "description": "心+星星：最浪漫的誓言"
       },
