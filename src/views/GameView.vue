@@ -1,8 +1,10 @@
 <template>
   <div 
     class="game-view page-container"
+    :class="'emotion-tier-' + currentEmotionTier.id"
     :style="{ background: currentSceneBackground }"
   >
+    <div class="emotion-tint-overlay" :style="{ background: emotionSceneTint }"></div>
     <div class="game-header">
       <div class="chapter-info">
         <h2 class="handwriting chapter-title">{{ currentChapter?.title }}</h2>
@@ -229,6 +231,9 @@ const currentSceneCombos = computed(() => gameStore.currentSceneCombos)
 const comboBonusTotal = computed(() => gameStore.comboBonusTotal)
 const sceneBackgroundOverride = computed(() => gameStore.sceneBackgroundOverride)
 const comboJustTriggered = computed(() => gameStore.comboJustTriggered)
+const currentEmotionTier = computed(() => gameStore.currentEmotionTier)
+const emotionSceneTint = computed(() => gameStore.emotionSceneTint)
+const chapterEmotionProgress = computed(() => gameStore.chapterEmotionProgress)
 
 const currentSceneBackground = computed(() => {
   if (currentScene.value?.background) {
@@ -469,6 +474,30 @@ onUnmounted(() => {
   min-height: 100vh;
   padding: 20px;
   transition: background 0.5s ease;
+  position: relative;
+}
+
+.emotion-tint-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  transition: background 0.8s ease;
+  mix-blend-mode: overlay;
+}
+
+.game-header,
+.game-content,
+.chapter-complete-overlay,
+.recovery-overlay,
+.rollback-overlay,
+.combo-achievement-overlay,
+.notification-wrapper {
+  position: relative;
+  z-index: 2;
 }
 
 .game-header {

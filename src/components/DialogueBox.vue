@@ -1,10 +1,19 @@
 <template>
   <div class="dialogue-wrapper">
-    <div v-if="dialogue" class="dialogue-box fade-in" :class="{ 'hidden-dialogue': isHidden, 'combo-dialogue': isHidden }">
+    <div v-if="dialogue" class="dialogue-box fade-in" :class="[
+      { 'hidden-dialogue': isHidden, 'combo-dialogue': isHidden },
+      'emotion-tier-' + emotionTier.id
+    ]">
       <div v-if="isHidden" class="hidden-badge">
         <span class="hidden-icon">🔮</span>
         <span class="hidden-label">隐藏对白</span>
       </div>
+      
+      <div class="emotion-tone-badge">
+        <span class="tone-icon">{{ emotionTier.icon }}</span>
+        <span class="tone-text">{{ emotionTier.dialogueTone }}语气</span>
+      </div>
+      
       <div class="dialogue-header">
         <span class="speaker" :class="speakerClass">{{ dialogue.speaker }}</span>
         <div class="header-actions">
@@ -146,6 +155,7 @@ const historyListRef = ref(null)
 
 const dialogueHistory = computed(() => gameStore.dialogueHistory)
 const typingSpeed = computed(() => gameStore.typingSpeed)
+const emotionTier = computed(() => gameStore.currentEmotionTier)
 
 const speedPresets = [
   { label: '很慢', value: 120 },
@@ -391,6 +401,129 @@ onUnmounted(() => {
 @keyframes badgeFloat {
   0%, 100% { transform: translateX(-50%) translateY(0); }
   50% { transform: translateX(-50%) translateY(-3px); }
+}
+
+.emotion-tone-badge {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  z-index: 5;
+  transition: all 0.3s ease;
+}
+
+.emotion-tier-calm .emotion-tone-badge {
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  border-color: #9ca3af;
+  color: #4b5563;
+}
+
+.emotion-tier-warm .emotion-tone-badge {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-color: #fbbf24;
+  color: #92400e;
+}
+
+.emotion-tier-tender .emotion-tone-badge {
+  background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+  border-color: #f472b6;
+  color: #9d174d;
+}
+
+.emotion-tier-heartbeat .emotion-tone-badge {
+  background: linear-gradient(135deg, #fecdd3, #fda4af);
+  border-color: #fb7185;
+  color: #9f1239;
+}
+
+.emotion-tier-touching .emotion-tone-badge {
+  background: linear-gradient(135deg, #f3e8ff, #c4b5fd);
+  border-color: #c084fc;
+  color: #6b21a8;
+}
+
+.emotion-tier-overflow .emotion-tone-badge {
+  background: linear-gradient(135deg, #fef3c7, #fce7f3, #f3e8ff);
+  border-color: #fbbf24;
+  color: #92400e;
+  animation: toneBadgeGlow 2s ease-in-out infinite;
+}
+
+@keyframes toneBadgeGlow {
+  0%, 100% { box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3); }
+  50% { box-shadow: 0 4px 16px rgba(251, 191, 36, 0.6); }
+}
+
+.tone-icon {
+  font-size: 0.85rem;
+}
+
+.tone-text {
+  letter-spacing: 0.3px;
+}
+
+.dialogue-box.emotion-tier-calm::before {
+  background: linear-gradient(90deg, #9ca3af, #6b7280);
+}
+
+.dialogue-box.emotion-tier-warm::before {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.dialogue-box.emotion-tier-tender::before {
+  background: linear-gradient(90deg, #f472b6, #ec4899);
+}
+
+.dialogue-box.emotion-tier-heartbeat::before {
+  background: linear-gradient(90deg, #fb7185, #f43f5e);
+}
+
+.dialogue-box.emotion-tier-touching::before {
+  background: linear-gradient(90deg, #c084fc, #a855f7);
+}
+
+.dialogue-box.emotion-tier-overflow::before {
+  background: linear-gradient(90deg, #fbbf24, #ec4899, #a855f7, #fbbf24);
+  background-size: 300% 100%;
+  animation: gradientShift 2s ease infinite;
+  height: 5px;
+}
+
+.emotion-tier-calm .dialogue-text {
+  color: #4b5563;
+}
+
+.emotion-tier-warm .dialogue-text {
+  color: #92400e;
+}
+
+.emotion-tier-tender .dialogue-text {
+  color: #9d174d;
+}
+
+.emotion-tier-heartbeat .dialogue-text {
+  color: #9f1239;
+}
+
+.emotion-tier-touching .dialogue-text {
+  color: #6b21a8;
+}
+
+.emotion-tier-overflow .dialogue-text {
+  background: linear-gradient(135deg, #92400e, #9d174d, #6b21a8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 500;
 }
 
 .hidden-icon {

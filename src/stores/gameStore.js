@@ -297,6 +297,137 @@ export const useGameStore = defineStore('game', () => {
     return Math.min(100, Math.max(0, emotionValue.value))
   })
 
+  const emotionTiers = [
+    {
+      id: 'calm',
+      name: '平静',
+      icon: '🌙',
+      min: 0,
+      max: 20,
+      color: '#6b7280',
+      gradient: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+      bgTint: 'rgba(107, 114, 128, 0.08)',
+      dialogueTone: '平淡',
+      description: '平静如水，故事刚刚开始',
+      chapterHint: '继续探索，收集更多回忆碎片'
+    },
+    {
+      id: 'warm',
+      name: '温暖',
+      icon: '☀️',
+      min: 20,
+      max: 45,
+      color: '#f59e0b',
+      gradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+      bgTint: 'rgba(245, 158, 11, 0.1)',
+      dialogueTone: '温和',
+      description: '淡淡的温暖涌上心头',
+      chapterHint: '心情逐渐明朗，继续加油'
+    },
+    {
+      id: 'tender',
+      name: '温柔',
+      icon: '🌸',
+      min: 45,
+      max: 65,
+      color: '#ec4899',
+      gradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)',
+      bgTint: 'rgba(236, 72, 153, 0.12)',
+      dialogueTone: '柔和',
+      description: '温柔的情愫在心中萌芽',
+      chapterHint: '氛围渐入佳境，发现更多美好'
+    },
+    {
+      id: 'heartbeat',
+      name: '心动',
+      icon: '💖',
+      min: 65,
+      max: 85,
+      color: '#f43f5e',
+      gradient: 'linear-gradient(135deg, #fecdd3 0%, #fda4af 100%)',
+      bgTint: 'rgba(244, 63, 94, 0.12)',
+      dialogueTone: '激动',
+      description: '心跳加速，仿佛回到了那个夏天',
+      chapterHint: '离目标越来越近了，继续探索'
+    },
+    {
+      id: 'touching',
+      name: '感动',
+      icon: '✨',
+      min: 85,
+      max: 100,
+      color: '#a855f7',
+      gradient: 'linear-gradient(135deg, #f3e8ff 0%, #c4b5fd 100%)',
+      bgTint: 'rgba(168, 85, 247, 0.15)',
+      dialogueTone: '深情',
+      description: '心中满是温暖的回忆',
+      chapterHint: '情绪高涨，即将达成目标！'
+    },
+    {
+      id: 'overflow',
+      name: '满溢',
+      icon: '🌟',
+      min: 100,
+      max: 999,
+      color: '#f59e0b',
+      gradient: 'linear-gradient(135deg, #fef3c7 0%, #fde047 50%, #f0abfc 100%)',
+      bgTint: 'rgba(245, 158, 11, 0.2)',
+      dialogueTone: '炽热',
+      description: '心弦颤动，所有的记忆都在发光',
+      chapterHint: '情绪已满溢！你是最棒的！'
+    }
+  ]
+
+  const currentEmotionTier = computed(() => {
+    const value = emotionValue.value
+    for (let i = emotionTiers.length - 1; i >= 0; i--) {
+      if (value >= emotionTiers[i].min) {
+        return emotionTiers[i]
+      }
+    }
+    return emotionTiers[0]
+  })
+
+  const emotionTierProgress = computed(() => {
+    const tier = currentEmotionTier.value
+    const nextTierIndex = emotionTiers.findIndex(t => t.id === tier.id) + 1
+    const nextTier = emotionTiers[nextTierIndex]
+    
+    if (!nextTier) {
+      return 100
+    }
+    
+    const range = nextTier.min - tier.min
+    const progress = emotionValue.value - tier.min
+    return Math.min(100, Math.max(0, (progress / range) * 100))
+  })
+
+  const emotionSceneTint = computed(() => {
+    return currentEmotionTier.value.bgTint
+  })
+
+  const emotionDialogueStyle = computed(() => {
+    const tier = currentEmotionTier.value
+    return {
+      tone: tier.dialogueTone,
+      color: tier.color,
+      tierId: tier.id
+    }
+  })
+
+  const chapterEmotionProgress = computed(() => {
+    const target = currentChapter.value?.emotionTarget || 100
+    const current = emotionValue.value
+    const percent = Math.min(100, (current / target) * 100)
+    return {
+      current,
+      target,
+      percent,
+      remaining: Math.max(0, target - current),
+      reached: current >= target
+    }
+  })
+
   const getMaterialById = (id) => {
     return materials.value.find(m => m.id === id)
   }
@@ -1855,6 +1986,12 @@ export const useGameStore = defineStore('game', () => {
     getMaterialUsageCount,
     canProceed,
     emotionPercentage,
+    emotionTiers,
+    currentEmotionTier,
+    emotionTierProgress,
+    emotionSceneTint,
+    emotionDialogueStyle,
+    chapterEmotionProgress,
     getMaterialById,
     getChapterById,
     startChapter,
