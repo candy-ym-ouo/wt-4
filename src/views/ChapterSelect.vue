@@ -188,6 +188,9 @@
       <button v-if="hasNgpData" class="btn btn-ghost ngp-btn" @click="showNgpStats = !showNgpStats">
         📊 多周目进度
       </button>
+      <button class="btn btn-ghost" @click="goToMemoryGallery">
+        📚 回忆图鉴
+      </button>
       <button class="btn btn-ghost" @click="goToEditor">
         📝 剧情编辑器
       </button>
@@ -400,7 +403,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '../stores/gameStore'
 import TutorialOverlay from '../components/TutorialOverlay.vue'
@@ -669,6 +672,10 @@ const openTutorial = () => {
 
 const goToEditor = () => {
   router.push('/story-editor')
+}
+
+const goToMemoryGallery = () => {
+  router.push('/memory-gallery')
 }
 
 const handleTutorialClose = () => {

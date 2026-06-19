@@ -30,6 +30,11 @@ const routes = [
     path: '/story-editor',
     name: 'StoryEditor',
     component: () => import('../views/StoryEditor.vue')
+  },
+  {
+    path: '/memory-gallery',
+    name: 'MemoryGallery',
+    component: () => import('../views/MemoryGallery.vue')
   }
 ]
 

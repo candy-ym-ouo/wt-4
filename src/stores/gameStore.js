@@ -2474,6 +2474,215 @@ export const useGameStore = defineStore('game', () => {
     return count
   }
 
+  const getGalleryDialogues = () => {
+    const dialogues = []
+    const globalTriggeredSet = buildGlobalTriggeredComboSet()
+
+    chapters.value.forEach(chapter => {
+      chapter.scenes.forEach(sceneId => {
+        const scene = scenes.value[sceneId]
+        if (!scene) return
+
+        scene.dialogues.forEach(dialogue => {
+          if (dialogue.isKeyLine) {
+            dialogues.push({
+              id: dialogue.id,
+              text: dialogue.text,
+              speaker: dialogue.speaker,
+              sceneId: sceneId,
+              chapterId: chapter.id,
+              chapterTitle: chapter.title,
+              type: 'key',
+              unlocked: completedChapters.value.includes(chapter.id)
+            })
+          }
+        })
+
+        if (scene.materialCombos) {
+          scene.materialCombos.forEach(combo => {
+            if (combo.hiddenDialogue) {
+              const isTriggered = globalTriggeredSet.has(combo.id)
+              dialogues.push({
+                id: combo.hiddenDialogue.id,
+                text: isTriggered ? combo.hiddenDialogue.text : '???',
+                speaker: combo.hiddenDialogue.speaker,
+                sceneId: sceneId,
+                chapterId: chapter.id,
+                chapterTitle: chapter.title,
+                comboName: combo.name,
+                type: 'hidden',
+                unlocked: isTriggered
+              })
+            }
+          })
+        }
+      })
+    })
+
+    return dialogues
+  }
+
+  const getGalleryScenes = () => {
+    const sceneList = []
+
+    chapters.value.forEach(chapter => {
+      chapter.scenes.forEach((sceneId, index) => {
+        const scene = scenes.value[sceneId]
+        if (!scene) return
+
+        const isUnlocked = completedChapters.value.includes(chapter.id) || 
+          (unlockedChapters.value.includes(chapter.id) && index === 0)
+
+        sceneList.push({
+          id: sceneId,
+          title: scene.name || `场景 ${index + 1}`,
+          chapterId: chapter.id,
+          chapterTitle: chapter.title,
+          background: scene.background,
+          timeOfDay: scene.timeOfDay,
+          weather: scene.weather,
+          dialogueCount: scene.dialogues?.length || 0,
+          unlocked: isUnlocked,
+          index: index + 1
+        })
+      })
+    })
+
+    return sceneList
+  }
+
+  const getGalleryMaterials = () => {
+    const materialList = []
+    const globalTriggeredSet = buildGlobalTriggeredComboSet()
+
+    materials.value.forEach(material => {
+      const isUsed = materialUsageHistory.value[material.id] > 0 || 
+        baseMaterials.value.some(m => m.id === material.id)
+
+      const usedInCombos = []
+      Object.values(scenes.value).forEach(scene => {
+        if (scene.materialCombos) {
+          scene.materialCombos.forEach(combo => {
+            if (combo.materials.includes(material.id)) {
+              usedInCombos.push({
+                id: combo.id,
+                name: combo.name,
+                triggered: globalTriggeredSet.has(combo.id)
+              })
+            }
+          })
+        }
+      })
+
+      materialList.push({
+        ...material,
+        unlocked: true,
+        usedCount: materialUsageHistory.value[material.id] || 0,
+        usedInCombos,
+        isHidden: material.isHidden || false,
+        categoryLabel: material.category === 'nature' ? '🌿 自然' : '📝 文具',
+        rarityLabel: material.rarity === 'legendary' ? '传说' : 
+                     material.rarity === 'rare' ? '稀有' : '普通'
+      })
+    })
+
+    return materialList
+  }
+
+  const getGalleryEndings = () => {
+    return endings.value.map(ending => ({
+      ...ending,
+      discovered: newGamePlus.value.discoveredEndingIds.includes(ending.id),
+      discoverTime: newGamePlus.value.endingDiscoverTimes[ending.id] || null,
+      typeLabel: getEndingTypeLabel(ending.type),
+      typeIcon: getEndingTypeIcon(ending.type)
+    }))
+  }
+
+  const getEndingTypeLabel = (type) => {
+    const labels = {
+      eternal: '永恒结局',
+      ngp_perfect: '完美轮回',
+      ngp_special: '特殊轮回',
+      true: '真结局',
+      perfect_path: '完美旅程',
+      dialogue_master: '心语心愿',
+      time_sequence: '时序之约',
+      special: '特殊结局',
+      good: '好结局',
+      normal: '普通结局',
+      happy: '快乐结局',
+      sad: '悲伤结局',
+      bad: '坏结局',
+      hidden: '隐藏结局'
+    }
+    return labels[type] || type
+  }
+
+  const getEndingTypeIcon = (type) => {
+    const icons = {
+      eternal: '💫',
+      ngp_perfect: '🌟',
+      ngp_special: '✨',
+      true: '👑',
+      perfect_path: '🏆',
+      dialogue_master: '💝',
+      time_sequence: '⏰',
+      special: '🎁',
+      good: '😊',
+      normal: '📖',
+      happy: '😄',
+      sad: '😢',
+      bad: '💀',
+      hidden: '🔮'
+    }
+    return icons[type] || '📖'
+  }
+
+  const getGalleryStats = () => {
+    const dialogues = getGalleryDialogues()
+    const scenes = getGalleryScenes()
+    const materials = getGalleryMaterials()
+    const endings = getGalleryEndings()
+
+    const keyDialogues = dialogues.filter(d => d.type === 'key')
+    const hiddenDialogues = dialogues.filter(d => d.type === 'hidden')
+
+    return {
+      total: {
+        dialogues: dialogues.length,
+        scenes: scenes.length,
+        materials: materials.length,
+        endings: endings.length
+      },
+      unlocked: {
+        keyDialogues: keyDialogues.filter(d => d.unlocked).length,
+        hiddenDialogues: hiddenDialogues.filter(d => d.unlocked).length,
+        scenes: scenes.filter(s => s.unlocked).length,
+        materials: materials.filter(m => m.unlocked).length,
+        endings: endings.filter(e => e.discovered).length
+      },
+      percentages: {
+        keyDialogues: keyDialogues.length > 0 
+          ? Math.round((keyDialogues.filter(d => d.unlocked).length / keyDialogues.length) * 100) 
+          : 0,
+        hiddenDialogues: hiddenDialogues.length > 0 
+          ? Math.round((hiddenDialogues.filter(d => d.unlocked).length / hiddenDialogues.length) * 100) 
+          : 0,
+        scenes: scenes.length > 0 
+          ? Math.round((scenes.filter(s => s.unlocked).length / scenes.length) * 100) 
+          : 0,
+        materials: materials.length > 0 
+          ? Math.round((materials.filter(m => m.unlocked).length / materials.length) * 100) 
+          : 0,
+        endings: endings.length > 0 
+          ? Math.round((endings.filter(e => e.discovered).length / endings.length) * 100) 
+          : 0,
+        overall: 0
+      }
+    }
+  }
+
   const generateMaterialReview = () => {
     const reviewItems = []
     const globalTriggeredSet = buildGlobalTriggeredComboSet()
@@ -3908,6 +4117,13 @@ export const useGameStore = defineStore('game', () => {
     isNgpConditionMet,
     showNgpNotification,
     getNgpSummary,
-    generateNgpNextGoals
+    generateNgpNextGoals,
+    getGalleryDialogues,
+    getGalleryScenes,
+    getGalleryMaterials,
+    getGalleryEndings,
+    getGalleryStats,
+    getEndingTypeLabel,
+    getEndingTypeIcon
   }
 })
