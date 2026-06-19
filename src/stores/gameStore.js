@@ -71,6 +71,10 @@ export const useGameStore = defineStore('game', () => {
 
   const activeMaterialFilter = ref('all')
   const materialUsageHistory = ref({})
+  const materialPlacementSequence = ref([])
+  const chapterCompletionDetails = ref({})
+  const keyDialogueLines = ref([])
+  const hiddenDialogueSequence = ref([])
 
   const branchStats = ref({
     pathHistory: [],
@@ -821,6 +825,9 @@ export const useGameStore = defineStore('game', () => {
     dialogueHistory.value = []
     activeMaterialFilter.value = 'all'
     currentPathSequence.value = []
+    materialPlacementSequence.value = []
+    keyDialogueLines.value = []
+    hiddenDialogueSequence.value = []
 
     const firstScene = scenes.value[chapter.scenes[0]]
     if (firstScene) {
@@ -874,6 +881,17 @@ export const useGameStore = defineStore('game', () => {
     if (!dialogue) return
 
     addToDialogueHistory(dialogue)
+
+    if (dialogue.isKeyLine) {
+      keyDialogueLines.value.push({
+        dialogueId: dialogue.id,
+        text: dialogue.text,
+        speaker: dialogue.speaker,
+        sceneId: currentSceneId.value,
+        chapterId: currentChapterId.value,
+        timestamp: Date.now()
+      })
+    }
 
     const baseEmotion = dialogue.emotionChange || 0
     const randomFluctuation = Math.floor(Math.random() * 3) - 1
@@ -931,6 +949,15 @@ export const useGameStore = defineStore('game', () => {
   const showHiddenDialogue = (hiddenDialogue) => {
     activeHiddenDialogue.value = { ...hiddenDialogue }
     isShowingHiddenDialogue.value = true
+
+    hiddenDialogueSequence.value.push({
+      dialogueId: hiddenDialogue.id,
+      text: hiddenDialogue.text,
+      speaker: hiddenDialogue.speaker,
+      sceneId: currentSceneId.value,
+      chapterId: currentChapterId.value,
+      timestamp: Date.now()
+    })
 
     const baseEmotion = hiddenDialogue.emotionChange || 0
     const randomFluctuation = Math.floor(Math.random() * 3)
@@ -1046,6 +1073,15 @@ export const useGameStore = defineStore('game', () => {
     const isPerfect = distanceRatio < 0.4
     const placementBonus = isPerfect ? Math.ceil(material.emotion * 0.3) : 0
 
+    materialPlacementSequence.value.push({
+      materialId,
+      isOptional: true,
+      isPerfect,
+      sceneId: currentSceneId.value,
+      chapterId: currentChapterId.value,
+      timestamp: Date.now()
+    })
+
     optionalMaterialsPlaced.value.push({
       id: materialId,
       x: position.x,
@@ -1117,6 +1153,15 @@ export const useGameStore = defineStore('game', () => {
     const distanceRatio = distance / maxDistance
     const isPerfect = distanceRatio < 0.4
     const placementBonus = isPerfect ? Math.ceil(material.emotion * 0.5) : 0
+
+    materialPlacementSequence.value.push({
+      materialId,
+      isOptional: false,
+      isPerfect,
+      sceneId: currentSceneId.value,
+      chapterId: currentChapterId.value,
+      timestamp: Date.now()
+    })
 
     placedMaterials.value.push({
       id: materialId,
@@ -1237,17 +1282,39 @@ export const useGameStore = defineStore('game', () => {
         isPerfect: e.isPerfect
       }))
 
+    const totalEmotion = Object.values(emotionBreakdown).reduce((a, b) => a + b, 0)
+    const triggeredComboCount = allCombos.filter(c => c.triggered).length
+    const totalComboCount = allCombos.length
+    const isPerfect = totalEmotion >= (chapter.emotionTarget || 0) && triggeredComboCount === totalComboCount
+
+    chapterCompletionDetails.value[chapter.id] = {
+      chapterId: chapter.id,
+      completedAt: Date.now(),
+      totalEmotion,
+      emotionTarget: chapter.emotionTarget || 0,
+      emotionReached: totalEmotion >= (chapter.emotionTarget || 0),
+      triggeredComboCount,
+      totalComboCount,
+      allCombosTriggered: triggeredComboCount === totalComboCount,
+      isPerfect,
+      perfectPlacementCount: perfectPlacementCount.value,
+      materialPlacementSequence: [...materialPlacementSequence.value],
+      keyDialogueLines: [...keyDialogueLines.value],
+      hiddenDialogueCount: hiddenDialogueSequence.value.length
+    }
+
     chapterScoreData.value[chapter.id] = {
       chapterId: chapter.id,
       completedAt: Date.now(),
       emotionBreakdown,
-      totalEmotion: Object.values(emotionBreakdown).reduce((a, b) => a + b, 0),
+      totalEmotion,
       materialChoices,
       allCombos,
-      triggeredComboCount: allCombos.filter(c => c.triggered).length,
-      totalComboCount: allCombos.length,
+      triggeredComboCount,
+      totalComboCount,
       emotionTarget: chapter.emotionTarget || 0,
-      log: [...currentChapterLog.value]
+      log: [...currentChapterLog.value],
+      isPerfect
     }
 
     saveChapterScoreData()
@@ -1255,6 +1322,126 @@ export const useGameStore = defineStore('game', () => {
     finalizeChapterPathStats(chapter.id)
 
     checkAndUnlockChapters()
+  }
+
+  const evaluateEndingConditions = (finalScore, completedChapterCount, perfectRate) => {
+    const conditions = {
+      emotionValue: emotionValue.value,
+      finalScore,
+      completedChapterCount,
+      perfectRate,
+      allChaptersCompleted: completedChapterCount === 4,
+      allChaptersPerfect: false,
+      allCombosTriggered: false,
+      allHiddenDialoguesFound: false,
+      keyLinesFound: false,
+      materialOrderMatch: false,
+      seasonComboTriggered: false,
+      totalHiddenDialogues: 0,
+      foundHiddenDialogues: 0,
+      totalCombos: 0,
+      triggeredCombos: 0
+    }
+
+    let totalHidden = 0
+    let foundHidden = 0
+    let totalCombos = 0
+    let triggeredCombosCount = 0
+    let allPerfect = true
+
+    chapters.value.forEach(chapter => {
+      const chapterHidden = getChapterTotalHiddenDialogues(chapter.id)
+      const chapterTriggeredHidden = getChapterTriggeredHiddenDialogues(chapter.id)
+      totalHidden += chapterHidden
+      foundHidden += chapterTriggeredHidden
+
+      const chapterTotalCombos = getChapterTotalCombos(chapter.id)
+      const chapterTriggeredCombos = getChapterTriggeredCombos(chapter.id)
+      totalCombos += chapterTotalCombos
+      triggeredCombosCount += chapterTriggeredCombos
+
+      const detail = chapterCompletionDetails.value[chapter.id]
+      if (!detail || !detail.isPerfect) {
+        allPerfect = false
+      }
+    })
+
+    conditions.totalHiddenDialogues = totalHidden
+    conditions.foundHiddenDialogues = foundHidden
+    conditions.totalCombos = totalCombos
+    conditions.triggeredCombos = triggeredCombosCount
+    conditions.allCombosTriggered = totalCombos > 0 && triggeredCombosCount === totalCombos
+    conditions.allHiddenDialoguesFound = totalHidden > 0 && foundHidden === totalHidden
+    conditions.allChaptersPerfect = allPerfect && completedChapterCount === 4
+    conditions.keyLinesFound = keyDialogueLines.value.length >= 4
+
+    const uniqueMaterialIds = [...new Set(materialPlacementSequence.value.map(m => m.materialId))]
+    const seasonMaterials = ['flower', 'sun', 'leaf', 'snowflake']
+    const hasAllSeasonMaterials = seasonMaterials.every(m => uniqueMaterialIds.includes(m))
+
+    if (hasAllSeasonMaterials) {
+      const seasonOrder = materialPlacementSequence.value
+        .filter(m => seasonMaterials.includes(m.materialId))
+        .map(m => m.materialId)
+
+      let orderIndex = 0
+      let matchesOrder = true
+      for (const matId of seasonOrder) {
+        if (matId === seasonMaterials[orderIndex]) {
+          orderIndex++
+          if (orderIndex >= seasonMaterials.length) break
+        }
+      }
+      conditions.materialOrderMatch = orderIndex === seasonMaterials.length
+    }
+
+    const globalComboSet = buildGlobalTriggeredComboSet()
+    conditions.seasonComboTriggered = globalComboSet.has('combo4_full_four_seasons')
+
+    return conditions
+  }
+
+  const selectEnding = (conditions) => {
+    const {
+      emotionValue,
+      finalScore,
+      completedChapterCount,
+      perfectRate,
+      allChaptersCompleted,
+      allChaptersPerfect,
+      allCombosTriggered,
+      allHiddenDialoguesFound,
+      keyLinesFound,
+      materialOrderMatch,
+      seasonComboTriggered
+    } = conditions
+
+    if (emotionValue >= 120 && allChaptersCompleted && allCombosTriggered &&
+        allHiddenDialoguesFound && seasonComboTriggered && materialOrderMatch) {
+      return endings.value.find(e => e.type === 'true')
+    }
+
+    if (allChaptersPerfect && allCombosTriggered && perfectRate >= 0.8 && finalScore >= 95) {
+      return endings.value.find(e => e.type === 'perfect_path')
+    }
+
+    if (allHiddenDialoguesFound && keyLinesFound && completedChapterCount >= 3) {
+      return endings.value.find(e => e.type === 'dialogue_master')
+    }
+
+    if (materialOrderMatch && emotionValue >= 80 && completedChapterCount >= 3) {
+      return endings.value.find(e => e.type === 'time_sequence')
+    }
+
+    if (finalScore >= 90 && completedChapterCount === 4 && perfectRate >= 0.6) {
+      return endings.value.find(e => e.type === 'special')
+    }
+
+    if (finalScore >= 65 && completedChapterCount >= 2) {
+      return endings.value.find(e => e.type === 'good')
+    }
+
+    return endings.value.find(e => e.type === 'normal')
   }
 
   const completeGame = () => {
@@ -1279,12 +1466,8 @@ export const useGameStore = defineStore('game', () => {
     const materialBonus = (placedCount / Math.max(1, totalMaterialCount)) * 10
     const finalScore = Math.min(100, baseScore + chapterBonus + perfectBonus + materialBonus)
 
-    let ending = endings.value.find(e => e.type === 'normal')
-    if (finalScore >= 90 && completedChapterCount === 4 && perfectRate >= 0.6) {
-      ending = endings.value.find(e => e.type === 'special')
-    } else if (finalScore >= 65 && completedChapterCount >= 2) {
-      ending = endings.value.find(e => e.type === 'good')
-    }
+    const endingConditions = evaluateEndingConditions(finalScore, completedChapterCount, perfectRate)
+    let ending = selectEnding(endingConditions)
 
     const summary = generatePlaySummary(finalScore, completedChapterCount, perfectRate)
     const materialReview = generateMaterialReview()
@@ -1303,6 +1486,7 @@ export const useGameStore = defineStore('game', () => {
           perfectPlacements: perfectPlacementCount.value,
           positiveBonus: positiveBonus.value
         },
+        endingConditions,
         summary,
         materialReview,
         branchStatus,
@@ -1689,6 +1873,10 @@ export const useGameStore = defineStore('game', () => {
     currentChapterLog.value = []
     activeMaterialFilter.value = 'all'
     materialUsageHistory.value = {}
+    materialPlacementSequence.value = []
+    chapterCompletionDetails.value = {}
+    keyDialogueLines.value = []
+    hiddenDialogueSequence.value = []
     currentPathSequence.value = []
     currentTimeOfDay.value = 'day'
     currentWeather.value = 'clear'
@@ -1825,6 +2013,10 @@ export const useGameStore = defineStore('game', () => {
       typingSpeed: typingSpeed.value,
       activeMaterialFilter: activeMaterialFilter.value,
       materialUsageHistory: materialUsageHistory.value,
+      materialPlacementSequence: materialPlacementSequence.value,
+      chapterCompletionDetails: chapterCompletionDetails.value,
+      keyDialogueLines: keyDialogueLines.value,
+      hiddenDialogueSequence: hiddenDialogueSequence.value,
       currentPathSequence: currentPathSequence.value,
       currentTimeOfDay: currentTimeOfDay.value,
       currentWeather: currentWeather.value,
@@ -1957,6 +2149,10 @@ export const useGameStore = defineStore('game', () => {
     typingSpeed.value = saveData.typingSpeed || 50
     activeMaterialFilter.value = saveData.activeMaterialFilter || 'all'
     materialUsageHistory.value = saveData.materialUsageHistory || {}
+    materialPlacementSequence.value = saveData.materialPlacementSequence || []
+    chapterCompletionDetails.value = saveData.chapterCompletionDetails || {}
+    keyDialogueLines.value = saveData.keyDialogueLines || []
+    hiddenDialogueSequence.value = saveData.hiddenDialogueSequence || []
     currentPathSequence.value = saveData.currentPathSequence || []
     currentTimeOfDay.value = saveData.currentTimeOfDay || 'day'
     currentWeather.value = saveData.currentWeather || 'clear'
@@ -2594,6 +2790,10 @@ export const useGameStore = defineStore('game', () => {
     materialTags,
     activeMaterialFilter,
     materialUsageHistory,
+    materialPlacementSequence,
+    chapterCompletionDetails,
+    keyDialogueLines,
+    hiddenDialogueSequence,
     branchStats,
     currentPathSequence,
     currentTimeOfDay,

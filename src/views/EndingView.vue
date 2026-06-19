@@ -320,7 +320,11 @@ const getEndingIcon = () => {
   const icons = {
     good: '💖',
     normal: '📖',
-    special: '🌸'
+    special: '🌸',
+    time_sequence: '⏰',
+    perfect_path: '👑',
+    dialogue_master: '💬',
+    true: '💎'
   }
   return icons[ending.value.type] || '✨'
 }
@@ -330,7 +334,11 @@ const getEndingType = () => {
   const types = {
     good: '💕 好结局',
     normal: '📝 普通结局',
-    special: '✨ 隐藏结局'
+    special: '✨ 隐藏结局',
+    time_sequence: '⏰ 时序结局',
+    perfect_path: '👑 完美结局',
+    dialogue_master: '💬 心语结局',
+    true: '💎 真结局'
   }
   return types[ending.value.type] || ''
 }

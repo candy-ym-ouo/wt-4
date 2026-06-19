@@ -25,5 +25,60 @@
     "description": "当所有素材都被正确放置，隐藏的结局将会显现。",
     "content": "当最后一片素材被放置在正确的位置，整本书散发出柔和的光芒。\n\n你看到了她，就站在那片樱花树下，笑容依旧灿烂。\n\n「我等你很久了。」\n\n原来，这不是结束，而是另一个开始。\n\n「愿所有的等待，都能换来久别重逢。」",
     "background": "linear-gradient(135deg, #e0f2fe 0%, #fce7f3 50%, #fef3c7 100%)"
+  },
+  {
+    "id": "ending_time_sequence",
+    "title": "时序之约",
+    "type": "time_sequence",
+    "minEmotion": 80,
+    "description": "按照四季的顺序放置素材，时光将为你停留。",
+    "content": "当樱花、夏日、秋叶、冬雪依次被放置在手账上，时间仿佛开始倒流。\n\n你看到了那些被遗忘的瞬间——春日初遇的悸动、夏日心动的瞬间、秋日离别的不舍、冬日重逢的喜悦。\n\n原来，最好的时光，就是和你一起走过的四季。\n\n「时光荏苒，四季有你，便是最好的安排。」",
+    "background": "linear-gradient(135deg, #fef3c7 0%, #d1fae5 25%, #fed7aa 50%, #dbeafe 75%, #fce7f3 100%)",
+    "triggerConditions": {
+      "materialOrder": ["flower", "sun", "leaf", "snowflake"],
+      "orderStrict": true
+    }
+  },
+  {
+    "id": "ending_perfect_path",
+    "title": "完美旅程",
+    "type": "perfect_path",
+    "minEmotion": 95,
+    "description": "每一章都以最完美的方式完成，这是属于你的专属结局。",
+    "content": "四章手账，每一页都写满了最真挚的情感，每一个素材都被放在了最恰当的位置。\n\n你不仅找回了所有的记忆，还发现了那些隐藏在细节中的温柔。\n\n她站在时光的尽头，微笑着向你伸出手。\n\n「谢谢你，认真地对待我们的每一个瞬间。」\n\n「因为是你，所以每一刻都值得被珍藏。」",
+    "background": "linear-gradient(135deg, #fef9c3 0%, #fce7f3 30%, #ede9fe 60%, #dbeafe 100%)",
+    "triggerConditions": {
+      "allChaptersPerfect": true,
+      "allCombosTriggered": true,
+      "minPerfectRate": 0.8
+    }
+  },
+  {
+    "id": "ending_dialogue_master",
+    "title": "心语心愿",
+    "type": "dialogue_master",
+    "minEmotion": 70,
+    "description": "当所有隐藏的心声都被听见，最真实的情感将会浮现。",
+    "content": "你找到了所有隐藏的对话，那些未曾说出口的话，那些藏在心底的秘密。\n\n原来，她的心意从一开始就写在了手账的每一个角落里。\n\n「樱花盛开的时候，我就喜欢上你了。」\n\n「夏天的蝉鸣，是我想你的心跳。」\n\n「落叶纷飞的季节，我在等你告白。」\n\n「初雪降临的那天，我们在一起吧。」\n\n「四季更迭，我喜欢你，从未改变。」",
+    "background": "linear-gradient(135deg, #fdf2f8 0%, #faf5ff 50%, #e0e7ff 100%)",
+    "triggerConditions": {
+      "allHiddenDialogues": true,
+      "keyLinesFound": true
+    }
+  },
+  {
+    "id": "ending_true",
+    "title": "真心绽放",
+    "type": "true",
+    "minEmotion": 120,
+    "description": "当所有条件都被满足，真正的结局将会降临。",
+    "content": "手账的最后一页，一颗心缓缓绽放出七彩的光芒。\n\n春夏秋冬，四季轮回，所有的记忆在此刻汇聚。\n\n你终于明白了——\n\n这本手账，从来都不是记录过去，而是通向未来的钥匙。\n\n她就站在光芒的尽头，笑容比你记忆中的还要灿烂。\n\n「我就知道你会找到这里的。」\n\n「因为我们之间，有四季都剪不断的羁绊。」\n\n「准备好了吗？新的故事，从现在开始。」",
+    "background": "linear-gradient(135deg, #fef9c3 0%, #fce7f3 20%, #e0e7ff 40%, #dbeafe 60%, #d1fae5 80%, #fed7aa 100%)",
+    "triggerConditions": {
+      "allOfTheAbove": true,
+      "emotionValue": 120,
+      "allChaptersCompleted": true,
+      "seasonComboTriggered": true
+    }
   }
 ]
