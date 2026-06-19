@@ -66,6 +66,9 @@ export const useGameStore = defineStore('game', () => {
   let heartbeatTimer = null
   let sessionId = null
 
+  const activeMaterialFilter = ref('all')
+  const materialUsageHistory = ref({})
+
   const currentChapter = computed(() => {
     return chapters.value.find(c => c.id === currentChapterId.value)
   })
@@ -115,6 +118,57 @@ export const useGameStore = defineStore('game', () => {
       !optionalMaterialsPlaced.value.some(p => p.id === m.id)
     )
   })
+
+  const materialCategories = computed(() => {
+    const categories = new Set(materials.value.map(m => m.category))
+    return [{ id: 'all', name: '全部' }, ...Array.from(categories).map(c => ({
+      id: c,
+      name: c === 'nature' ? '🌿 自然' : '📝 文具'
+    }))]
+  })
+
+  const materialTags = computed(() => {
+    const tags = new Set()
+    materials.value.forEach(m => m.tags.forEach(t => tags.add(t)))
+    return Array.from(tags)
+  })
+
+  const filteredAvailableMaterials = computed(() => {
+    let materials = availableMaterials.value
+    if (activeMaterialFilter.value !== 'all') {
+      materials = materials.filter(m => m.category === activeMaterialFilter.value)
+    }
+    return materials
+  })
+
+  const currentChapterRecommendedMaterials = computed(() => {
+    if (!currentChapter.value) return []
+    const seasonMap = {
+      chapter1: 'spring',
+      chapter2: 'summer',
+      chapter3: 'autumn',
+      chapter4: 'winter'
+    }
+    const season = seasonMap[currentChapter.value.id] || 'all'
+    return availableMaterials.value.filter(m => 
+      m.tags.includes(season) || m.tags.includes('all')
+    ).map(m => ({
+      ...m,
+      isRecommended: true
+    }))
+  })
+
+  const getMaterialUsageCount = (materialId) => {
+    return materialUsageHistory.value[materialId] || 0
+  }
+
+  const setMaterialFilter = (filter) => {
+    activeMaterialFilter.value = filter
+  }
+
+  const resetMaterialFilter = () => {
+    activeMaterialFilter.value = 'all'
+  }
 
   const canPlaceOptionalMaterial = computed(() => {
     return requiredMaterialPlaced.value && isWaitingForMaterial.value === false && availableOptionalMaterials.value.length > 0
@@ -172,6 +226,7 @@ export const useGameStore = defineStore('game', () => {
     activeHiddenDialogue.value = null
     currentChapterLog.value = []
     dialogueHistory.value = []
+    activeMaterialFilter.value = 'all'
   }
 
   const addToDialogueHistory = (dialogue) => {
@@ -351,6 +406,8 @@ export const useGameStore = defineStore('game', () => {
     const material = getMaterialById(materialId)
     if (!material) return false
 
+    materialUsageHistory.value[materialId] = (materialUsageHistory.value[materialId] || 0) + 1
+
     const centerX = stageWidth / 2
     const centerY = stageHeight / 2
     const distance = Math.sqrt(
@@ -412,6 +469,8 @@ export const useGameStore = defineStore('game', () => {
 
     const material = getMaterialById(materialId)
     if (!material) return false
+
+    materialUsageHistory.value[materialId] = (materialUsageHistory.value[materialId] || 0) + 1
 
     const centerX = stageWidth / 2
     const centerY = stageHeight / 2
@@ -658,6 +717,8 @@ export const useGameStore = defineStore('game', () => {
     chapterScoreData.value = {}
     dialogueCountSinceLastAutoSave.value = 0
     currentChapterLog.value = []
+    activeMaterialFilter.value = 'all'
+    materialUsageHistory.value = {}
     resetStats()
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('journal_game_saves')
@@ -749,6 +810,8 @@ export const useGameStore = defineStore('game', () => {
       activeHiddenDialogue: activeHiddenDialogue.value,
       dialogueHistory: dialogueHistory.value,
       typingSpeed: typingSpeed.value,
+      activeMaterialFilter: activeMaterialFilter.value,
+      materialUsageHistory: materialUsageHistory.value,
       timestamp: Date.now()
     }
     return {
@@ -857,6 +920,8 @@ export const useGameStore = defineStore('game', () => {
     activeHiddenDialogue.value = saveData.activeHiddenDialogue || null
     dialogueHistory.value = saveData.dialogueHistory || []
     typingSpeed.value = saveData.typingSpeed || 50
+    activeMaterialFilter.value = saveData.activeMaterialFilter || 'all'
+    materialUsageHistory.value = saveData.materialUsageHistory || {}
     comboJustTriggered.value = null
     gameCompleted.value = false
     currentEnding.value = null
@@ -1338,11 +1403,20 @@ export const useGameStore = defineStore('game', () => {
     currentScene,
     currentDialogue,
     availableMaterials,
+    filteredAvailableMaterials,
     currentSceneCombos,
     currentSceneTriggeredCombos,
     currentSceneOptionalMaterials,
     availableOptionalMaterials,
     canPlaceOptionalMaterial,
+    materialCategories,
+    materialTags,
+    activeMaterialFilter,
+    materialUsageHistory,
+    currentChapterRecommendedMaterials,
+    setMaterialFilter,
+    resetMaterialFilter,
+    getMaterialUsageCount,
     canProceed,
     emotionPercentage,
     getMaterialById,

@@ -9,8 +9,24 @@
       </div>
     </div>
 
+    <div v-if="chapterRecommendation && chapterRecommendation.length > 0" class="chapter-recommendation">
+      <div class="recommendation-title">💡 本章节推荐：</div>
+      <div class="recommendation-tags">
+        <span 
+          v-for="mat in chapterRecommendation" 
+          :key="mat.id"
+          class="recommendation-tag"
+          :class="{ used: isMaterialUsed(mat.id) }"
+        >
+          <span class="rec-emoji">{{ getEmoji(mat.shape) }}</span>
+          <span class="rec-name">{{ mat.name }}</span>
+          <span v-if="isMaterialUsed(mat.id)" class="rec-check">✓</span>
+        </span>
+      </div>
+    </div>
+
     <div v-if="currentSceneCombos.length > 0" class="combo-hints">
-      <div class="combo-title">💡 本场景组合提示：</div>
+      <div class="combo-title">🔮 本场景组合提示：</div>
       <div 
         v-for="combo in currentSceneCombos" 
         :key="combo.id" 
@@ -37,9 +53,27 @@
       </div>
     </div>
 
+    <div class="filter-section">
+      <div class="filter-label">分类筛选：</div>
+      <div class="filter-buttons">
+        <button
+          v-for="cat in materialCategories"
+          :key="cat.id"
+          class="filter-btn"
+          :class="{ active: activeMaterialFilter === cat.id }"
+          @click="setMaterialFilter(cat.id)"
+        >
+          {{ cat.name }}
+        </button>
+      </div>
+      <div class="filter-stats">
+        显示 {{ filteredAvailableMaterials.length }} / {{ availableMaterials.length }} 个素材
+      </div>
+    </div>
+
     <div class="materials-grid">
       <div
-        v-for="material in availableMaterials"
+        v-for="material in filteredAvailableMaterials"
         :key="material.id"
         class="material-item"
         :class="{ 
@@ -48,12 +82,16 @@
           used: isMaterialUsed(material.id),
           optional: isOptionalMaterial(material.id),
           required: material.id === requiredMaterialId,
+          recommended: isRecommendedMaterial(material.id),
           [material.rarity || 'common']: true
         }"
         @click="selectMaterial(material)"
       >
         <div v-if="material.rarity === 'rare'" class="rarity-badge rare">稀有</div>
         <div v-else-if="material.rarity === 'legendary'" class="rarity-badge legendary">传说</div>
+        
+        <div v-if="isRecommendedMaterial(material.id) && !isMaterialUsed(material.id)" class="recommend-badge">推荐</div>
+        
         <div class="material-icon" :style="{ background: material.color }">
           <span class="material-emoji">{{ getEmoji(material.shape) }}</span>
         </div>
@@ -61,10 +99,22 @@
           <span class="material-name">{{ material.name }}</span>
           <span class="material-emotion">+{{ material.emotion }} 💕</span>
         </div>
-        <div v-if="isMaterialUsed(material.id)" class="used-badge">已放置</div>
+        
+        <div v-if="isMaterialUsed(material.id)" class="used-badge">
+          <span class="used-icon">✓</span>
+          <span class="used-text">已放置</span>
+        </div>
         <div v-else-if="isOptionalMaterial(material.id) && requiredMaterialPlaced" class="optional-badge">可选</div>
         <div v-else-if="material.id === requiredMaterialId && isWaitingForMaterial" class="required-badge">必需</div>
+        
+        <div v-if="getUsageCount(material.id) > 0" class="usage-counter">
+          使用: {{ getUsageCount(material.id) }}次
+        </div>
       </div>
+    </div>
+
+    <div v-if="filteredAvailableMaterials.length === 0 && availableMaterials.length > 0" class="empty-filter-hint">
+      该分类下没有可用素材，<button class="link-btn" @click="resetMaterialFilter">查看全部</button>
     </div>
   </div>
 </template>
@@ -78,6 +128,7 @@ const emit = defineEmits(['select'])
 const gameStore = useGameStore()
 
 const availableMaterials = computed(() => gameStore.availableMaterials)
+const filteredAvailableMaterials = computed(() => gameStore.filteredAvailableMaterials)
 const isWaitingForMaterial = computed(() => gameStore.isWaitingForMaterial)
 const requiredMaterialId = computed(() => gameStore.requiredMaterialId)
 const optionalMaterialsPlaced = computed(() => gameStore.optionalMaterialsPlaced)
@@ -87,6 +138,13 @@ const currentSceneCombos = computed(() => gameStore.currentSceneCombos)
 const currentSceneTriggeredCombos = computed(() => gameStore.currentSceneTriggeredCombos)
 const currentSceneOptionalMaterials = computed(() => gameStore.currentSceneOptionalMaterials)
 const currentScene = computed(() => gameStore.currentScene)
+const materialCategories = computed(() => gameStore.materialCategories)
+const activeMaterialFilter = computed(() => gameStore.activeMaterialFilter)
+const currentChapterRecommendedMaterials = computed(() => gameStore.currentChapterRecommendedMaterials)
+
+const chapterRecommendation = computed(() => {
+  return currentChapterRecommendedMaterials.value
+})
 
 const requiredMaterialName = computed(() => {
   if (!requiredMaterialId.value) return ''
@@ -122,9 +180,25 @@ const isComboTriggered = (comboId) => {
   return currentSceneTriggeredCombos.value.some(c => c.id === comboId)
 }
 
+const isRecommendedMaterial = (materialId) => {
+  return currentChapterRecommendedMaterials.value.some(m => m.id === materialId)
+}
+
 const getMaterialName = (materialId) => {
   const material = gameStore.getMaterialById(materialId)
   return material ? material.name : materialId
+}
+
+const getUsageCount = (materialId) => {
+  return gameStore.getMaterialUsageCount(materialId)
+}
+
+const setMaterialFilter = (filter) => {
+  gameStore.setMaterialFilter(filter)
+}
+
+const resetMaterialFilter = () => {
+  gameStore.resetMaterialFilter()
 }
 
 const getEmoji = (shape) => {
@@ -193,6 +267,59 @@ const selectMaterial = (material) => {
 .panel-hint.done {
   color: #10b981;
   font-size: 0.8rem;
+}
+
+.chapter-recommendation {
+  background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #a7f3d0;
+}
+
+.recommendation-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #059669;
+  margin-bottom: 8px;
+}
+
+.recommendation-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recommendation-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  border: 1px solid #6ee7b7;
+  transition: all 0.2s ease;
+}
+
+.recommendation-tag.used {
+  background: #d1fae5;
+  border-color: #10b981;
+  opacity: 0.7;
+}
+
+.rec-emoji {
+  font-size: 0.9rem;
+}
+
+.rec-name {
+  color: #065f46;
+  font-weight: 500;
+}
+
+.rec-check {
+  color: #10b981;
+  font-weight: bold;
 }
 
 .combo-hints {
@@ -277,6 +404,58 @@ const selectMaterial = (material) => {
   font-weight: 500;
 }
 
+.filter-section {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 6px 14px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.filter-btn:hover {
+  border-color: var(--accent-pink);
+  color: var(--accent-pink);
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, #f472b6, #ec4899);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.3);
+}
+
+.filter-stats {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
 .materials-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -307,6 +486,20 @@ const selectMaterial = (material) => {
   border-color: #f59e0b;
   background: linear-gradient(135deg, #fffbeb, #ffffff);
   box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2);
+}
+
+.material-item.recommended:not(.used):not(.disabled) {
+  border-color: #10b981;
+  animation: recommendPulse 2s infinite;
+}
+
+@keyframes recommendPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
 }
 
 .material-item:hover:not(.disabled):not(.used) {
@@ -347,8 +540,10 @@ const selectMaterial = (material) => {
 }
 
 .material-item.used {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: not-allowed;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  border-color: #d1d5db;
 }
 
 .material-icon {
@@ -392,12 +587,20 @@ const selectMaterial = (material) => {
   position: absolute;
   top: -8px;
   right: -8px;
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 500;
+  font-size: 0.65rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.used-icon {
+  font-size: 0.8rem;
 }
 
 .optional-badge {
@@ -424,6 +627,18 @@ const selectMaterial = (material) => {
   font-weight: 500;
 }
 
+.recommend-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
 .rarity-badge {
   position: absolute;
   top: 6px;
@@ -442,6 +657,41 @@ const selectMaterial = (material) => {
 .rarity-badge.legendary {
   background: linear-gradient(135deg, #f59e0b, #ef4444);
   color: white;
+}
+
+.material-item.recommended .rarity-badge {
+  top: 28px;
+}
+
+.usage-counter {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  font-size: 0.6rem;
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.empty-filter-hint {
+  text-align: center;
+  padding: 20px;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent-pink);
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: underline;
+}
+
+.link-btn:hover {
+  color: #ec4899;
 }
 
 @keyframes pulsePurple {
@@ -466,6 +716,20 @@ const selectMaterial = (material) => {
 
   .panel-status {
     text-align: left;
+  }
+
+  .filter-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .filter-stats {
+    margin-left: 0;
+  }
+
+  .chapter-recommendation {
+    padding: 10px 12px;
   }
 
   .combo-hints {
