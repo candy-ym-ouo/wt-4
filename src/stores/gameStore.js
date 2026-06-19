@@ -22,7 +22,7 @@ const CRASH_RECOVERY_THRESHOLD = 180000
 
 export const useGameStore = defineStore('game', () => {
   const chapters = ref(chaptersData)
-  const materials = ref(materialsData)
+  const baseMaterials = ref(materialsData)
   const scenes = ref(scenesData)
   const endings = ref(endingsData)
 
@@ -119,7 +119,9 @@ export const useGameStore = defineStore('game', () => {
       minFinalEmotionForInheritance: 30
     },
     unlockedHiddenMaterialIds: [],
+    hiddenMaterialUnlockTimes: {},
     discoveredEndingIds: [],
+    endingDiscoverTimes: {},
     perfectCycleHistory: [],
     cycleRewards: {}
   })
@@ -210,6 +212,13 @@ export const useGameStore = defineStore('game', () => {
       isHidden: true
     }
   ])
+
+  const materials = computed(() => {
+    const unlockedHidden = hiddenMaterialsRegistry.value.filter(m => 
+      newGamePlus.value.unlockedHiddenMaterialIds.includes(m.id)
+    )
+    return [...baseMaterials.value, ...unlockedHidden]
+  })
 
   const crossCycleAchievements = ref([
     {
@@ -349,8 +358,20 @@ export const useGameStore = defineStore('game', () => {
   })
 
   const currentSceneOptionalMaterials = computed(() => {
-    if (!currentScene.value?.optionalMaterials) return []
-    return materials.value.filter(m => currentScene.value.optionalMaterials.includes(m.id))
+    if (!currentScene.value?.optionalMaterials) {
+      const unlockedHidden = hiddenMaterialsRegistry.value.filter(m =>
+        newGamePlus.value.unlockedHiddenMaterialIds.includes(m.id)
+      )
+      return unlockedHidden
+    }
+    const baseOptionals = materials.value.filter(m =>
+      currentScene.value.optionalMaterials.includes(m.id)
+    )
+    const unlockedHidden = hiddenMaterialsRegistry.value.filter(m =>
+      newGamePlus.value.unlockedHiddenMaterialIds.includes(m.id) &&
+      !currentScene.value.optionalMaterials.includes(m.id)
+    )
+    return [...baseOptionals, ...unlockedHidden]
   })
 
   const availableOptionalMaterials = computed(() => {
@@ -1870,7 +1891,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   const selectEnding = (conditions) => {
-    const orderedEndingTypes = ['true', 'perfect_path', 'dialogue_master', 'time_sequence', 'special', 'good', 'normal']
+    const orderedEndingTypes = ['eternal', 'ngp_perfect', 'true', 'ngp_special', 'perfect_path', 'dialogue_master', 'time_sequence', 'special', 'good', 'normal']
 
     for (const type of orderedEndingTypes) {
       const ending = endings.value.find(e => e.type === type)
@@ -1885,6 +1906,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   const completeGame = () => {
+    if (gameCompleted.value) return
     gameCompleted.value = true
 
     if (currentChapterId.value && !completedChapters.value.includes(currentChapterId.value)) {
@@ -1894,9 +1916,12 @@ export const useGameStore = defineStore('game', () => {
     branchStats.value.totalPlaythroughs++
     saveBranchStats()
 
+    newGamePlus.value.totalPlaythroughs++
+
     const endingId = currentEnding.value?.id
     if (endingId && !newGamePlus.value.discoveredEndingIds.includes(endingId)) {
       newGamePlus.value.discoveredEndingIds.push(endingId)
+      newGamePlus.value.endingDiscoverTimes[endingId] = Date.now()
     }
 
     const allPerfect = chapters.value.every(ch => {
@@ -2079,6 +2104,7 @@ export const useGameStore = defineStore('game', () => {
 
       if (unlocked) {
         ngp.unlockedHiddenMaterialIds.push(mat.id)
+        ngp.hiddenMaterialUnlockTimes[mat.id] = Date.now()
         newlyUnlocked.push(mat)
       }
     })
@@ -2236,7 +2262,6 @@ export const useGameStore = defineStore('game', () => {
     const currentCycle = newGamePlus.value.currentCycle
     const inheritedEmotion = calculateInheritedEmotion(finalEmotion, currentCycle)
 
-    newGamePlus.value.totalPlaythroughs++
     newGamePlus.value.currentCycle++
     newGamePlus.value.maxCycleUnlocked = Math.max(
       newGamePlus.value.maxCycleUnlocked,
@@ -2770,7 +2795,9 @@ export const useGameStore = defineStore('game', () => {
         inheritedEmotion: 0,
         emotionInheritanceConfig: newGamePlus.value.emotionInheritanceConfig,
         unlockedHiddenMaterialIds: [],
+        hiddenMaterialUnlockTimes: {},
         discoveredEndingIds: [],
+        endingDiscoverTimes: {},
         perfectCycleHistory: [],
         cycleRewards: {}
       }

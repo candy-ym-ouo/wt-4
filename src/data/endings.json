@@ -1,5 +1,53 @@
 [
   {
+    "id": "ending_eternal",
+    "title": "永恒之约",
+    "type": "eternal",
+    "minEmotion": 150,
+    "description": "跨越无数次轮回，你们的羁绊早已超越了时间本身。",
+    "content": "当第五次合上这本手账时，时间仿佛静止了。\n\n你看到了无数个平行的自己——\n\n有的在樱花树下初遇，有的在夏日蝉鸣中心动，\n有的在落叶纷飞时告别，有的在初雪降临时重逢。\n\n但无论哪一个你，最终都走向了她。\n\n「你来了。」\n\n她站在时光的交汇处，身后是无数个四季的轮回。\n\n「我等了你很久很久。」\n\n「不过没关系，因为我知道，你一定会来的。」\n\n「这一次，我们不要再分开了，好吗？」\n\n手账发出前所未有的光芒，新的篇章，永恒的篇章，从此刻开始书写。",
+    "background": "linear-gradient(135deg, #fef3c7 0%, #fce7f3 20%, #e0e7ff 40%, #cffafe 60%, #d1fae5 80%, #fef3c7 100%)",
+    "triggerConditions": {
+      "currentCycle": 5,
+      "allEndingsDiscovered": true,
+      "allHiddenMaterialsUnlocked": true,
+      "allAchievementsUnlocked": true,
+      "emotionValue": 150
+    }
+  },
+  {
+    "id": "ending_ngp_remember",
+    "title": "记忆回廊",
+    "type": "ngp_special",
+    "minEmotion": 100,
+    "description": "在第二次的旅程中，你发现了那些被遗忘的细节。",
+    "content": "第二周目结束时，你在手账的夹层中发现了一张泛黄的照片。\n\n照片上的两个人，笑得那么灿烂，仿佛拥有全世界的幸福。\n\n你不记得这张照片是什么时候放进去的，但看着它，心脏却莫名地跳动着。\n\n「这是...我们第一次去游乐园的时候拍的。」\n\n耳边仿佛响起了她的声音。\n\n「你说，摩天轮转到最高点的时候许愿，愿望就会实现。」\n\n「那你许了什么愿？」\n\n「我许的愿是——希望每一次轮回，都能遇见你。」\n\n照片的背面，写着一行小字：\n「愿我们的故事，永不完结。」",
+    "background": "linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fce7f3 100%)",
+    "triggerConditions": {
+      "isNgpCycle": true,
+      "hasInheritedEmotion": true,
+      "allChaptersCompleted": true,
+      "minFinalScore": 80
+    }
+  },
+  {
+    "id": "ending_ngp_perfect",
+    "title": "时光回响",
+    "type": "ngp_perfect",
+    "minEmotion": 130,
+    "description": "完美的轮回，唤醒了沉睡在记忆深处的真实。",
+    "content": "当所有章节都以完美的姿态完成，当所有组合都被触发，\n当所有隐藏的对话都被听见，当所有的情感都被收集——\n\n手账开始发光，比以往任何一次都要耀眼。\n\n你看到了，看到了那个一直等待着的人。\n\n「你终于来了。」\n\n她的身影有些模糊，却又那么熟悉。\n\n「我一直在等你，等你想起一切。」\n\n「每一次轮回，都是为了让你记起——」\n\n「我有多爱你。」\n\n光芒渐渐散去，但你知道，这不是结束。\n\n真正的故事，才刚刚开始。",
+    "background": "linear-gradient(135deg, #fdf2f8 0%, #faf5ff 30%, #dbeafe 60%, #d1fae5 100%)",
+    "triggerConditions": {
+      "currentCycle": 3,
+      "allChaptersPerfect": true,
+      "allCombosTriggered": true,
+      "allHiddenDialogues": true,
+      "hasPerfectCycle": true,
+      "emotionValue": 130
+    }
+  },
+  {
     "id": "ending_true",
     "title": "真心绽放",
     "type": "true",

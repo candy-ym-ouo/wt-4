@@ -457,9 +457,10 @@ const newlyUnlockedAchievements = computed(() => {
 
 const newlyUnlockedMaterials = computed(() => {
   const unlockedIds = gameStore.newGamePlus.unlockedHiddenMaterialIds
+  const unlockTimes = gameStore.newGamePlus.hiddenMaterialUnlockTimes || {}
   return gameStore.hiddenMaterialsRegistry.filter(
     mat => unlockedIds.includes(mat.id) && 
-    mat.unlockedAt && new Date(mat.unlockedAt) > new Date(Date.now() - 60000)
+    unlockTimes[mat.id] && Date.now() - unlockTimes[mat.id] < 120000
   )
 })
 
@@ -476,7 +477,10 @@ const getEndingIcon = () => {
     time_sequence: '⏰',
     perfect_path: '👑',
     dialogue_master: '💬',
-    true: '💎'
+    true: '💎',
+    ngp_special: '🔄',
+    ngp_perfect: '🌟',
+    eternal: '♾️'
   }
   return icons[ending.value.type] || '✨'
 }
@@ -490,7 +494,10 @@ const getEndingType = () => {
     time_sequence: '⏰ 时序结局',
     perfect_path: '👑 完美结局',
     dialogue_master: '💬 心语结局',
-    true: '💎 真结局'
+    true: '💎 真结局',
+    ngp_special: '🔄 多周目结局',
+    ngp_perfect: '🌟 多周目完美结局',
+    eternal: '♾️ 永恒结局'
   }
   return types[ending.value.type] || ''
 }
