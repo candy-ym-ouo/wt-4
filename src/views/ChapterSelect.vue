@@ -149,6 +149,9 @@
       <button class="btn btn-secondary" @click="openLoadModal">
         📂 读取存档
       </button>
+      <button class="btn btn-ghost" @click="goToEditor">
+        📝 剧情编辑器
+      </button>
       <button class="btn btn-ghost" @click="resetGame">
         🔄 重新开始
       </button>
@@ -438,6 +441,10 @@ const resetGame = () => {
 
 const openTutorial = () => {
   gameStore.showTutorial('chapter-select')
+}
+
+const goToEditor = () => {
+  router.push('/story-editor')
 }
 
 const handleTutorialClose = () => {

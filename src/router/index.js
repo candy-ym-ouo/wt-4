@@ -25,6 +25,11 @@ const routes = [
     path: '/ending',
     name: 'Ending',
     component: () => import('../views/EndingView.vue')
+  },
+  {
+    path: '/story-editor',
+    name: 'StoryEditor',
+    component: () => import('../views/StoryEditor.vue')
   }
 ]
 
