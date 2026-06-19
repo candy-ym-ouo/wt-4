@@ -8,28 +8,28 @@
         "id": "d1_1_1",
         "speaker": "旁白",
         "text": "阳光透过窗帘的缝隙，在木质书桌上洒下金色的光斑。",
-        "emotionChange": 5,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d1_1_2",
         "speaker": "你",
         "text": "这本手账...是多久以前的了？",
-        "emotionChange": 3,
+        "emotionChange": 1,
         "trigger": null
       },
       {
         "id": "d1_1_3",
         "speaker": "旁白",
         "text": "封面上的樱花图案已经有些褪色，但依然能感受到当年的用心。",
-        "emotionChange": 2,
+        "emotionChange": 1,
         "trigger": "material_required"
       },
       {
         "id": "d1_1_4",
         "speaker": "内心",
         "text": "那年春天，好像发生了很多事情呢...",
-        "emotionChange": 5,
+        "emotionChange": 2,
         "trigger": null
       }
     ],
@@ -45,28 +45,28 @@
         "id": "d1_2_1",
         "speaker": "回忆",
         "text": "\"你也喜欢樱花吗？\" 一个清脆的声音在身后响起。",
-        "emotionChange": 8,
+        "emotionChange": 3,
         "trigger": null
       },
       {
         "id": "d1_2_2",
         "speaker": "你",
         "text": "嗯...每年春天都会来这里看。",
-        "emotionChange": 4,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d1_2_3",
         "speaker": "回忆",
         "text": "她的笑容像阳光一样灿烂，蝴蝶在她身边翩翩起舞。",
-        "emotionChange": 6,
+        "emotionChange": 2,
         "trigger": "material_required"
       },
       {
         "id": "d1_2_4",
         "speaker": "内心",
         "text": "那是我们第一次相遇的地方...",
-        "emotionChange": 7,
+        "emotionChange": 3,
         "trigger": null
       }
     ],
@@ -82,28 +82,28 @@
         "id": "d1_3_1",
         "speaker": "旁白",
         "text": "手账里夹着一封信，信封上的字迹依然清晰。",
-        "emotionChange": 5,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d1_3_2",
         "speaker": "你",
         "text": "这是...她写给我的信？",
-        "emotionChange": 8,
+        "emotionChange": 3,
         "trigger": null
       },
       {
         "id": "d1_3_3",
         "speaker": "回忆",
         "text": "\"下个春天，我们还在这里见面吧。\"",
-        "emotionChange": 10,
+        "emotionChange": 3,
         "trigger": "material_required"
       },
       {
         "id": "d1_3_4",
         "speaker": "旁白",
         "text": "春日的记忆，就这样被轻轻唤醒了...",
-        "emotionChange": 5,
+        "emotionChange": 2,
         "trigger": "chapter_complete"
       }
     ],
@@ -119,22 +119,29 @@
         "id": "d2_1_1",
         "speaker": "旁白",
         "text": "夏日的阳光格外耀眼，知了在树上不知疲倦地歌唱。",
-        "emotionChange": 5,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d2_1_2",
         "speaker": "你",
         "text": "好热啊...真想去图书馆吹空调。",
-        "emotionChange": 2,
+        "emotionChange": 1,
         "trigger": null
       },
       {
         "id": "d2_1_3",
         "speaker": "回忆",
         "text": "\"这么巧？我也正要去图书馆呢。\"",
-        "emotionChange": 8,
+        "emotionChange": 3,
         "trigger": "material_required"
+      },
+      {
+        "id": "d2_1_4",
+        "speaker": "旁白",
+        "text": "窗外的太阳，照亮了两个人的身影。",
+        "emotionChange": 2,
+        "trigger": null
       }
     ],
     "requiredMaterial": "sun",
@@ -149,22 +156,29 @@
         "id": "d2_2_1",
         "speaker": "旁白",
         "text": "图书馆里很安静，只有窗外传来的蝉鸣声。",
-        "emotionChange": 4,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d2_2_2",
         "speaker": "你",
         "text": "你也喜欢这本书吗？",
-        "emotionChange": 5,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d2_2_3",
         "speaker": "回忆",
         "text": "她点点头，在书页上写下了一行小字。",
-        "emotionChange": 7,
+        "emotionChange": 3,
         "trigger": "material_required"
+      },
+      {
+        "id": "d2_2_4",
+        "speaker": "内心",
+        "text": "蝉鸣声声，好像在为我们伴奏...",
+        "emotionChange": 2,
+        "trigger": null
       }
     ],
     "requiredMaterial": "cicada",
@@ -179,21 +193,28 @@
         "id": "d2_3_1",
         "speaker": "旁白",
         "text": "手账里夹着一片枯黄的书签，是那本书的第27页。",
-        "emotionChange": 6,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d2_3_2",
         "speaker": "你",
         "text": "「夏天的相遇，是青春最美的注脚」...",
-        "emotionChange": 10,
+        "emotionChange": 4,
         "trigger": null
       },
       {
         "id": "d2_3_3",
         "speaker": "回忆",
+        "text": "书签的背面，画着一本小书的图案。",
+        "emotionChange": 3,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d2_3_4",
+        "speaker": "回忆",
         "text": "那个夏天的阳光，好像永远都不会褪色。",
-        "emotionChange": 8,
+        "emotionChange": 3,
         "trigger": "chapter_complete"
       }
     ],
@@ -209,22 +230,29 @@
         "id": "d3_1_1",
         "speaker": "旁白",
         "text": "秋风起，金黄的落叶铺满了校园的小径。",
-        "emotionChange": 5,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d3_1_2",
         "speaker": "你",
         "text": "时间过得真快啊...",
-        "emotionChange": 4,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d3_1_3",
         "speaker": "回忆",
         "text": "\"你看，这片叶子的形状好特别。\"",
-        "emotionChange": 7,
+        "emotionChange": 3,
         "trigger": "material_required"
+      },
+      {
+        "id": "d3_1_4",
+        "speaker": "旁白",
+        "text": "她弯下腰，轻轻拾起了那片落叶。",
+        "emotionChange": 2,
+        "trigger": null
       }
     ],
     "requiredMaterial": "leaf",
@@ -239,22 +267,29 @@
         "id": "d3_2_1",
         "speaker": "旁白",
         "text": "街角的咖啡店飘出浓郁的香气，那是你们常去的地方。",
-        "emotionChange": 6,
+        "emotionChange": 3,
         "trigger": null
       },
       {
         "id": "d3_2_2",
         "speaker": "你",
         "text": "老位置？",
-        "emotionChange": 5,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d3_2_3",
         "speaker": "回忆",
         "text": "她笑着点头，阳光洒在她的发梢。",
-        "emotionChange": 8,
+        "emotionChange": 3,
         "trigger": "material_required"
+      },
+      {
+        "id": "d3_2_4",
+        "speaker": "内心",
+        "text": "咖啡的香气，是秋天最温暖的味道...",
+        "emotionChange": 2,
+        "trigger": null
       }
     ],
     "requiredMaterial": "coffee",
@@ -269,21 +304,28 @@
         "id": "d3_3_1",
         "speaker": "旁白",
         "text": "怀表的指针滴答作响，记录着相聚的每一分钟。",
-        "emotionChange": 5,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d3_3_2",
         "speaker": "你",
         "text": "如果时间能停在这一刻就好了...",
-        "emotionChange": 8,
+        "emotionChange": 3,
         "trigger": null
       },
       {
         "id": "d3_3_3",
         "speaker": "回忆",
+        "text": "她把那块怀表轻轻放到你的手心。",
+        "emotionChange": 4,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d3_3_4",
+        "speaker": "回忆",
         "text": "\"没关系，我们还有很多个秋天。\"",
-        "emotionChange": 12,
+        "emotionChange": 4,
         "trigger": "chapter_complete"
       }
     ],
@@ -299,22 +341,29 @@
         "id": "d4_1_1",
         "speaker": "旁白",
         "text": "初雪降临的那天，整个世界都变得安静而洁白。",
-        "emotionChange": 6,
+        "emotionChange": 3,
         "trigger": null
       },
       {
         "id": "d4_1_2",
         "speaker": "你",
         "text": "今年的雪，好像比往年来得更早一些。",
-        "emotionChange": 4,
+        "emotionChange": 2,
         "trigger": null
       },
       {
         "id": "d4_1_3",
         "speaker": "回忆",
         "text": "她伸手接住一片雪花，脸上绽放出温暖的笑容。",
-        "emotionChange": 9,
+        "emotionChange": 4,
         "trigger": "material_required"
+      },
+      {
+        "id": "d4_1_4",
+        "speaker": "旁白",
+        "text": "雪花在她的指尖慢慢融化，像一个温柔的梦。",
+        "emotionChange": 2,
+        "trigger": null
       }
     ],
     "requiredMaterial": "snowflake",
@@ -329,22 +378,29 @@
         "id": "d4_2_1",
         "speaker": "旁白",
         "text": "她把一条红色的围巾围在你的脖子上。",
-        "emotionChange": 7,
+        "emotionChange": 3,
         "trigger": null
       },
       {
         "id": "d4_2_2",
         "speaker": "回忆",
         "text": "\"这样，你就不会冷了。\"",
-        "emotionChange": 10,
+        "emotionChange": 4,
         "trigger": null
       },
       {
         "id": "d4_2_3",
         "speaker": "你",
         "text": "你的手也好冰，我帮你暖暖。",
-        "emotionChange": 12,
+        "emotionChange": 5,
         "trigger": "material_required"
+      },
+      {
+        "id": "d4_2_4",
+        "speaker": "内心",
+        "text": "围巾的温度，是这个冬天最珍贵的礼物...",
+        "emotionChange": 3,
+        "trigger": null
       }
     ],
     "requiredMaterial": "scarf",
@@ -359,21 +415,28 @@
         "id": "d4_3_1",
         "speaker": "旁白",
         "text": "手账翻到了最后一页，那里画着一颗心。",
-        "emotionChange": 8,
+        "emotionChange": 3,
         "trigger": null
       },
       {
         "id": "d4_3_2",
         "speaker": "你",
         "text": "原来...你一直都在这里。",
-        "emotionChange": 15,
+        "emotionChange": 6,
         "trigger": null
       },
       {
         "id": "d4_3_3",
         "speaker": "回忆",
+        "text": "她的指尖轻轻指向那颗心的位置。",
+        "emotionChange": 5,
+        "trigger": "material_required"
+      },
+      {
+        "id": "d4_3_4",
+        "speaker": "回忆",
         "text": "\"春夏秋冬，四季轮回，我一直都在。\"",
-        "emotionChange": 20,
+        "emotionChange": 8,
         "trigger": "game_complete"
       }
     ],

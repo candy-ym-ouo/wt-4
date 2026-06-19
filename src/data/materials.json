@@ -3,7 +3,7 @@
     "id": "flower",
     "name": "樱花",
     "category": "nature",
-    "emotion": 10,
+    "emotion": 4,
     "color": "#f472b6",
     "shape": "flower",
     "description": "春天里最温柔的存在，仿佛能听见花开的声音"
@@ -12,7 +12,7 @@
     "id": "butterfly",
     "name": "蝴蝶",
     "category": "nature",
-    "emotion": 8,
+    "emotion": 3,
     "color": "#a78bfa",
     "shape": "butterfly",
     "description": "翩翩起舞的精灵，承载着少年的梦想"
@@ -21,7 +21,7 @@
     "id": "letter",
     "name": "信笺",
     "category": "stationery",
-    "emotion": 12,
+    "emotion": 5,
     "color": "#fef3c7",
     "shape": "rectangle",
     "description": "写满心事的纸张，每一个字都是心跳的痕迹"
@@ -30,7 +30,7 @@
     "id": "sun",
     "name": "太阳",
     "category": "nature",
-    "emotion": 15,
+    "emotion": 6,
     "color": "#fbbf24",
     "shape": "circle",
     "description": "夏日最炽热的告白，照亮所有阴暗的角落"
@@ -39,7 +39,7 @@
     "id": "cicada",
     "name": "蝉",
     "category": "nature",
-    "emotion": 7,
+    "emotion": 3,
     "color": "#84cc16",
     "shape": "cicada",
     "description": "整个夏天的歌唱，只为等待一个回眸"
@@ -48,7 +48,7 @@
     "id": "book",
     "name": "书本",
     "category": "stationery",
-    "emotion": 10,
+    "emotion": 4,
     "color": "#fcd34d",
     "shape": "book",
     "description": "翻开的书页里，夹着谁的青春"
@@ -57,7 +57,7 @@
     "id": "leaf",
     "name": "落叶",
     "category": "nature",
-    "emotion": 12,
+    "emotion": 5,
     "color": "#f97316",
     "shape": "leaf",
     "description": "金色的信笺，写满秋天的思念"
@@ -66,7 +66,7 @@
     "id": "coffee",
     "name": "咖啡",
     "category": "stationery",
-    "emotion": 9,
+    "emotion": 4,
     "color": "#78350f",
     "shape": "cup",
     "description": "冒着热气的温暖，是午后最惬意的陪伴"
@@ -75,7 +75,7 @@
     "id": "watch",
     "name": "怀表",
     "category": "stationery",
-    "emotion": 11,
+    "emotion": 5,
     "color": "#6b7280",
     "shape": "circle",
     "description": "滴答作响的时光，记录着每一个重要的瞬间"
@@ -84,7 +84,7 @@
     "id": "snowflake",
     "name": "雪花",
     "category": "nature",
-    "emotion": 10,
+    "emotion": 5,
     "color": "#e0f2fe",
     "shape": "snowflake",
     "description": "每一片都是独一无二的，就像我们的故事"
@@ -93,7 +93,7 @@
     "id": "scarf",
     "name": "围巾",
     "category": "stationery",
-    "emotion": 13,
+    "emotion": 6,
     "color": "#ef4444",
     "shape": "scarf",
     "description": "缠绕的温暖，是冬天里最贴心的守护"
@@ -102,7 +102,7 @@
     "id": "heart",
     "name": "心",
     "category": "nature",
-    "emotion": 20,
+    "emotion": 10,
     "color": "#ec4899",
     "shape": "heart",
     "description": "所有情感的归宿，是爱最纯粹的形状"
@@ -111,7 +111,7 @@
     "id": "cloud",
     "name": "云朵",
     "category": "nature",
-    "emotion": 6,
+    "emotion": 2,
     "color": "#f3f4f6",
     "shape": "cloud",
     "description": "飘忽不定的思绪，像棉花糖一样柔软"
@@ -120,7 +120,7 @@
     "id": "star",
     "name": "星星",
     "category": "nature",
-    "emotion": 11,
+    "emotion": 5,
     "color": "#fde047",
     "shape": "star",
     "description": "夜空中最亮的指引，照亮前行的路"
@@ -129,7 +129,7 @@
     "id": "music",
     "name": "音符",
     "category": "stationery",
-    "emotion": 8,
+    "emotion": 3,
     "color": "#8b5cf6",
     "shape": "note",
     "description": "流淌的旋律，是无法言说的心事"

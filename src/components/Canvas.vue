@@ -61,8 +61,18 @@
 
     <div v-if="isWaitingForMaterial && requiredMaterial" class="material-hint pulse">
       <span class="hint-icon">✨</span>
-      <span class="hint-text">请放置「{{ requiredMaterial.name }}」</span>
+      <span class="hint-text">请放置「{{ requiredMaterial.name }}」（放在画面中央有加成哦～）</span>
     </div>
+
+    <transition name="feedback">
+      <div
+        v-if="placementFeedback"
+        :class="['placement-feedback', placementFeedback.type]"
+        :style="{ left: placementFeedback.x + 'px', top: placementFeedback.y + 'px' }"
+      >
+        {{ placementFeedback.message }}
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -88,6 +98,7 @@ const stageWidth = ref(600)
 const stageHeight = ref(450)
 const mousePos = ref({ x: 0, y: 0 })
 const selectedMaterial = ref(null)
+const placementFeedback = ref(null)
 
 const placedMaterials = computed(() => gameStore.placedMaterials)
 const isWaitingForMaterial = computed(() => gameStore.isWaitingForMaterial)
@@ -143,8 +154,31 @@ const handleStageClick = (e) => {
   const pos = stage.getPointerPosition()
 
   if (selectedMaterial.value.id === requiredMaterialId.value) {
-    const success = gameStore.placeMaterial(selectedMaterial.value.id, pos)
-    if (success) {
+    const result = gameStore.placeMaterial(
+      selectedMaterial.value.id,
+      pos,
+      stageWidth.value,
+      stageHeight.value
+    )
+    if (result && result.success) {
+      if (result.isPerfect) {
+        placementFeedback.value = {
+          type: 'perfect',
+          message: `完美放置！+${result.bonus} 情绪加成 ✨`,
+          x: pos.x,
+          y: pos.y
+        }
+      } else {
+        placementFeedback.value = {
+          type: 'normal',
+          message: '放置成功',
+          x: pos.x,
+          y: pos.y
+        }
+      }
+      setTimeout(() => {
+        placementFeedback.value = null
+      }, 1500)
       emit('materialPlaced', selectedMaterial.value)
       selectedMaterial.value = null
     }
@@ -1033,5 +1067,59 @@ defineExpose({
 
 .hint-text {
   font-size: 0.95rem;
+}
+
+.placement-feedback {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  z-index: 20;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.placement-feedback.perfect {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.placement-feedback.normal {
+  background: rgba(255, 255, 255, 0.95);
+  color: #4b5563;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.feedback-enter-active {
+  animation: feedbackIn 0.3s ease-out;
+}
+
+.feedback-leave-active {
+  animation: feedbackOut 0.5s ease-in;
+}
+
+@keyframes feedbackIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes feedbackOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(-30px);
+  }
 }
 </style>

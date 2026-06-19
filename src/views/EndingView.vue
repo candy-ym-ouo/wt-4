@@ -21,13 +21,45 @@
         </div>
 
         <div class="ending-stats">
-          <div class="stat-item">
-            <span class="stat-label">最终情绪值</span>
-            <span class="stat-value handwriting">{{ emotionValue }}</span>
+          <div class="stat-header">
+            <span class="score-label">综合评分</span>
+            <span class="score-value handwriting">{{ ending?.stats?.finalScore || 0 }}</span>
+            <span class="score-max">/ 100</span>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">完成章节</span>
-            <span class="stat-value handwriting">{{ completedChapters }} / {{ totalChapters }}</span>
+          
+          <div class="score-bar">
+            <div 
+              class="score-bar-fill"
+              :style="{ width: (ending?.stats?.finalScore || 0) + '%' }"
+            ></div>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-item">
+              <span class="stat-icon">💖</span>
+              <span class="stat-label">情绪值</span>
+              <span class="stat-value">{{ ending?.stats?.emotionValue || 0 }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-icon">📖</span>
+              <span class="stat-label">完成章节</span>
+              <span class="stat-value">{{ ending?.stats?.completedChapters || 0 }}/{{ totalChapters }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-icon">🎨</span>
+              <span class="stat-label">放置素材</span>
+              <span class="stat-value">{{ ending?.stats?.placedMaterials || 0 }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-icon">✨</span>
+              <span class="stat-label">完美放置</span>
+              <span class="stat-value">{{ ending?.stats?.perfectPlacements || 0 }}</span>
+            </div>
+            <div v-if="ending?.stats?.positiveBonus > 0" class="stat-item">
+              <span class="stat-icon">🌟</span>
+              <span class="stat-label">额外加成</span>
+              <span class="stat-value">+{{ ending?.stats?.positiveBonus || 0 }}</span>
+            </div>
           </div>
         </div>
 
@@ -53,8 +85,6 @@ const router = useRouter()
 const gameStore = useGameStore()
 
 const ending = computed(() => gameStore.currentEnding)
-const emotionValue = computed(() => gameStore.emotionValue)
-const completedChapters = computed(() => gameStore.completedChapters.length)
 const totalChapters = computed(() => gameStore.chapters.length)
 
 const endingParagraphs = computed(() => {
@@ -166,29 +196,81 @@ onMounted(() => {
 }
 
 .ending-stats {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
   margin-bottom: 40px;
-  padding: 20px;
+  padding: 25px;
   background: var(--bg-primary);
-  border-radius: 12px;
+  border-radius: 16px;
+}
+
+.stat-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.score-label {
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.score-value {
+  font-size: 3rem;
+  color: var(--accent-pink);
+  line-height: 1;
+}
+
+.score-max {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+}
+
+.score-bar {
+  width: 100%;
+  height: 10px;
+  background: rgba(244, 114, 182, 0.15);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.score-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f472b6, #a78bfa, #fbbf24);
+  border-radius: 5px;
+  transition: width 1s ease-out;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 15px;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+}
+
+.stat-icon {
+  font-size: 1.4rem;
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
 .stat-value {
-  font-size: 2rem;
+  font-size: 1.3rem;
   color: var(--accent-pink);
+  font-weight: 600;
 }
 
 .ending-actions {
