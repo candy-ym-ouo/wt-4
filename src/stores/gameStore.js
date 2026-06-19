@@ -1671,7 +1671,46 @@ export const useGameStore = defineStore('game', () => {
     notification.value = null
   }
 
+  const generateSaveThumbnail = () => {
+    const chapter = currentChapter.value
+    const scene = currentScene.value
+    const dialogue = currentDialogue.value
+    const chapterScenes = chapter?.scenes || []
+    const totalSceneDialogues = scene?.dialogues?.length || 0
+    const currentSceneIndex = chapterScenes.indexOf(currentSceneId.value)
+
+    let chapterProgress = 0
+    if (chapterScenes.length > 0) {
+      const sceneProgress = currentSceneIndex >= 0 ? currentSceneIndex : 0
+      const dialogueProgress = totalSceneDialogues > 0
+        ? (currentDialogueIndex.value / totalSceneDialogues)
+        : 0
+      chapterProgress = Math.round(
+        ((sceneProgress + dialogueProgress) / chapterScenes.length) * 100
+      )
+      chapterProgress = Math.min(100, Math.max(0, chapterProgress))
+    }
+
+    return {
+      chapterTitle: chapter?.title || '未知章节',
+      chapterSubtitle: chapter?.subtitle || '',
+      sceneName: scene?.name || scene?.id || '未知场景',
+      dialoguePreview: dialogue?.text
+        ? dialogue.text.slice(0, 40) + (dialogue.text.length > 40 ? '...' : '')
+        : '剧情进行中...',
+      emotionValue: emotionValue.value,
+      emotionTier: currentEmotionTier.value?.name || '平静',
+      emotionIcon: currentEmotionTier.value?.icon || '🌙',
+      chapterProgress,
+      completedChaptersCount: completedChapters.value.length,
+      totalChaptersCount: chapters.value.length,
+      triggeredCombosCount: triggeredCombos.value.length,
+      playTimeDialogues: totalDialogueCount.value
+    }
+  }
+
   const serializeGameState = () => {
+    const thumbnail = generateSaveThumbnail()
     const baseData = {
       currentChapterId: currentChapterId.value,
       currentSceneId: currentSceneId.value,
@@ -1699,12 +1738,31 @@ export const useGameStore = defineStore('game', () => {
       activeMaterialFilter: activeMaterialFilter.value,
       materialUsageHistory: materialUsageHistory.value,
       currentPathSequence: currentPathSequence.value,
+      thumbnail,
       timestamp: Date.now()
     }
     return {
       ...baseData,
       checksum: createChecksum(baseData)
     }
+  }
+
+  const latestSaveSlotIndex = computed(() => {
+    let latestIndex = -1
+    let latestTime = 0
+    saveSlots.value.forEach((slot, index) => {
+      if (slot && slot.timestamp > latestTime) {
+        latestTime = slot.timestamp
+        latestIndex = index
+      }
+    })
+    return latestIndex
+  })
+
+  const getSaveThumbnail = (slotIndex) => {
+    const slot = saveSlots.value[slotIndex]
+    if (!slot) return null
+    return slot.thumbnail || null
   }
 
   const autoSave = () => {
@@ -2533,6 +2591,9 @@ export const useGameStore = defineStore('game', () => {
     saveBranchStats,
     loadBranchStats,
     resetBranchStats,
-    generateBranchStatsReport
+    generateBranchStatsReport,
+    generateSaveThumbnail,
+    latestSaveSlotIndex,
+    getSaveThumbnail
   }
 })
