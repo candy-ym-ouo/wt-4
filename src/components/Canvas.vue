@@ -216,6 +216,11 @@ const selectMaterial = (material) => {
   selectedMaterial.value = material
 }
 
+const resetCanvas = () => {
+  selectedMaterial.value = null
+  placementFeedback.value = null
+}
+
 const handleResize = () => {
   if (!containerRef.value) return
   const width = Math.min(containerRef.value.offsetWidth, 600)
@@ -1029,7 +1034,8 @@ onUnmounted(() => {
 })
 
 defineExpose({
-  selectMaterial
+  selectMaterial,
+  resetCanvas
 })
 </script>
 

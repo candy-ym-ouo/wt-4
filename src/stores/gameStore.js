@@ -1,9 +1,15 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import chaptersData from '../data/chapters.json'
 import materialsData from '../data/materials.json'
 import scenesData from '../data/scenes.json'
 import endingsData from '../data/endings.json'
+
+const AUTO_SAVE_KEY = 'journal_game_autosave'
+const CHAPTER_SNAPSHOTS_KEY = 'journal_game_chapter_snapshots'
+const SESSION_KEY = 'journal_game_session'
+const BACKUP_KEY = 'journal_game_saves_backup'
+const AUTO_SAVE_DIALOGUE_INTERVAL = 5
 
 export const useGameStore = defineStore('game', () => {
   const chapters = ref(chaptersData)
@@ -28,6 +34,16 @@ export const useGameStore = defineStore('game', () => {
   const saveSlots = ref([null, null, null])
   const gameCompleted = ref(false)
   const currentEnding = ref(null)
+
+  const autoSaveEnabled = ref(true)
+  const lastAutoSaveTime = ref(null)
+  const autoSaveData = ref(null)
+  const chapterSnapshots = ref({})
+  const notification = ref(null)
+  const showRecoveryModal = ref(false)
+  const recoveryData = ref(null)
+  const dialogueCountSinceLastAutoSave = ref(0)
+  const isInitialized = ref(false)
 
   const currentChapter = computed(() => {
     return chapters.value.find(c => c.id === currentChapterId.value)
@@ -224,58 +240,50 @@ export const useGameStore = defineStore('game', () => {
   }
 
   const saveGame = (slotIndex) => {
-    const saveData = {
-      currentChapterId: currentChapterId.value,
-      currentSceneId: currentSceneId.value,
-      currentDialogueIndex: currentDialogueIndex.value,
-      emotionValue: emotionValue.value,
-      placedMaterials: placedMaterials.value,
-      unlockedChapters: unlockedChapters.value,
-      completedChapters: completedChapters.value,
-      isWaitingForMaterial: isWaitingForMaterial.value,
-      requiredMaterialId: requiredMaterialId.value,
-      perfectPlacementCount: perfectPlacementCount.value,
-      totalDialogueCount: totalDialogueCount.value,
-      positiveBonus: positiveBonus.value,
-      timestamp: Date.now()
-    }
+    const saveData = serializeGameState()
 
     saveSlots.value[slotIndex] = saveData
 
     localStorage.setItem('journal_game_saves', JSON.stringify(saveSlots.value))
+    backupSaveSlots()
     return true
   }
 
   const loadGame = (slotIndex) => {
-    const saveData = saveSlots.value[slotIndex]
-    if (!saveData) return false
+    let saveData = saveSlots.value[slotIndex]
+    if (!saveData) {
+      if (!restoreFromBackup() || !saveSlots.value[slotIndex]) {
+        return false
+      }
+      saveData = saveSlots.value[slotIndex]
+    }
 
-    currentChapterId.value = saveData.currentChapterId
-    currentSceneId.value = saveData.currentSceneId
-    currentDialogueIndex.value = saveData.currentDialogueIndex
-    emotionValue.value = saveData.emotionValue
-    placedMaterials.value = saveData.placedMaterials
-    unlockedChapters.value = saveData.unlockedChapters
-    completedChapters.value = saveData.completedChapters
-    isWaitingForMaterial.value = saveData.isWaitingForMaterial
-    requiredMaterialId.value = saveData.requiredMaterialId
-    perfectPlacementCount.value = saveData.perfectPlacementCount || 0
-    totalDialogueCount.value = saveData.totalDialogueCount || 0
-    positiveBonus.value = saveData.positiveBonus || 0
-    gameCompleted.value = false
-    currentEnding.value = null
-
-    return true
+    return applySaveData(saveData)
   }
 
   const loadSavesFromStorage = () => {
     const saved = localStorage.getItem('journal_game_saves')
     if (saved) {
       try {
-        saveSlots.value = JSON.parse(saved)
+        const loaded = JSON.parse(saved)
+        if (Array.isArray(loaded)) {
+          saveSlots.value = loaded.map(slot => {
+            if (slot && !validateSaveData(slot)) {
+              console.warn('Found corrupted save slot, attempting backup recovery')
+              return null
+            }
+            return slot
+          })
+          if (saveSlots.value.some(s => s === null && loaded[saveSlots.value.indexOf(null)] !== null)) {
+            restoreFromBackup()
+          }
+        }
       } catch (e) {
-        console.error('Failed to load saves:', e)
+        console.error('Failed to load saves, attempting backup recovery:', e)
+        restoreFromBackup()
       }
+    } else {
+      restoreFromBackup()
     }
   }
 
@@ -291,7 +299,18 @@ export const useGameStore = defineStore('game', () => {
     requiredMaterialId.value = null
     gameCompleted.value = false
     currentEnding.value = null
+    autoSaveData.value = null
+    lastAutoSaveTime.value = null
+    chapterSnapshots.value = {}
+    dialogueCountSinceLastAutoSave.value = 0
     resetStats()
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('journal_game_saves')
+      localStorage.removeItem(AUTO_SAVE_KEY)
+      localStorage.removeItem(CHAPTER_SNAPSHOTS_KEY)
+      localStorage.removeItem(SESSION_KEY)
+      localStorage.removeItem(BACKUP_KEY)
+    }
   }
 
   const goToChapterSelect = () => {
@@ -305,7 +324,368 @@ export const useGameStore = defineStore('game', () => {
     currentEnding.value = null
   }
 
+  const createChecksum = (data) => {
+    const str = JSON.stringify(data)
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash
+    }
+    return Math.abs(hash).toString(36)
+  }
+
+  const validateSaveData = (data) => {
+    if (!data || typeof data !== 'object') return false
+    if (!data.currentChapterId && data.currentChapterId !== null) return false
+    if (!data.timestamp) return false
+    if (data.checksum) {
+      const savedChecksum = data.checksum
+      const { checksum, ...rest } = data
+      const calculatedChecksum = createChecksum(rest)
+      if (savedChecksum !== calculatedChecksum) {
+        console.warn('Save data checksum mismatch, data may be corrupted')
+        return false
+      }
+    }
+    return true
+  }
+
+  const showNotification = (message, type = 'info', duration = 2500) => {
+    notification.value = { message, type, id: Date.now() }
+    if (duration > 0) {
+      setTimeout(() => {
+        if (notification.value && notification.value.id === notification.value.id) {
+          notification.value = null
+        }
+      }, duration)
+    }
+  }
+
+  const clearNotification = () => {
+    notification.value = null
+  }
+
+  const serializeGameState = () => {
+    const baseData = {
+      currentChapterId: currentChapterId.value,
+      currentSceneId: currentSceneId.value,
+      currentDialogueIndex: currentDialogueIndex.value,
+      emotionValue: emotionValue.value,
+      placedMaterials: placedMaterials.value,
+      unlockedChapters: unlockedChapters.value,
+      completedChapters: completedChapters.value,
+      isWaitingForMaterial: isWaitingForMaterial.value,
+      requiredMaterialId: requiredMaterialId.value,
+      perfectPlacementCount: perfectPlacementCount.value,
+      totalDialogueCount: totalDialogueCount.value,
+      positiveBonus: positiveBonus.value,
+      timestamp: Date.now()
+    }
+    return {
+      ...baseData,
+      checksum: createChecksum(baseData)
+    }
+  }
+
+  const autoSave = () => {
+    if (!autoSaveEnabled.value || !currentChapterId.value) return false
+
+    try {
+      const saveData = serializeGameState()
+      autoSaveData.value = saveData
+      lastAutoSaveTime.value = saveData.timestamp
+      localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(saveData))
+      dialogueCountSinceLastAutoSave.value = 0
+      return true
+    } catch (e) {
+      console.error('Auto-save failed:', e)
+      return false
+    }
+  }
+
+  const loadAutoSave = () => {
+    try {
+      const saved = localStorage.getItem(AUTO_SAVE_KEY)
+      if (!saved) return false
+      const saveData = JSON.parse(saved)
+      if (!validateSaveData(saveData)) {
+        console.warn('Auto-save data invalid, trying backup...')
+        return false
+      }
+      autoSaveData.value = saveData
+      lastAutoSaveTime.value = saveData.timestamp
+      return true
+    } catch (e) {
+      console.error('Failed to load auto-save:', e)
+      return false
+    }
+  }
+
+  const restoreFromAutoSave = () => {
+    if (!autoSaveData.value) {
+      if (!loadAutoSave()) return false
+    }
+    const result = applySaveData(autoSaveData.value)
+    if (result) {
+      showNotification('已从自动存档恢复', 'success')
+    }
+    return result
+  }
+
+  const applySaveData = (saveData) => {
+    if (!validateSaveData(saveData)) {
+      showNotification('存档数据损坏，无法恢复', 'error')
+      return false
+    }
+    currentChapterId.value = saveData.currentChapterId
+    currentSceneId.value = saveData.currentSceneId
+    currentDialogueIndex.value = saveData.currentDialogueIndex
+    emotionValue.value = saveData.emotionValue
+    placedMaterials.value = saveData.placedMaterials || []
+    unlockedChapters.value = saveData.unlockedChapters || ['chapter1']
+    completedChapters.value = saveData.completedChapters || []
+    isWaitingForMaterial.value = saveData.isWaitingForMaterial || false
+    requiredMaterialId.value = saveData.requiredMaterialId || null
+    perfectPlacementCount.value = saveData.perfectPlacementCount || 0
+    totalDialogueCount.value = saveData.totalDialogueCount || 0
+    positiveBonus.value = saveData.positiveBonus || 0
+    gameCompleted.value = false
+    currentEnding.value = null
+    return true
+  }
+
+  const saveChapterSnapshot = (chapterId = currentChapterId.value) => {
+    if (!chapterId) return false
+
+    try {
+      const snapshot = serializeGameState()
+      snapshot.snapshotType = 'chapter_start'
+      snapshot.snapshotChapterId = chapterId
+
+      chapterSnapshots.value[chapterId] = snapshot
+      localStorage.setItem(CHAPTER_SNAPSHOTS_KEY, JSON.stringify(chapterSnapshots.value))
+      return true
+    } catch (e) {
+      console.error('Failed to save chapter snapshot:', e)
+      return false
+    }
+  }
+
+  const loadChapterSnapshots = () => {
+    try {
+      const saved = localStorage.getItem(CHAPTER_SNAPSHOTS_KEY)
+      if (saved) {
+        chapterSnapshots.value = JSON.parse(saved)
+      }
+    } catch (e) {
+      console.error('Failed to load chapter snapshots:', e)
+      chapterSnapshots.value = {}
+    }
+  }
+
+  const hasChapterSnapshot = (chapterId = currentChapterId.value) => {
+    return !!(chapterSnapshots.value[chapterId] && validateSaveData(chapterSnapshots.value[chapterId]))
+  }
+
+  const rollbackToChapterStart = (chapterId = currentChapterId.value) => {
+    const snapshot = chapterSnapshots.value[chapterId]
+    if (!snapshot) {
+      showNotification('没有找到该章节的存档点', 'warning')
+      return false
+    }
+    if (!validateSaveData(snapshot)) {
+      showNotification('章节存档点数据已损坏', 'error')
+      return false
+    }
+
+    const chapter = getChapterById(chapterId)
+    if (!chapter) return false
+
+    const snapshotEmotion = snapshot.emotionValue || 0
+    const result = applySaveData(snapshot)
+    if (result) {
+      showNotification(`已回滚到「${chapter.title}」开头，情绪值 ${snapshotEmotion}`, 'success')
+    }
+    return result
+  }
+
+  const deleteChapterSnapshot = (chapterId) => {
+    delete chapterSnapshots.value[chapterId]
+    localStorage.setItem(CHAPTER_SNAPSHOTS_KEY, JSON.stringify(chapterSnapshots.value))
+  }
+
+  const backupSaveSlots = () => {
+    try {
+      const backup = {
+        data: saveSlots.value,
+        timestamp: Date.now()
+      }
+      localStorage.setItem(BACKUP_KEY, JSON.stringify(backup))
+      return true
+    } catch (e) {
+      console.error('Failed to backup saves:', e)
+      return false
+    }
+  }
+
+  const restoreFromBackup = () => {
+    try {
+      const saved = localStorage.getItem(BACKUP_KEY)
+      if (!saved) return false
+      const backup = JSON.parse(saved)
+      if (!backup.data) return false
+      saveSlots.value = backup.data
+      localStorage.setItem('journal_game_saves', JSON.stringify(saveSlots.value))
+      return true
+    } catch (e) {
+      console.error('Failed to restore backup:', e)
+      return false
+    }
+  }
+
+  const markSessionActive = () => {
+    try {
+      const session = {
+        active: true,
+        lastHeartbeat: Date.now(),
+        currentChapterId: currentChapterId.value
+      }
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+    } catch (e) {
+      console.error('Failed to mark session active:', e)
+    }
+  }
+
+  const markSessionEnded = () => {
+    try {
+      const session = {
+        active: false,
+        endedAt: Date.now(),
+        currentChapterId: currentChapterId.value
+      }
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+    } catch (e) {
+      console.error('Failed to mark session ended:', e)
+    }
+  }
+
+  const checkForCrashRecovery = () => {
+    try {
+      const saved = localStorage.getItem(SESSION_KEY)
+      if (!saved) return null
+
+      const session = JSON.parse(saved)
+      if (session.active && session.lastHeartbeat) {
+        const timeSinceHeartbeat = Date.now() - session.lastHeartbeat
+        if (timeSinceHeartbeat > 30000) {
+          const autoSaveExists = loadAutoSave()
+          if (autoSaveExists && autoSaveData.value) {
+            recoveryData.value = {
+              type: 'crash',
+              session: session,
+              autoSave: autoSaveData.value
+            }
+            showRecoveryModal.value = true
+            return recoveryData.value
+          }
+        }
+      }
+      return null
+    } catch (e) {
+      console.error('Error checking for crash recovery:', e)
+      return null
+    }
+  }
+
+  const confirmRecovery = (doRestore) => {
+    if (doRestore && recoveryData.value) {
+      const { type, autoSave } = recoveryData.value
+      if (autoSave) {
+        applySaveData(autoSave)
+        showNotification('已恢复到上次关闭前的进度', 'success')
+      }
+    }
+    showRecoveryModal.value = false
+    recoveryData.value = null
+    markSessionEnded()
+  }
+
+  const dismissRecovery = () => {
+    confirmRecovery(false)
+  }
+
+  const handleBeforeUnload = () => {
+    if (currentChapterId.value) {
+      autoSave()
+      markSessionEnded()
+    }
+  }
+
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden' && currentChapterId.value) {
+      autoSave()
+      markSessionActive()
+    }
+  }
+
+  const setupEventListeners = () => {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', handleBeforeUnload)
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }
+
+  const cleanupEventListeners = () => {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }
+
   loadSavesFromStorage()
+  loadChapterSnapshots()
+  loadAutoSave()
+
+  const startChapterWithTracking = (chapterId) => {
+    const chapter = getChapterById(chapterId)
+    if (!chapter || !unlockedChapters.value.includes(chapterId)) return
+
+    resetStats()
+    startChapter(chapterId)
+    saveChapterSnapshot(chapterId)
+    autoSave()
+  }
+
+  watch(currentDialogueIndex, () => {
+    if (!currentChapterId.value || !isInitialized.value) return
+    dialogueCountSinceLastAutoSave.value++
+    if (dialogueCountSinceLastAutoSave.value >= AUTO_SAVE_DIALOGUE_INTERVAL) {
+      if (autoSave()) {
+        showNotification('自动存档已保存', 'info', 1500)
+      }
+    }
+  })
+
+  watch(isWaitingForMaterial, (val, oldVal) => {
+    if (!isInitialized.value) return
+    if (oldVal === true && val === false) {
+      if (autoSave()) {
+        showNotification('素材放置完成，已自动存档', 'info', 1800)
+      }
+    }
+  })
+
+  watch(currentSceneId, (newScene, oldScene) => {
+    if (!isInitialized.value || !currentChapterId.value) return
+    if (newScene && oldScene && newScene !== oldScene) {
+      if (autoSave()) {
+        showNotification('场景切换，已自动存档', 'info', 1500)
+      }
+    }
+  })
+
+  setupEventListeners()
 
   return {
     chapters,
@@ -329,6 +709,14 @@ export const useGameStore = defineStore('game', () => {
     saveSlots,
     gameCompleted,
     currentEnding,
+    autoSaveEnabled,
+    lastAutoSaveTime,
+    autoSaveData,
+    chapterSnapshots,
+    notification,
+    showRecoveryModal,
+    recoveryData,
+    isInitialized,
     currentChapter,
     currentScene,
     currentDialogue,
@@ -338,6 +726,7 @@ export const useGameStore = defineStore('game', () => {
     getMaterialById,
     getChapterById,
     startChapter,
+    startChapterWithTracking,
     nextDialogue,
     placeMaterial,
     completeChapter,
@@ -347,6 +736,26 @@ export const useGameStore = defineStore('game', () => {
     loadSavesFromStorage,
     resetGame,
     goToChapterSelect,
-    resetStats
+    resetStats,
+    validateSaveData,
+    showNotification,
+    clearNotification,
+    autoSave,
+    loadAutoSave,
+    restoreFromAutoSave,
+    saveChapterSnapshot,
+    loadChapterSnapshots,
+    hasChapterSnapshot,
+    rollbackToChapterStart,
+    deleteChapterSnapshot,
+    backupSaveSlots,
+    restoreFromBackup,
+    markSessionActive,
+    markSessionEnded,
+    checkForCrashRecovery,
+    confirmRecovery,
+    dismissRecovery,
+    setupEventListeners,
+    cleanupEventListeners
   }
 })
