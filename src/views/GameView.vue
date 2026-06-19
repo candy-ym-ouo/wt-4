@@ -306,15 +306,46 @@ watch(() => gameStore.completedChapters, (completed) => {
 
 onMounted(() => {
   const chapterId = route.params.chapterId
+  
   if (!gameStore.currentChapterId || gameStore.currentChapterId !== chapterId) {
     if (gameStore.unlockedChapters.includes(chapterId)) {
-      gameStore.startChapterWithTracking(chapterId)
+      const shouldResume = checkShouldResume(chapterId)
+      if (shouldResume) {
+        gameStore.restoreFromAutoSave()
+        if (gameStore.currentChapterId !== chapterId) {
+          gameStore.startChapterWithTracking(chapterId)
+        } else {
+          gameStore.startGameSession()
+        }
+      } else {
+        gameStore.startChapterWithTracking(chapterId)
+      }
     } else {
       router.push('/chapter-select')
     }
+  } else {
+    gameStore.startGameSession()
   }
   gameStore.isInitialized = true
 })
+
+const checkShouldResume = (chapterId) => {
+  if (!gameStore.autoSaveData) return false
+  if (gameStore.autoSaveData.currentChapterId !== chapterId) return false
+  const savedSession = localStorage.getItem('journal_game_session')
+  if (savedSession) {
+    try {
+      const session = JSON.parse(savedSession)
+      if (session.active && session.currentChapterId === chapterId) {
+        const timeSince = Date.now() - (session.lastHeartbeat || 0)
+        return timeSince < 3600000
+      }
+    } catch (e) {
+      return false
+    }
+  }
+  return false
+}
 
 onUnmounted(() => {
   gameStore.isInitialized = false

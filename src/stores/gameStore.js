@@ -6,10 +6,13 @@ import scenesData from '../data/scenes.json'
 import endingsData from '../data/endings.json'
 
 const AUTO_SAVE_KEY = 'journal_game_autosave'
+const AUTO_SAVE_BACKUP_KEY = 'journal_game_autosave_backup'
 const CHAPTER_SNAPSHOTS_KEY = 'journal_game_chapter_snapshots'
 const SESSION_KEY = 'journal_game_session'
 const BACKUP_KEY = 'journal_game_saves_backup'
 const AUTO_SAVE_DIALOGUE_INTERVAL = 5
+const HEARTBEAT_INTERVAL = 20000
+const CRASH_RECOVERY_THRESHOLD = 180000
 
 export const useGameStore = defineStore('game', () => {
   const chapters = ref(chaptersData)
@@ -44,6 +47,8 @@ export const useGameStore = defineStore('game', () => {
   const recoveryData = ref(null)
   const dialogueCountSinceLastAutoSave = ref(0)
   const isInitialized = ref(false)
+  let heartbeatTimer = null
+  let sessionId = null
 
   const currentChapter = computed(() => {
     return chapters.value.find(c => c.id === currentChapterId.value)
@@ -237,6 +242,7 @@ export const useGameStore = defineStore('game', () => {
     }
 
     currentEnding.value = ending
+    autoSave()
   }
 
   const saveGame = (slotIndex) => {
@@ -307,6 +313,7 @@ export const useGameStore = defineStore('game', () => {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('journal_game_saves')
       localStorage.removeItem(AUTO_SAVE_KEY)
+      localStorage.removeItem(AUTO_SAVE_BACKUP_KEY)
       localStorage.removeItem(CHAPTER_SNAPSHOTS_KEY)
       localStorage.removeItem(SESSION_KEY)
       localStorage.removeItem(BACKUP_KEY)
@@ -314,6 +321,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   const goToChapterSelect = () => {
+    endGameSession()
     currentChapterId.value = null
     currentSceneId.value = null
     currentDialogueIndex.value = 0
@@ -393,6 +401,19 @@ export const useGameStore = defineStore('game', () => {
 
     try {
       const saveData = serializeGameState()
+      
+      const currentAutoSave = localStorage.getItem(AUTO_SAVE_KEY)
+      if (currentAutoSave) {
+        try {
+          const parsed = JSON.parse(currentAutoSave)
+          if (validateSaveData(parsed)) {
+            localStorage.setItem(AUTO_SAVE_BACKUP_KEY, currentAutoSave)
+          }
+        } catch (e) {
+          console.warn('Current auto-save invalid, skipping backup:', e)
+        }
+      }
+
       autoSaveData.value = saveData
       lastAutoSaveTime.value = saveData.timestamp
       localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(saveData))
@@ -407,15 +428,29 @@ export const useGameStore = defineStore('game', () => {
   const loadAutoSave = () => {
     try {
       const saved = localStorage.getItem(AUTO_SAVE_KEY)
-      if (!saved) return false
-      const saveData = JSON.parse(saved)
-      if (!validateSaveData(saveData)) {
-        console.warn('Auto-save data invalid, trying backup...')
-        return false
+      if (saved) {
+        const saveData = JSON.parse(saved)
+        if (validateSaveData(saveData)) {
+          autoSaveData.value = saveData
+          lastAutoSaveTime.value = saveData.timestamp
+          return true
+        }
+        console.warn('Primary auto-save invalid, trying backup...')
       }
-      autoSaveData.value = saveData
-      lastAutoSaveTime.value = saveData.timestamp
-      return true
+
+      const backupSaved = localStorage.getItem(AUTO_SAVE_BACKUP_KEY)
+      if (backupSaved) {
+        const backupData = JSON.parse(backupSaved)
+        if (validateSaveData(backupData)) {
+          autoSaveData.value = backupData
+          lastAutoSaveTime.value = backupData.timestamp
+          localStorage.setItem(AUTO_SAVE_KEY, backupSaved)
+          console.warn('Restored auto-save from backup')
+          return true
+        }
+      }
+
+      return false
     } catch (e) {
       console.error('Failed to load auto-save:', e)
       return false
@@ -548,8 +583,11 @@ export const useGameStore = defineStore('game', () => {
     try {
       const session = {
         active: true,
+        sessionId: sessionId,
         lastHeartbeat: Date.now(),
-        currentChapterId: currentChapterId.value
+        currentChapterId: currentChapterId.value,
+        currentSceneId: currentSceneId.value,
+        emotionValue: emotionValue.value
       }
       localStorage.setItem(SESSION_KEY, JSON.stringify(session))
     } catch (e) {
@@ -561,7 +599,9 @@ export const useGameStore = defineStore('game', () => {
     try {
       const session = {
         active: false,
+        sessionId: sessionId,
         endedAt: Date.now(),
+        endReason: 'normal',
         currentChapterId: currentChapterId.value
       }
       localStorage.setItem(SESSION_KEY, JSON.stringify(session))
@@ -570,28 +610,79 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  const startHeartbeat = () => {
+    stopHeartbeat()
+    sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    markSessionActive()
+    heartbeatTimer = setInterval(() => {
+      if (currentChapterId.value && document.visibilityState === 'visible') {
+        markSessionActive()
+      }
+    }, HEARTBEAT_INTERVAL)
+  }
+
+  const stopHeartbeat = () => {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer)
+      heartbeatTimer = null
+    }
+  }
+
+  const startGameSession = () => {
+    startHeartbeat()
+    autoSave()
+  }
+
+  const endGameSession = () => {
+    if (currentChapterId.value) {
+      autoSave()
+    }
+    markSessionEnded()
+    stopHeartbeat()
+    sessionId = null
+  }
+
   const checkForCrashRecovery = () => {
     try {
       const saved = localStorage.getItem(SESSION_KEY)
-      if (!saved) return null
+      if (!saved) {
+        return null
+      }
 
       const session = JSON.parse(saved)
-      if (session.active && session.lastHeartbeat) {
-        const timeSinceHeartbeat = Date.now() - session.lastHeartbeat
-        if (timeSinceHeartbeat > 30000) {
-          const autoSaveExists = loadAutoSave()
-          if (autoSaveExists && autoSaveData.value) {
-            recoveryData.value = {
-              type: 'crash',
-              session: session,
-              autoSave: autoSaveData.value
-            }
-            showRecoveryModal.value = true
-            return recoveryData.value
-          }
-        }
+      
+      if (!session.active) {
+        return null
       }
-      return null
+
+      if (!session.lastHeartbeat) {
+        return null
+      }
+
+      const timeSinceHeartbeat = Date.now() - session.lastHeartbeat
+
+      if (timeSinceHeartbeat < CRASH_RECOVERY_THRESHOLD) {
+        return null
+      }
+
+      const autoSaveExists = loadAutoSave()
+      if (!autoSaveExists || !autoSaveData.value) {
+        return null
+      }
+
+      if (!validateSaveData(autoSaveData.value)) {
+        console.warn('Auto-save data invalid during crash recovery check')
+        return null
+      }
+
+      recoveryData.value = {
+        type: 'crash',
+        session: session,
+        autoSave: autoSaveData.value,
+        timeSinceHeartbeat: timeSinceHeartbeat
+      }
+      showRecoveryModal.value = true
+      return recoveryData.value
     } catch (e) {
       console.error('Error checking for crash recovery:', e)
       return null
@@ -600,15 +691,17 @@ export const useGameStore = defineStore('game', () => {
 
   const confirmRecovery = (doRestore) => {
     if (doRestore && recoveryData.value) {
-      const { type, autoSave } = recoveryData.value
+      const { autoSave } = recoveryData.value
       if (autoSave) {
         applySaveData(autoSave)
+        startGameSession()
         showNotification('已恢复到上次关闭前的进度', 'success')
       }
+    } else {
+      markSessionEnded()
     }
     showRecoveryModal.value = false
     recoveryData.value = null
-    markSessionEnded()
   }
 
   const dismissRecovery = () => {
@@ -616,22 +709,44 @@ export const useGameStore = defineStore('game', () => {
   }
 
   const handleBeforeUnload = () => {
-    if (currentChapterId.value) {
-      autoSave()
-      markSessionEnded()
+    try {
+      if (currentChapterId.value) {
+        autoSave()
+        markSessionActive()
+      }
+    } catch (e) {
+      console.error('Before unload error:', e)
+    }
+  }
+
+  const handlePageHide = () => {
+    try {
+      if (currentChapterId.value) {
+        autoSave()
+        if (document.visibilityState === 'hidden') {
+          markSessionActive()
+        }
+      }
+    } catch (e) {
+      console.error('Page hide error:', e)
     }
   }
 
   const handleVisibilityChange = () => {
-    if (document.visibilityState === 'hidden' && currentChapterId.value) {
-      autoSave()
-      markSessionActive()
+    if (currentChapterId.value) {
+      if (document.visibilityState === 'hidden') {
+        autoSave()
+        markSessionActive()
+      } else {
+        markSessionActive()
+      }
     }
   }
 
   const setupEventListeners = () => {
     if (typeof window !== 'undefined') {
       window.addEventListener('beforeunload', handleBeforeUnload)
+      window.addEventListener('pagehide', handlePageHide)
       document.addEventListener('visibilitychange', handleVisibilityChange)
     }
   }
@@ -639,6 +754,7 @@ export const useGameStore = defineStore('game', () => {
   const cleanupEventListeners = () => {
     if (typeof window !== 'undefined') {
       window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('pagehide', handlePageHide)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }
@@ -654,12 +770,13 @@ export const useGameStore = defineStore('game', () => {
     resetStats()
     startChapter(chapterId)
     saveChapterSnapshot(chapterId)
-    autoSave()
+    startGameSession()
   }
 
   watch(currentDialogueIndex, () => {
     if (!currentChapterId.value || !isInitialized.value) return
     dialogueCountSinceLastAutoSave.value++
+    markSessionActive()
     if (dialogueCountSinceLastAutoSave.value >= AUTO_SAVE_DIALOGUE_INTERVAL) {
       if (autoSave()) {
         showNotification('自动存档已保存', 'info', 1500)
@@ -670,6 +787,7 @@ export const useGameStore = defineStore('game', () => {
   watch(isWaitingForMaterial, (val, oldVal) => {
     if (!isInitialized.value) return
     if (oldVal === true && val === false) {
+      markSessionActive()
       if (autoSave()) {
         showNotification('素材放置完成，已自动存档', 'info', 1800)
       }
@@ -679,6 +797,7 @@ export const useGameStore = defineStore('game', () => {
   watch(currentSceneId, (newScene, oldScene) => {
     if (!isInitialized.value || !currentChapterId.value) return
     if (newScene && oldScene && newScene !== oldScene) {
+      markSessionActive()
       if (autoSave()) {
         showNotification('场景切换，已自动存档', 'info', 1500)
       }
@@ -752,6 +871,10 @@ export const useGameStore = defineStore('game', () => {
     restoreFromBackup,
     markSessionActive,
     markSessionEnded,
+    startHeartbeat,
+    stopHeartbeat,
+    startGameSession,
+    endGameSession,
     checkForCrashRecovery,
     confirmRecovery,
     dismissRecovery,
