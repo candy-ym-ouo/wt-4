@@ -3,6 +3,10 @@
     <div class="header">
       <h1 class="title text-gradient">文艺手账</h1>
       <p class="subtitle">翻开属于你的故事</p>
+      <button class="help-btn" @click="openTutorial" title="新手引导">
+        <span class="help-icon">❓</span>
+        <span class="help-text">新手引导</span>
+      </button>
     </div>
 
     <div class="chapters-grid">
@@ -224,6 +228,8 @@
         </button>
       </div>
     </div>
+
+    <TutorialOverlay page="chapter-select" @close="handleTutorialClose" />
   </div>
 </template>
 
@@ -231,6 +237,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '../stores/gameStore'
+import TutorialOverlay from '../components/TutorialOverlay.vue'
 
 const router = useRouter()
 const gameStore = useGameStore()
@@ -429,9 +436,22 @@ const resetGame = () => {
   }
 }
 
+const openTutorial = () => {
+  gameStore.showTutorial('chapter-select')
+}
+
+const handleTutorialClose = () => {
+}
+
 onMounted(() => {
   gameStore.checkForCrashRecovery()
   gameStore.isInitialized = true
+  
+  if (gameStore.shouldShowFirstTimeTutorial()) {
+    setTimeout(() => {
+      gameStore.showTutorial('chapter-select')
+    }, 500)
+  }
 })
 </script>
 
@@ -445,6 +465,36 @@ onMounted(() => {
   text-align: center;
   margin-bottom: 40px;
   padding: 40px 0;
+  position: relative;
+}
+
+.help-btn {
+  position: absolute;
+  top: 20px;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 2px solid #e9d5ff;
+  background: linear-gradient(135deg, #faf5ff, #fdf4ff);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #7c3aed;
+  transition: all 0.3s ease;
+  font-family: var(--font-serif);
+}
+
+.help-btn:hover {
+  background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.help-icon {
+  font-size: 1rem;
 }
 
 .chapters-grid {
@@ -1108,6 +1158,17 @@ onMounted(() => {
 
   .header {
     padding: 20px 0;
+  }
+
+  .help-btn {
+    top: 10px;
+    right: 0;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .help-text {
+    display: none;
   }
 
   .chapter-card {

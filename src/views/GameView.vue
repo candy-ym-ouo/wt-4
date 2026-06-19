@@ -15,6 +15,13 @@
       </div>
       <div class="header-actions">
         <button 
+          class="btn btn-ghost action-btn help-action-btn" 
+          @click="openTutorial" 
+          title="新手引导"
+        >
+          ❓
+        </button>
+        <button 
           class="btn btn-ghost action-btn" 
           @click="handleRollback" 
           title="回滚到章节开头"
@@ -196,6 +203,8 @@
         </div>
       </div>
     </div>
+
+    <TutorialOverlay page="game" @close="handleTutorialClose" />
   </div>
 </template>
 
@@ -208,6 +217,7 @@ import DialogueBox from '../components/DialogueBox.vue'
 import EmotionMeter from '../components/EmotionMeter.vue'
 import MaterialPanel from '../components/MaterialPanel.vue'
 import SaveLoadModal from '../components/SaveLoadModal.vue'
+import TutorialOverlay from '../components/TutorialOverlay.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -406,6 +416,13 @@ const handleDismissRecovery = () => {
   gameStore.dismissRecovery()
 }
 
+const openTutorial = () => {
+  gameStore.showTutorial('game')
+}
+
+const handleTutorialClose = () => {
+}
+
 const goBack = () => {
   gameStore.autoSave()
   gameStore.goToChapterSelect()
@@ -585,6 +602,16 @@ onUnmounted(() => {
   opacity: 0.4;
   cursor: not-allowed;
   transform: none;
+}
+
+.help-action-btn {
+  background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+  color: #7c3aed;
+}
+
+.help-action-btn:hover {
+  background: linear-gradient(135deg, #e9d5ff, #ddd6fe);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .game-content {

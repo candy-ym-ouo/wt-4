@@ -12,6 +12,7 @@ const SESSION_KEY = 'journal_game_session'
 const BACKUP_KEY = 'journal_game_saves_backup'
 const CHAPTER_SCORE_KEY = 'journal_game_chapter_scores'
 const BRANCH_STATS_KEY = 'journal_game_branch_stats'
+const TUTORIAL_KEY = 'journal_game_tutorial'
 const AUTO_SAVE_DIALOGUE_INTERVAL = 5
 const HEARTBEAT_INTERVAL = 20000
 const CRASH_RECOVERY_THRESHOLD = 180000
@@ -85,6 +86,21 @@ export const useGameStore = defineStore('game', () => {
     totalPlaythroughs: 0
   })
   const currentPathSequence = ref([])
+
+  const tutorialState = ref({
+    completed: false,
+    currentStep: 0,
+    showTutorial: false,
+    page: 'chapter-select',
+    stepsCompleted: {
+      homeIntro: false,
+      dialogueAdvance: false,
+      materialSelect: false,
+      canvasPlace: false,
+      comboSystem: false,
+      endingRules: false
+    }
+  })
 
   const currentChapter = computed(() => {
     return chapters.value.find(c => c.id === currentChapterId.value)
@@ -766,6 +782,172 @@ export const useGameStore = defineStore('game', () => {
     currentPathSequence.value = []
     localStorage.removeItem(BRANCH_STATS_KEY)
   }
+
+  const tutorialSteps = {
+    'chapter-select': [
+      {
+        id: 'homeIntro',
+        title: '欢迎来到文艺手账',
+        content: '这是一本充满回忆的手账，通过选择素材、放置画布，你将一步步解锁属于自己的故事。',
+        icon: '📖',
+        highlight: null
+      },
+      {
+        id: 'chapterCards',
+        title: '章节选择',
+        content: '点击章节卡片开始游戏。完成前一章才能解锁下一章，每一章都有独特的故事和素材。',
+        icon: '📚',
+        highlight: '.chapters-grid'
+      },
+      {
+        id: 'gameActions',
+        title: '存档与设置',
+        content: '在这里你可以读取存档、继续上次进度，或者重新开始游戏。',
+        icon: '💾',
+        highlight: '.actions'
+      }
+    ],
+    'game': [
+      {
+        id: 'dialogueAdvance',
+        title: '对白推进',
+        content: '点击对话框可以推进剧情。对白会以打字机效果显示，再次点击可以跳过动画。故事就在这些对话中慢慢展开...',
+        icon: '💬',
+        highlight: '.dialogue-wrapper'
+      },
+      {
+        id: 'emotionMeter',
+        title: '情绪值系统',
+        content: '情绪值会随着剧情推进和素材放置而增长。情绪值越高，结局越美好。注意观察情绪条的变化！',
+        icon: '💕',
+        highlight: '.emotion-meter'
+      },
+      {
+        id: 'materialSelect',
+        title: '素材选择',
+        content: '当剧情需要时，你需要从素材库中选择合适的素材。素材分为「必放」和「可选」，必放素材推进剧情，可选素材解锁组合。',
+        icon: '🎨',
+        highlight: '.material-panel'
+      },
+      {
+        id: 'canvasPlace',
+        title: '画布放置',
+        content: '选中素材后，点击画布放置。放在画布中心区域可以获得「完美放置」加成，额外增加情绪值。',
+        icon: '🖼️',
+        highlight: '.canvas-wrapper'
+      },
+      {
+        id: 'comboSystem',
+        title: '素材组合',
+        content: '特定的素材组合可以触发隐藏效果和额外对话。注意查看素材库中的「组合收集进度」，解锁所有组合吧！',
+        icon: '🔮',
+        highlight: '.combo-hints'
+      },
+      {
+        id: 'endingRules',
+        title: '结局形成规则',
+        content: '游戏有多种结局：普通结局、好结局、特殊结局、完美结局等。结局由情绪值、完成章节数、收集的组合、隐藏对话等因素共同决定。探索不同的选择，发现所有结局吧！',
+        icon: '🌟',
+        highlight: null
+      }
+    ]
+  }
+
+  const getTutorialSteps = (page) => {
+    return tutorialSteps[page] || []
+  }
+
+  const showTutorial = (page = 'chapter-select') => {
+    tutorialState.value.showTutorial = true
+    tutorialState.value.page = page
+    tutorialState.value.currentStep = 0
+  }
+
+  const hideTutorial = () => {
+    tutorialState.value.showTutorial = false
+  }
+
+  const nextTutorialStep = () => {
+    const steps = getTutorialSteps(tutorialState.value.page)
+    if (tutorialState.value.currentStep < steps.length - 1) {
+      tutorialState.value.currentStep++
+    } else {
+      completeTutorial()
+    }
+  }
+
+  const prevTutorialStep = () => {
+    if (tutorialState.value.currentStep > 0) {
+      tutorialState.value.currentStep--
+    }
+  }
+
+  const setTutorialStep = (stepIndex) => {
+    tutorialState.value.currentStep = stepIndex
+  }
+
+  const markTutorialStepCompleted = (stepId) => {
+    if (tutorialState.value.stepsCompleted[stepId] !== undefined) {
+      tutorialState.value.stepsCompleted[stepId] = true
+      saveTutorialState()
+    }
+  }
+
+  const completeTutorial = () => {
+    tutorialState.value.completed = true
+    tutorialState.value.showTutorial = false
+    Object.keys(tutorialState.value.stepsCompleted).forEach(key => {
+      tutorialState.value.stepsCompleted[key] = true
+    })
+    saveTutorialState()
+  }
+
+  const saveTutorialState = () => {
+    try {
+      localStorage.setItem(TUTORIAL_KEY, JSON.stringify(tutorialState.value))
+    } catch (e) {
+      console.error('Failed to save tutorial state:', e)
+    }
+  }
+
+  const loadTutorialState = () => {
+    try {
+      const saved = localStorage.getItem(TUTORIAL_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        tutorialState.value = { ...tutorialState.value, ...parsed, showTutorial: false }
+      }
+    } catch (e) {
+      console.error('Failed to load tutorial state:', e)
+    }
+  }
+
+  const resetTutorial = () => {
+    tutorialState.value = {
+      completed: false,
+      currentStep: 0,
+      showTutorial: false,
+      page: 'chapter-select',
+      stepsCompleted: {
+        homeIntro: false,
+        dialogueAdvance: false,
+        materialSelect: false,
+        canvasPlace: false,
+        comboSystem: false,
+        endingRules: false
+      }
+    }
+    localStorage.removeItem(TUTORIAL_KEY)
+  }
+
+  const shouldShowFirstTimeTutorial = () => {
+    return !tutorialState.value.completed
+  }
+
+  const getCurrentTutorialStep = computed(() => {
+    const steps = getTutorialSteps(tutorialState.value.page)
+    return steps[tutorialState.value.currentStep] || null
+  })
 
   const generateBranchStatsReport = () => {
     const allChapterOverviews = chapters.value
@@ -2742,6 +2924,7 @@ export const useGameStore = defineStore('game', () => {
   loadAutoSave()
   loadChapterScoreData()
   loadBranchStats()
+  loadTutorialState()
   checkAndUnlockChapters()
 
   const startChapterWithTracking = (chapterId) => {
@@ -2948,6 +3131,20 @@ export const useGameStore = defineStore('game', () => {
     loadBranchStats,
     resetBranchStats,
     generateBranchStatsReport,
+    tutorialState,
+    getTutorialSteps,
+    showTutorial,
+    hideTutorial,
+    nextTutorialStep,
+    prevTutorialStep,
+    setTutorialStep,
+    markTutorialStepCompleted,
+    completeTutorial,
+    saveTutorialState,
+    loadTutorialState,
+    resetTutorial,
+    shouldShowFirstTimeTutorial,
+    getCurrentTutorialStep,
     generateSaveThumbnail,
     latestSaveSlotIndex,
     getSaveThumbnail
