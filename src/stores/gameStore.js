@@ -51,6 +51,8 @@ export const useGameStore = defineStore('game', () => {
 
   const currentChapterLog = ref([])
   const chapterScoreData = ref({})
+  const dialogueHistory = ref([])
+  const typingSpeed = ref(50)
 
   const autoSaveEnabled = ref(true)
   const lastAutoSaveTime = ref(null)
@@ -169,6 +171,19 @@ export const useGameStore = defineStore('game', () => {
     comboJustTriggered.value = null
     activeHiddenDialogue.value = null
     currentChapterLog.value = []
+    dialogueHistory.value = []
+  }
+
+  const addToDialogueHistory = (dialogue) => {
+    if (!dialogue) return
+    dialogueHistory.value.push({
+      ...dialogue,
+      timestamp: Date.now()
+    })
+  }
+
+  const setTypingSpeed = (speed) => {
+    typingSpeed.value = Math.max(10, Math.min(200, speed))
   }
 
   const resetStats = () => {
@@ -181,6 +196,7 @@ export const useGameStore = defineStore('game', () => {
     if (!currentScene.value) return
 
     if (activeHiddenDialogue.value) {
+      addToDialogueHistory(activeHiddenDialogue.value)
       activeHiddenDialogue.value = null
       isShowingHiddenDialogue.value = false
       if (pendingHiddenDialogues.value.length > 0) {
@@ -198,6 +214,8 @@ export const useGameStore = defineStore('game', () => {
 
     const dialogue = currentDialogue.value
     if (!dialogue) return
+
+    addToDialogueHistory(dialogue)
 
     const baseEmotion = dialogue.emotionChange || 0
     const randomFluctuation = Math.floor(Math.random() * 3) - 1
@@ -729,6 +747,8 @@ export const useGameStore = defineStore('game', () => {
       optionalMaterialsPlaced: optionalMaterialsPlaced.value,
       requiredMaterialPlaced: requiredMaterialPlaced.value,
       activeHiddenDialogue: activeHiddenDialogue.value,
+      dialogueHistory: dialogueHistory.value,
+      typingSpeed: typingSpeed.value,
       timestamp: Date.now()
     }
     return {
@@ -835,6 +855,8 @@ export const useGameStore = defineStore('game', () => {
     optionalMaterialsPlaced.value = saveData.optionalMaterialsPlaced || []
     requiredMaterialPlaced.value = saveData.requiredMaterialPlaced || false
     activeHiddenDialogue.value = saveData.activeHiddenDialogue || null
+    dialogueHistory.value = saveData.dialogueHistory || []
+    typingSpeed.value = saveData.typingSpeed || 50
     comboJustTriggered.value = null
     gameCompleted.value = false
     currentEnding.value = null
@@ -1310,6 +1332,8 @@ export const useGameStore = defineStore('game', () => {
     isInitialized,
     currentChapterLog,
     chapterScoreData,
+    dialogueHistory,
+    typingSpeed,
     currentChapter,
     currentScene,
     currentDialogue,
@@ -1372,6 +1396,8 @@ export const useGameStore = defineStore('game', () => {
     confirmRecovery,
     dismissRecovery,
     setupEventListeners,
-    cleanupEventListeners
+    cleanupEventListeners,
+    addToDialogueHistory,
+    setTypingSpeed
   }
 })

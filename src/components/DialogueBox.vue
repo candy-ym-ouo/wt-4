@@ -1,32 +1,130 @@
 <template>
-  <div v-if="dialogue" class="dialogue-box fade-in" :class="{ 'hidden-dialogue': isHidden, 'combo-dialogue': isHidden }">
-    <div v-if="isHidden" class="hidden-badge">
-      <span class="hidden-icon">🔮</span>
-      <span class="hidden-label">隐藏对白</span>
+  <div class="dialogue-wrapper">
+    <div v-if="dialogue" class="dialogue-box fade-in" :class="{ 'hidden-dialogue': isHidden, 'combo-dialogue': isHidden }">
+      <div v-if="isHidden" class="hidden-badge">
+        <span class="hidden-icon">🔮</span>
+        <span class="hidden-label">隐藏对白</span>
+      </div>
+      <div class="dialogue-header">
+        <span class="speaker" :class="speakerClass">{{ dialogue.speaker }}</span>
+        <div class="header-actions">
+          <button class="icon-btn" @click.stop="toggleSpeedPanel" title="打字速度">
+            <span class="btn-icon">⚡</span>
+          </button>
+          <button class="icon-btn" @click.stop="toggleHistory" title="历史对白" :class="{ active: showHistory }">
+            <span class="btn-icon">📜</span>
+            <span v-if="dialogueHistory.length > 0" class="history-badge">{{ dialogueHistory.length }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div v-if="showSpeedPanel" class="speed-panel slide-down" @click.stop>
+        <div class="speed-panel-header">
+          <span class="speed-label">打字速度</span>
+          <span class="speed-value">{{ currentSpeedLabel }}</span>
+        </div>
+        <div class="speed-presets">
+          <button 
+            v-for="preset in speedPresets" 
+            :key="preset.value"
+            class="speed-preset-btn"
+            :class="{ active: typingSpeed === preset.value }"
+            @click="changeSpeed(preset.value)"
+          >
+            {{ preset.label }}
+          </button>
+        </div>
+        <input 
+          type="range" 
+          :min="10" 
+          :max="200" 
+          :value="typingSpeed" 
+          @input="onSpeedInput"
+          class="speed-slider"
+        />
+        <div class="speed-range-labels">
+          <span>慢</span>
+          <span>快</span>
+        </div>
+      </div>
+
+      <div class="dialogue-content">
+        <p class="dialogue-text" :class="{ 'hidden-text': isHidden, 'key-line': isKeyLine }">
+          <template v-if="isKeyLine">
+            <span class="key-line-marker">✨</span>
+          </template>
+          {{ displayedText }}
+          <template v-if="isKeyLine">
+            <span class="key-line-marker">✨</span>
+          </template>
+        </p>
+        <span v-if="isTyping" class="typing-cursor" :class="{ 'hidden-cursor': isHidden }">|</span>
+      </div>
+      <div v-if="isHidden && dialogue.emotionChange" class="hidden-emotion-reward">
+        <span class="emotion-sparkle">✨</span>
+        <span class="emotion-text">隐藏回忆 +{{ dialogue.emotionChange }} 💕</span>
+        <span class="emotion-sparkle">✨</span>
+      </div>
+      <div v-if="!isTyping && !isWaitingForMaterial" class="dialogue-footer">
+        <span class="hint" :class="{ 'hidden-hint': isHidden }">{{ isHidden ? '继续回忆 ▸' : '点击继续 ▸' }}</span>
+      </div>
+      <div v-if="isWaitingForMaterial" class="dialogue-footer">
+        <span class="hint-material">请从下方选择素材放置到画布上</span>
+      </div>
     </div>
-    <div class="dialogue-header">
-      <span class="speaker" :class="speakerClass">{{ dialogue.speaker }}</span>
-    </div>
-    <div class="dialogue-content">
-      <p class="dialogue-text" :class="{ 'hidden-text': isHidden }">{{ displayedText }}</p>
-      <span v-if="isTyping" class="typing-cursor" :class="{ 'hidden-cursor': isHidden }">|</span>
-    </div>
-    <div v-if="isHidden && dialogue.emotionChange" class="hidden-emotion-reward">
-      <span class="emotion-sparkle">✨</span>
-      <span class="emotion-text">隐藏回忆 +{{ dialogue.emotionChange }} 💕</span>
-      <span class="emotion-sparkle">✨</span>
-    </div>
-    <div v-if="!isTyping && !isWaitingForMaterial" class="dialogue-footer">
-      <span class="hint" :class="{ 'hidden-hint': isHidden }">{{ isHidden ? '继续回忆 ▸' : '点击继续 ▸' }}</span>
-    </div>
-    <div v-if="isWaitingForMaterial" class="dialogue-footer">
-      <span class="hint-material">请从下方选择素材放置到画布上</span>
-    </div>
+
+    <Transition name="history">
+      <div v-if="showHistory" class="history-overlay" @click.self="toggleHistory">
+        <div class="history-panel slide-up" @click.stop>
+          <div class="history-header">
+            <h3 class="history-title">📜 历史对白</h3>
+            <button class="icon-btn close-btn" @click.stop="toggleHistory" title="关闭">
+              <span class="btn-icon">✕</span>
+            </button>
+          </div>
+          <div class="history-list" ref="historyListRef">
+            <div v-if="dialogueHistory.length === 0" class="history-empty">
+              <span class="empty-icon">📖</span>
+              <p>暂无历史对白</p>
+              <p class="empty-hint">继续阅读，之前的对话会显示在这里</p>
+            </div>
+            <div 
+              v-for="(item, index) in dialogueHistory" 
+              :key="index"
+              class="history-item"
+              :class="{ 'history-hidden': item.isHidden, 'history-key-line': item.isKeyLine }"
+            >
+              <div class="history-item-header">
+                <span class="history-speaker" :class="getSpeakerClass(item.speaker)">{{ item.speaker }}</span>
+                <span v-if="item.isHidden" class="history-tag hidden-tag">🔮 隐藏</span>
+                <span v-if="item.isKeyLine" class="history-tag key-tag">✨ 关键</span>
+              </div>
+              <p class="history-text">{{ item.text }}</p>
+            </div>
+            <div v-if="dialogue" class="history-item history-current">
+              <div class="history-item-header">
+                <span class="history-speaker" :class="speakerClass">{{ dialogue.speaker }}</span>
+                <span class="history-tag current-tag">当前</span>
+                <span v-if="isHidden" class="history-tag hidden-tag">🔮 隐藏</span>
+                <span v-if="isKeyLine" class="history-tag key-tag">✨ 关键</span>
+              </div>
+              <p class="history-text">{{ dialogue.text }}</p>
+            </div>
+          </div>
+          <div class="history-footer">
+            <span class="history-count">共 {{ dialogueHistory.length + (dialogue ? 1 : 0) }} 条对白</span>
+            <button class="btn btn-ghost scroll-btn" @click="scrollToBottom" v-if="dialogueHistory.length > 5">
+              回到底部 ↓
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 
 const props = defineProps({
@@ -42,13 +140,41 @@ const gameStore = useGameStore()
 const displayedText = ref('')
 const isTyping = ref(false)
 const typeInterval = ref(null)
+const showHistory = ref(false)
+const showSpeedPanel = ref(false)
+const historyListRef = ref(null)
+
+const dialogueHistory = computed(() => gameStore.dialogueHistory)
+const typingSpeed = computed(() => gameStore.typingSpeed)
+
+const speedPresets = [
+  { label: '很慢', value: 120 },
+  { label: '慢', value: 80 },
+  { label: '正常', value: 50 },
+  { label: '快', value: 25 },
+  { label: '很快', value: 10 }
+]
+
+const currentSpeedLabel = computed(() => {
+  const preset = speedPresets.find(p => p.value === typingSpeed.value)
+  if (preset) return preset.label
+  if (typingSpeed.value >= 100) return '很慢'
+  if (typingSpeed.value >= 60) return '慢'
+  if (typingSpeed.value >= 35) return '正常'
+  if (typingSpeed.value >= 15) return '快'
+  return '很快'
+})
 
 const isWaitingForMaterial = computed(() => gameStore.isWaitingForMaterial)
 const isHidden = computed(() => props.dialogue?.isHidden || gameStore.isShowingHiddenDialogue)
+const isKeyLine = computed(() => props.dialogue?.isKeyLine || (props.dialogue?.emotionChange && props.dialogue.emotionChange >= 5))
 
 const speakerClass = computed(() => {
   if (!props.dialogue) return ''
-  const speaker = props.dialogue.speaker
+  return getSpeakerClass(props.dialogue.speaker)
+})
+
+const getSpeakerClass = (speaker) => {
   const classMap = {
     '旁白': 'speaker-narrator',
     '你': 'speaker-you',
@@ -56,7 +182,7 @@ const speakerClass = computed(() => {
     '内心': 'speaker-inner'
   }
   return classMap[speaker] || ''
-})
+}
 
 const typeText = (text) => {
   displayedText.value = ''
@@ -67,6 +193,8 @@ const typeText = (text) => {
     clearInterval(typeInterval.value)
   }
 
+  const speed = isHidden.value ? Math.min(typingSpeed.value + 15, 100) : typingSpeed.value
+
   typeInterval.value = setInterval(() => {
     if (index < text.length) {
       displayedText.value += text[index]
@@ -75,7 +203,7 @@ const typeText = (text) => {
       clearInterval(typeInterval.value)
       isTyping.value = false
     }
-  }, isHidden.value ? 65 : 50)
+  }, speed)
 }
 
 const skipTyping = () => {
@@ -87,10 +215,59 @@ const skipTyping = () => {
 }
 
 const handleClick = () => {
+  if (showSpeedPanel.value) {
+    showSpeedPanel.value = false
+    return
+  }
   if (isTyping.value) {
     skipTyping()
   } else if (!isWaitingForMaterial.value) {
     emit('next')
+  }
+}
+
+const toggleHistory = () => {
+  showHistory.value = !showHistory.value
+  if (showHistory.value) {
+    nextTick(() => {
+      scrollToBottom()
+    })
+  }
+}
+
+const toggleSpeedPanel = () => {
+  showSpeedPanel.value = !showSpeedPanel.value
+}
+
+const changeSpeed = (speed) => {
+  gameStore.setTypingSpeed(speed)
+  if (isTyping.value && props.dialogue) {
+    const remainingText = props.dialogue.text.substring(displayedText.value.length)
+    if (typeInterval.value) {
+      clearInterval(typeInterval.value)
+    }
+    let index = 0
+    const actualSpeed = isHidden.value ? Math.min(speed + 15, 100) : speed
+    typeInterval.value = setInterval(() => {
+      if (index < remainingText.length) {
+        displayedText.value += remainingText[index]
+        index++
+      } else {
+        clearInterval(typeInterval.value)
+        isTyping.value = false
+      }
+    }, actualSpeed)
+  }
+}
+
+const onSpeedInput = (e) => {
+  const speed = parseInt(e.target.value)
+  gameStore.setTypingSpeed(speed)
+}
+
+const scrollToBottom = () => {
+  if (historyListRef.value) {
+    historyListRef.value.scrollTop = historyListRef.value.scrollHeight
   }
 }
 
@@ -113,6 +290,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.dialogue-wrapper {
+  position: relative;
+}
+
 .dialogue-box {
   background: var(--bg-secondary);
   border-radius: var(--border-radius);
@@ -223,6 +404,9 @@ onUnmounted(() => {
 
 .dialogue-header {
   margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .speaker {
@@ -264,6 +448,168 @@ onUnmounted(() => {
   color: #9d174d;
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.icon-btn:hover {
+  background: white;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.icon-btn.active {
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+}
+
+.icon-btn.active .btn-icon {
+  color: white;
+}
+
+.btn-icon {
+  font-size: 1rem;
+}
+
+.history-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--accent-pink);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.speed-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 15px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid #e9d5ff;
+}
+
+.speed-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.speed-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.speed-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.speed-presets {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.speed-preset-btn {
+  flex: 1;
+  min-width: 50px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+}
+
+.speed-preset-btn:hover {
+  border-color: var(--accent-pink);
+  color: var(--accent-pink);
+}
+
+.speed-preset-btn.active {
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+  color: white;
+  border-color: transparent;
+}
+
+.speed-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #f3e8ff;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.speed-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.speed-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(236, 72, 153, 0.4);
+}
+
+.speed-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
 .dialogue-content {
   min-height: 60px;
   margin-bottom: 15px;
@@ -273,6 +619,7 @@ onUnmounted(() => {
   font-size: 1.05rem;
   line-height: 1.8;
   color: var(--text-primary);
+  margin: 0;
 }
 
 .dialogue-text.hidden-text {
@@ -280,6 +627,35 @@ onUnmounted(() => {
   color: #581c87;
   font-weight: 500;
   letter-spacing: 0.3px;
+}
+
+.dialogue-text.key-line {
+  background: linear-gradient(135deg, #fef3c7 0%, #fce7f3 50%, #ede9fe 100%);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border-left: 4px solid var(--accent-pink);
+  font-weight: 500;
+  margin: 0 -8px;
+  position: relative;
+}
+
+.key-line-marker {
+  display: inline-block;
+  animation: keySparkle 1.5s ease-in-out infinite;
+  margin: 0 4px;
+}
+
+.key-line-marker:first-child {
+  animation-delay: 0s;
+}
+
+.key-line-marker:last-child {
+  animation-delay: 0.75s;
+}
+
+@keyframes keySparkle {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
 .typing-cursor {
@@ -357,6 +733,255 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
+.history-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(6px);
+  padding: 20px;
+}
+
+.history-panel {
+  background: white;
+  border-radius: 20px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.history-header {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f3e8ff;
+  background: linear-gradient(135deg, #faf5ff 0%, #fdf4ff 100%);
+}
+
+.history-title {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.close-btn:hover {
+  background: #fee2e2;
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.history-list::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.history-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.history-empty p {
+  margin: 4px 0;
+  font-size: 0.95rem;
+}
+
+.empty-hint {
+  font-size: 0.8rem !important;
+  opacity: 0.7;
+}
+
+.history-item {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.history-item:hover {
+  background: #f5f5f5;
+}
+
+.history-item.history-hidden {
+  background: linear-gradient(135deg, #faf5ff 0%, #fdf4ff 100%);
+  border-left-color: #a855f7;
+}
+
+.history-item.history-key-line {
+  background: linear-gradient(135deg, #fef3c7 0%, #fce7f3 50%, #ede9fe 100%);
+  border-left-color: var(--accent-pink);
+}
+
+.history-item.history-current {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-left-color: #3b82f6;
+}
+
+.history-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.history-speaker {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.history-tag {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.hidden-tag {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.key-tag {
+  background: linear-gradient(135deg, #fef3c7, #fce7f3);
+  color: #be185d;
+}
+
+.current-tag {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.history-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.history-footer {
+  padding: 14px 24px;
+  border-top: 1px solid #f3e8ff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+}
+
+.history-count {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.scroll-btn {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  border-radius: 20px;
+}
+
+.history-enter-active,
+.history-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.history-enter-from,
+.history-leave-to {
+  opacity: 0;
+}
+
+.history-enter-active .history-panel,
+.history-leave-active .history-panel {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+}
+
+.history-enter-from .history-panel,
+.history-leave-to .history-panel {
+  transform: translateY(30px) scale(0.95);
+  opacity: 0;
+}
+
+.slide-down {
+  animation: slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 @media (max-width: 768px) {
   .dialogue-box {
     padding: 20px;
@@ -378,6 +1003,38 @@ onUnmounted(() => {
 
   .emotion-text {
     font-size: 0.85rem;
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .btn-icon {
+    font-size: 0.9rem;
+  }
+
+  .speed-preset-btn {
+    font-size: 0.7rem;
+    padding: 5px 8px;
+    min-width: 44px;
+  }
+
+  .history-panel {
+    border-radius: 16px;
+    max-height: 85vh;
+  }
+
+  .history-header {
+    padding: 16px 18px;
+  }
+
+  .history-list {
+    padding: 12px 18px;
+  }
+
+  .history-footer {
+    padding: 12px 18px;
   }
 }
 </style>

@@ -179,6 +179,7 @@
         "speaker": "回忆",
         "text": "\"下个春天，我们还在这里见面吧。\"",
         "emotionChange": 3,
+        "isKeyLine": true,
         "trigger": "material_required"
       },
       {
@@ -186,6 +187,7 @@
         "speaker": "旁白",
         "text": "春日的记忆，就这样被轻轻唤醒了...",
         "emotionChange": 2,
+        "isKeyLine": true,
         "trigger": "chapter_complete"
       }
     ],
@@ -425,6 +427,7 @@
         "speaker": "你",
         "text": "「夏天的相遇，是青春最美的注脚」...",
         "emotionChange": 4,
+        "isKeyLine": true,
         "trigger": null
       },
       {
@@ -439,6 +442,7 @@
         "speaker": "回忆",
         "text": "那个夏天的阳光，好像永远都不会褪色。",
         "emotionChange": 3,
+        "isKeyLine": true,
         "trigger": "chapter_complete"
       }
     ],
@@ -678,6 +682,7 @@
         "speaker": "你",
         "text": "如果时间能停在这一刻就好了...",
         "emotionChange": 3,
+        "isKeyLine": true,
         "trigger": null
       },
       {
@@ -692,6 +697,7 @@
         "speaker": "回忆",
         "text": "\"没关系，我们还有很多个秋天。\"",
         "emotionChange": 4,
+        "isKeyLine": true,
         "trigger": "chapter_complete"
       }
     ],
@@ -931,6 +937,7 @@
         "speaker": "你",
         "text": "原来...你一直都在这里。",
         "emotionChange": 6,
+        "isKeyLine": true,
         "trigger": null
       },
       {
@@ -945,6 +952,7 @@
         "speaker": "回忆",
         "text": "\"春夏秋冬，四季轮回，我一直都在。\"",
         "emotionChange": 8,
+        "isKeyLine": true,
         "trigger": "game_complete"
       }
     ],
