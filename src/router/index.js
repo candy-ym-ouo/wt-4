@@ -17,6 +17,11 @@ const routes = [
     component: () => import('../views/GameView.vue')
   },
   {
+    path: '/chapter-score/:chapterId',
+    name: 'ChapterScore',
+    component: () => import('../views/ChapterScoreView.vue')
+  },
+  {
     path: '/ending',
     name: 'Ending',
     component: () => import('../views/EndingView.vue')

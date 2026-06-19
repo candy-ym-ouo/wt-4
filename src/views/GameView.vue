@@ -179,7 +179,10 @@
           <button class="btn btn-primary" @click="goToNextChapter">
             继续冒险 ▸
           </button>
-          <button class="btn btn-secondary" @click="goBack">
+          <button class="btn btn-secondary" @click="viewChapterScore">
+            📊 评分明细
+          </button>
+          <button class="btn btn-ghost" @click="goBack">
             返回章节选择
           </button>
         </div>
@@ -389,6 +392,15 @@ const goToNextChapter = () => {
     router.push(`/game/${nextChapter.id}`)
   } else {
     goBack()
+  }
+}
+
+const viewChapterScore = () => {
+  showChapterComplete.value = false
+  const chapterId = currentChapter.value?.id
+  if (chapterId) {
+    gameStore.autoSave()
+    router.push(`/chapter-score/${chapterId}`)
   }
 }
 

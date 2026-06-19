@@ -34,6 +34,13 @@
             <span v-else class="status-locked">
               🔒 未解锁
             </span>
+            <button
+              v-if="isChapterCompleted(chapter.id) && hasChapterScoreData(chapter.id)"
+              class="score-detail-btn"
+              @click.stop="viewScoreDetail(chapter.id)"
+            >
+              📊 评分明细
+            </button>
           </div>
 
           <div class="chapter-materials">
@@ -169,6 +176,14 @@ const isChapterCompleted = (chapterId) => {
 
 const hasChapterSnapshot = (chapterId) => {
   return gameStore.hasChapterSnapshot(chapterId)
+}
+
+const hasChapterScoreData = (chapterId) => {
+  return !!gameStore.getChapterScoreDetail(chapterId)
+}
+
+const viewScoreDetail = (chapterId) => {
+  router.push(`/chapter-score/${chapterId}`)
 }
 
 const getMaterialColor = (materialId) => {
@@ -355,12 +370,32 @@ onMounted(() => {
 }
 
 .chapter-status {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.85rem;
   margin-bottom: 15px;
   background: rgba(255, 255, 255, 0.8);
+  flex-wrap: wrap;
+}
+
+.score-detail-btn {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border: 1px solid var(--accent-purple);
+  background: rgba(167, 139, 250, 0.1);
+  color: var(--accent-purple);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-serif);
+}
+
+.score-detail-btn:hover {
+  background: var(--accent-purple);
+  color: white;
 }
 
 .status-completed {

@@ -10,6 +10,7 @@ const AUTO_SAVE_BACKUP_KEY = 'journal_game_autosave_backup'
 const CHAPTER_SNAPSHOTS_KEY = 'journal_game_chapter_snapshots'
 const SESSION_KEY = 'journal_game_session'
 const BACKUP_KEY = 'journal_game_saves_backup'
+const CHAPTER_SCORE_KEY = 'journal_game_chapter_scores'
 const AUTO_SAVE_DIALOGUE_INTERVAL = 5
 const HEARTBEAT_INTERVAL = 20000
 const CRASH_RECOVERY_THRESHOLD = 180000
@@ -47,6 +48,9 @@ export const useGameStore = defineStore('game', () => {
   const optionalMaterialsPlaced = ref([])
   const requiredMaterialPlaced = ref(false)
   const comboJustTriggered = ref(null)
+
+  const currentChapterLog = ref([])
+  const chapterScoreData = ref({})
 
   const autoSaveEnabled = ref(true)
   const lastAutoSaveTime = ref(null)
@@ -132,6 +136,16 @@ export const useGameStore = defineStore('game', () => {
     return chapters.value.find(c => c.id === id)
   }
 
+  const addEmotionLog = (type, amount, detail = {}) => {
+    currentChapterLog.value.push({
+      type,
+      amount,
+      sceneId: currentSceneId.value,
+      timestamp: Date.now(),
+      ...detail
+    })
+  }
+
   const startChapter = (chapterId) => {
     const chapter = getChapterById(chapterId)
     if (!chapter || !unlockedChapters.value.includes(chapterId)) return
@@ -154,6 +168,7 @@ export const useGameStore = defineStore('game', () => {
     requiredMaterialPlaced.value = false
     comboJustTriggered.value = null
     activeHiddenDialogue.value = null
+    currentChapterLog.value = []
   }
 
   const resetStats = () => {
@@ -192,6 +207,13 @@ export const useGameStore = defineStore('game', () => {
     if (randomFluctuation > 0) {
       positiveBonus.value += randomFluctuation
     }
+    addEmotionLog('dialogue', finalEmotion, {
+      dialogueId: dialogue.id,
+      speaker: dialogue.speaker,
+      text: dialogue.text,
+      baseEmotion,
+      fluctuation: randomFluctuation
+    })
 
     if (dialogue.trigger === 'material_required') {
       isWaitingForMaterial.value = true
@@ -231,6 +253,11 @@ export const useGameStore = defineStore('game', () => {
     if (randomFluctuation > 0) {
       positiveBonus.value += randomFluctuation
     }
+    addEmotionLog('hidden_dialogue', finalEmotion, {
+      speaker: hiddenDialogue.speaker,
+      text: hiddenDialogue.text,
+      isHidden: true
+    })
   }
 
   const checkMaterialCombos = () => {
@@ -264,6 +291,14 @@ export const useGameStore = defineStore('game', () => {
     triggeredCombos.value.push(combo.id)
     comboBonusTotal.value += combo.emotionBonus || 0
     emotionValue.value += combo.emotionBonus || 0
+
+    addEmotionLog('combo', combo.emotionBonus || 0, {
+      comboId: combo.id,
+      comboName: combo.name,
+      comboDescription: combo.description,
+      materials: combo.materials,
+      hasHiddenDialogue: !!combo.hiddenDialogue
+    })
 
     if (combo.hiddenDialogue) {
       pendingHiddenDialogues.value.push({ ...combo.hiddenDialogue })
@@ -325,6 +360,19 @@ export const useGameStore = defineStore('game', () => {
       perfectPlacementCount.value++
     }
 
+    addEmotionLog('material', material.emotion, {
+      materialId,
+      materialName: material.name,
+      isOptional: true,
+      isPerfect
+    })
+    if (placementBonus > 0) {
+      addEmotionLog('perfect_bonus', placementBonus, {
+        materialId,
+        materialName: material.name
+      })
+    }
+
     const newlyTriggered = checkMaterialCombos()
     const comboResults = newlyTriggered.map(combo => triggerCombo(combo)).filter(Boolean)
 
@@ -373,6 +421,19 @@ export const useGameStore = defineStore('game', () => {
       perfectPlacementCount.value++
     }
 
+    addEmotionLog('material', material.emotion, {
+      materialId,
+      materialName: material.name,
+      isOptional: false,
+      isPerfect
+    })
+    if (placementBonus > 0) {
+      addEmotionLog('perfect_bonus', placementBonus, {
+        materialId,
+        materialName: material.name
+      })
+    }
+
     requiredMaterialPlaced.value = true
     isWaitingForMaterial.value = false
     requiredMaterialId.value = null
@@ -411,6 +472,58 @@ export const useGameStore = defineStore('game', () => {
     if (!completedChapters.value.includes(chapter.id)) {
       completedChapters.value.push(chapter.id)
     }
+
+    const emotionBreakdown = { dialogue: 0, hidden_dialogue: 0, material: 0, perfect_bonus: 0, combo: 0 }
+    currentChapterLog.value.forEach(entry => {
+      if (emotionBreakdown[entry.type] !== undefined) {
+        emotionBreakdown[entry.type] += entry.amount
+      }
+    })
+
+    const chapterScenes = chapter.scenes || []
+    const allCombos = []
+    chapterScenes.forEach(sceneId => {
+      const scene = scenes.value[sceneId]
+      if (scene?.materialCombos) {
+        scene.materialCombos.forEach(combo => {
+          allCombos.push({
+            id: combo.id,
+            name: combo.name,
+            description: combo.description,
+            materials: combo.materials,
+            emotionBonus: combo.emotionBonus || 0,
+            hasHiddenDialogue: !!combo.hiddenDialogue,
+            sceneId,
+            triggered: triggeredCombos.value.includes(combo.id)
+          })
+        })
+      }
+    })
+
+    const materialChoices = currentChapterLog.value
+      .filter(e => e.type === 'material')
+      .map(e => ({
+        sceneId: e.sceneId,
+        materialId: e.materialId,
+        materialName: e.materialName,
+        isOptional: e.isOptional,
+        isPerfect: e.isPerfect
+      }))
+
+    chapterScoreData.value[chapter.id] = {
+      chapterId: chapter.id,
+      completedAt: Date.now(),
+      emotionBreakdown,
+      totalEmotion: Object.values(emotionBreakdown).reduce((a, b) => a + b, 0),
+      materialChoices,
+      allCombos,
+      triggeredComboCount: allCombos.filter(c => c.triggered).length,
+      totalComboCount: allCombos.length,
+      emotionTarget: chapter.emotionTarget || 0,
+      log: [...currentChapterLog.value]
+    }
+
+    saveChapterScoreData()
 
     const nextChapterIndex = chapters.value.findIndex(c => c.id === chapter.id) + 1
     if (nextChapterIndex < chapters.value.length) {
@@ -524,7 +637,9 @@ export const useGameStore = defineStore('game', () => {
     autoSaveData.value = null
     lastAutoSaveTime.value = null
     chapterSnapshots.value = {}
+    chapterScoreData.value = {}
     dialogueCountSinceLastAutoSave.value = 0
+    currentChapterLog.value = []
     resetStats()
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('journal_game_saves')
@@ -533,6 +648,7 @@ export const useGameStore = defineStore('game', () => {
       localStorage.removeItem(CHAPTER_SNAPSHOTS_KEY)
       localStorage.removeItem(SESSION_KEY)
       localStorage.removeItem(BACKUP_KEY)
+      localStorage.removeItem(CHAPTER_SCORE_KEY)
     }
   }
 
@@ -785,6 +901,30 @@ export const useGameStore = defineStore('game', () => {
     localStorage.setItem(CHAPTER_SNAPSHOTS_KEY, JSON.stringify(chapterSnapshots.value))
   }
 
+  const saveChapterScoreData = () => {
+    try {
+      localStorage.setItem(CHAPTER_SCORE_KEY, JSON.stringify(chapterScoreData.value))
+    } catch (e) {
+      console.error('Failed to save chapter score data:', e)
+    }
+  }
+
+  const loadChapterScoreData = () => {
+    try {
+      const saved = localStorage.getItem(CHAPTER_SCORE_KEY)
+      if (saved) {
+        chapterScoreData.value = JSON.parse(saved)
+      }
+    } catch (e) {
+      console.error('Failed to load chapter score data:', e)
+      chapterScoreData.value = {}
+    }
+  }
+
+  const getChapterScoreDetail = (chapterId) => {
+    return chapterScoreData.value[chapterId] || null
+  }
+
   const backupSaveSlots = () => {
     try {
       const backup = {
@@ -997,6 +1137,7 @@ export const useGameStore = defineStore('game', () => {
   loadSavesFromStorage()
   loadChapterSnapshots()
   loadAutoSave()
+  loadChapterScoreData()
 
   const startChapterWithTracking = (chapterId) => {
     const chapter = getChapterById(chapterId)
@@ -1081,6 +1222,8 @@ export const useGameStore = defineStore('game', () => {
     showRecoveryModal,
     recoveryData,
     isInitialized,
+    currentChapterLog,
+    chapterScoreData,
     currentChapter,
     currentScene,
     currentDialogue,
@@ -1121,6 +1264,9 @@ export const useGameStore = defineStore('game', () => {
     hasChapterSnapshot,
     rollbackToChapterStart,
     deleteChapterSnapshot,
+    getChapterScoreDetail,
+    saveChapterScoreData,
+    loadChapterScoreData,
     backupSaveSlots,
     restoreFromBackup,
     markSessionActive,
