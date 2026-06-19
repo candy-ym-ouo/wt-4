@@ -131,6 +131,49 @@
               @change="updateCondition(idx, 'minCount', Number($event.target.value))"
             />
           </div>
+          <div v-if="getConditionType(cond.type)?.needsCycle" class="form-group">
+            <label class="form-label">周目数</label>
+            <input
+              type="number"
+              class="form-input form-input-sm"
+              :value="cond.cycle"
+              @change="updateCondition(idx, 'cycle', Number($event.target.value))"
+              placeholder="例如：2"
+            />
+          </div>
+          <div v-if="getConditionType(cond.type)?.needsMaterialId" class="form-group">
+            <label class="form-label">素材ID</label>
+            <select
+              class="form-select form-input-sm"
+              :value="cond.materialId"
+              @change="updateCondition(idx, 'materialId', $event.target.value)"
+            >
+              <option value="">任意隐藏素材</option>
+              <option v-for="mat in hiddenMaterialOptions" :key="mat.id" :value="mat.id">{{ mat.name }}</option>
+            </select>
+          </div>
+          <div v-if="getConditionType(cond.type)?.needsAchievementId" class="form-group">
+            <label class="form-label">成就ID</label>
+            <select
+              class="form-select form-input-sm"
+              :value="cond.achievementId"
+              @change="updateCondition(idx, 'achievementId', $event.target.value)"
+            >
+              <option value="">任意成就</option>
+              <option v-for="ach in achievementOptions" :key="ach.id" :value="ach.id">{{ ach.name }}</option>
+            </select>
+          </div>
+          <div v-if="getConditionType(cond.type)?.needsEndingId" class="form-group">
+            <label class="form-label">结局ID</label>
+            <select
+              class="form-select form-input-sm"
+              :value="cond.endingId"
+              @change="updateCondition(idx, 'endingId', $event.target.value)"
+            >
+              <option value="">任意结局</option>
+              <option v-for="ending in editorStore.endings" :key="ending.id" :value="ending.id">{{ ending.title }}</option>
+            </select>
+          </div>
           <div class="form-group">
             <label class="form-label">描述</label>
             <input
@@ -174,8 +217,10 @@
 <script setup>
 import { computed } from 'vue'
 import { useEditorStore } from '../../stores/editorStore'
+import { useGameStore } from '../../stores/gameStore'
 
 const editorStore = useEditorStore()
+const gameStore = useGameStore()
 
 const chapter = computed({
   get() { return editorStore.selectedChapter }
@@ -183,6 +228,14 @@ const chapter = computed({
 
 const otherChapters = computed(() => {
   return editorStore.chapters.filter(c => c.id !== chapter.value?.id)
+})
+
+const hiddenMaterialOptions = computed(() => {
+  return gameStore.hiddenMaterialsRegistry || []
+})
+
+const achievementOptions = computed(() => {
+  return gameStore.crossCycleAchievements || []
 })
 
 const updateField = (field, value) => {

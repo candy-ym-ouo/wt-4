@@ -7,6 +7,42 @@
         <span class="help-icon">❓</span>
         <span class="help-text">新手引导</span>
       </button>
+
+      <div v-if="ngpSummary.currentCycle > 1 || ngpSummary.totalPlaythroughs > 0" class="ngp-header-info slide-down">
+        <div class="ngp-cycle-badge">
+          <span class="cycle-icon">🔄</span>
+          <span class="cycle-text">第 {{ ngpSummary.currentCycle }} 周目</span>
+        </div>
+        <div class="ngp-stats-row">
+          <div class="ngp-stat">
+            <span class="ngp-stat-icon">💕</span>
+            <span class="ngp-stat-value">+{{ ngpSummary.inheritedEmotion }}</span>
+            <span class="ngp-stat-label">继承情绪</span>
+          </div>
+          <div class="ngp-stat">
+            <span class="ngp-stat-icon">🎁</span>
+            <span class="ngp-stat-value">{{ ngpSummary.unlockedHiddenMaterials }}/{{ ngpSummary.totalHiddenMaterials }}</span>
+            <span class="ngp-stat-label">隐藏素材</span>
+          </div>
+          <div class="ngp-stat">
+            <span class="ngp-stat-icon">🏆</span>
+            <span class="ngp-stat-value">{{ ngpSummary.unlockedAchievements }}/{{ ngpSummary.totalAchievements }}</span>
+            <span class="ngp-stat-label">成就</span>
+          </div>
+          <div class="ngp-stat">
+            <span class="ngp-stat-icon">🎬</span>
+            <span class="ngp-stat-value">{{ ngpSummary.discoveredEndings }}/{{ ngpSummary.totalEndings }}</span>
+            <span class="ngp-stat-label">结局</span>
+          </div>
+        </div>
+        <div v-if="ngpSummary.inheritanceRatio > 0" class="ngp-inheritance-info">
+          <span class="inheritance-icon">✨</span>
+          <span class="inheritance-text">
+            本周目情绪继承比例：{{ Math.round(ngpSummary.inheritanceRatio * 100) }}%
+            <span v-if="ngpSummary.inheritedEmotion > 0">（已继承 +{{ ngpSummary.inheritedEmotion }} 点）</span>
+          </span>
+        </div>
+      </div>
     </div>
 
     <div class="chapters-grid">
@@ -149,12 +185,139 @@
       <button class="btn btn-secondary" @click="openLoadModal">
         📂 读取存档
       </button>
+      <button v-if="hasNgpData" class="btn btn-ghost ngp-btn" @click="showNgpStats = !showNgpStats">
+        📊 多周目进度
+      </button>
       <button class="btn btn-ghost" @click="goToEditor">
         📝 剧情编辑器
       </button>
       <button class="btn btn-ghost" @click="resetGame">
         🔄 重新开始
       </button>
+    </div>
+
+    <div v-if="showNgpStats" class="ngp-stats-modal-overlay" @click.self="showNgpStats = false">
+      <div class="ngp-stats-modal slide-up">
+        <div class="modal-header">
+          <h3 class="handwriting modal-title">🌟 多周目成长</h3>
+          <button class="icon-btn" @click="showNgpStats = false">✕</button>
+        </div>
+
+        <div class="ngp-overview">
+          <div class="overview-grid">
+            <div class="overview-card">
+              <div class="overview-card-icon">🔄</div>
+              <div class="overview-card-value">{{ ngpSummary.currentCycle }}</div>
+              <div class="overview-card-label">当前周目</div>
+            </div>
+            <div class="overview-card">
+              <div class="overview-card-icon">🎮</div>
+              <div class="overview-card-value">{{ ngpSummary.totalPlaythroughs }}</div>
+              <div class="overview-card-label">总通关次数</div>
+            </div>
+            <div class="overview-card">
+              <div class="overview-card-icon">👑</div>
+              <div class="overview-card-value">{{ ngpSummary.perfectCycles }}</div>
+              <div class="overview-card-label">完美周目</div>
+            </div>
+            <div class="overview-card">
+              <div class="overview-card-icon">✨</div>
+              <div class="overview-card-value">{{ Math.round(ngpSummary.inheritanceRatio * 100) }}%</div>
+              <div class="overview-card-label">继承比例</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ngp-section">
+          <h4 class="section-subtitle">🏆 跨周目成就</h4>
+          <div class="achievements-list">
+            <div 
+              v-for="ach in gameStore.crossCycleAchievements" 
+              :key="ach.id" 
+              class="achievement-item"
+              :class="{ unlocked: ach.unlocked, locked: !ach.unlocked }"
+            >
+              <div class="achievement-icon">{{ ach.icon }}</div>
+              <div class="achievement-info">
+                <div class="achievement-name">{{ ach.name }}</div>
+                <div class="achievement-desc">{{ ach.description }}</div>
+                <div v-if="ach.unlocked" class="achievement-unlocked-at">
+                  解锁于 {{ formatDate(ach.unlockedAt) }}
+                </div>
+              </div>
+              <div v-if="ach.unlocked" class="achievement-status">✓</div>
+              <div v-else class="achievement-status locked">🔒</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ngp-section">
+          <h4 class="section-subtitle">🎁 隐藏素材收集</h4>
+          <div class="hidden-materials-grid">
+            <div 
+              v-for="mat in gameStore.hiddenMaterialsRegistry" 
+              :key="mat.id" 
+              class="hidden-material-item"
+              :class="{ unlocked: gameStore.isMaterialUnlocked(mat.id), locked: !gameStore.isMaterialUnlocked(mat.id) }"
+            >
+              <div class="material-icon" :style="{ background: mat.color }">
+                {{ getEmoji(mat.shape) }}
+              </div>
+              <div class="material-info">
+                <div class="material-name">{{ mat.name }}</div>
+                <div class="material-desc">{{ mat.description }}</div>
+                <div class="material-meta">
+                  <span class="rarity-badge" :class="mat.rarity">{{ mat.rarity === 'legendary' ? '传说' : '稀有' }}</span>
+                  <span class="emotion-bonus">+{{ mat.emotion }}💕</span>
+                </div>
+              </div>
+              <div v-if="gameStore.isMaterialUnlocked(mat.id)" class="material-status">✓</div>
+              <div v-else class="material-status locked">
+                <span class="unlock-hint">周目 {{ mat.unlockCycle }}+</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ngp-section">
+          <h4 class="section-subtitle">🎬 结局收集</h4>
+          <div class="endings-grid">
+            <div 
+              v-for="ending in gameStore.endings" 
+              :key="ending.id" 
+              class="ending-collection-item"
+              :class="{ discovered: ngpSummary.discoveredEndings > 0 && gameStore.newGamePlus.discoveredEndingIds.includes(ending.id), not_discovered: !gameStore.newGamePlus.discoveredEndingIds.includes(ending.id) }"
+            >
+              <div class="ending-type-icon">{{ getEndingTypeIcon(ending.type) }}</div>
+              <div class="ending-collection-info">
+                <div class="ending-collection-title">
+                  {{ gameStore.newGamePlus.discoveredEndingIds.includes(ending.id) ? ending.title : '???' }}
+                </div>
+                <div class="ending-collection-type">{{ getEndingTypeName(ending.type) }}</div>
+              </div>
+              <div v-if="gameStore.newGamePlus.discoveredEndingIds.includes(ending.id)" class="ending-status">✓</div>
+              <div v-else class="ending-status locked">🔒</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ngp-actions">
+          <button 
+            v-if="ngpSummary.totalPlaythroughs > 0" 
+            class="btn btn-primary btn-block"
+            @click="startNewCycle"
+          >
+            🔄 开启第 {{ ngpSummary.currentCycle + 1 }} 周目
+          </button>
+          <button 
+            v-if="hasNgpData" 
+            class="btn btn-ghost btn-block"
+            @click="resetAllProgress"
+          >
+            🗑️ 重置所有多周目数据
+          </button>
+        </div>
+      </div>
     </div>
 
     <Transition name="notification">
@@ -245,6 +408,8 @@ import TutorialOverlay from '../components/TutorialOverlay.vue'
 const router = useRouter()
 const gameStore = useGameStore()
 
+const showNgpStats = ref(false)
+
 const chapters = computed(() => gameStore.chapters)
 const saveSlots = computed(() => gameStore.saveSlots)
 const showLoadModal = computed(() => gameStore.showLoadModal)
@@ -252,6 +417,11 @@ const autoSaveData = computed(() => gameStore.autoSaveData)
 const notification = computed(() => gameStore.notification)
 const showRecoveryModal = computed(() => gameStore.showRecoveryModal)
 const recoveryData = computed(() => gameStore.recoveryData)
+
+const ngpSummary = computed(() => gameStore.getNgpSummary())
+const hasNgpData = computed(() => 
+  ngpSummary.value.currentCycle > 1 || ngpSummary.value.totalPlaythroughs > 0
+)
 
 const isChapterUnlocked = (chapterId) => {
   return gameStore.unlockedChapters.includes(chapterId)
@@ -392,13 +562,9 @@ const getChapterName = (chapterId) => {
 }
 
 const formatDate = (timestamp) => {
+  if (!timestamp) return ''
   const date = new Date(timestamp)
-  return date.toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return date.toLocaleDateString('zh-CN')
 }
 
 const getRecoveryChapterName = computed(() => {
@@ -433,9 +599,67 @@ const handleDismissRecovery = () => {
 }
 
 const resetGame = () => {
-  if (confirm('确定要重新开始吗？所有进度将会重置。')) {
-    gameStore.resetGame()
-    window.location.reload()
+  if (confirm('确定要重新开始吗？当前进度将被清空（保留多周目数据）。')) {
+    gameStore.resetGame(false)
+  }
+}
+
+const getEmoji = (shape) => {
+  const map = {
+    heart: '❤️',
+    star: '⭐',
+    circle: '🔵',
+    square: '🔲',
+    diamond: '💎',
+    triangle: '🔺',
+    flower: '🌸',
+    leaf: '🍃',
+    cloud: '☁️',
+    music: '🎵'
+  }
+  return map[shape] || '🔮'
+}
+
+const getEndingTypeIcon = (type) => {
+  const map = {
+    happy: '😊',
+    normal: '😐',
+    sad: '😢',
+    true: '👑',
+    hidden: '🔮',
+    bad: '💀'
+  }
+  return map[type] || '📖'
+}
+
+const getEndingTypeName = (type) => {
+  const map = {
+    happy: '快乐结局',
+    normal: '普通结局',
+    sad: '悲伤结局',
+    true: '真结局',
+    hidden: '隐藏结局',
+    bad: '坏结局'
+  }
+  return map[type] || type
+}
+
+const startNewCycle = () => {
+  if (confirm(`确定要开启第 ${ngpSummary.value.currentCycle + 1} 周目吗？\n\n当前周目数据将被保存为历史，下一周目将继承 ${Math.round(ngpSummary.value.inheritanceRatio * 100)}% 的情绪值。`)) {
+    gameStore.startNewCycle()
+    showNgpStats.value = false
+  }
+}
+
+const resetAllProgress = () => {
+  if (confirm('确定要重置所有多周目数据吗？\n\n这将清空：\n• 周目计数\n• 成就进度\n• 隐藏素材解锁\n• 结局收集记录\n• 情绪继承配置\n\n此操作不可恢复！')) {
+    if (confirm('此操作将永久删除所有多周目进度，确定继续吗？')) {
+      localStorage.removeItem('journal_game_ngp')
+      localStorage.removeItem('journal_game_hidden_materials')
+      localStorage.removeItem('journal_game_cycle_achievements')
+      gameStore.resetGame(true)
+      showNgpStats.value = false
+    }
   }
 }
 
@@ -502,6 +726,433 @@ onMounted(() => {
 
 .help-icon {
   font-size: 1rem;
+}
+
+.ngp-header-info {
+  margin-top: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(236, 72, 153, 0.1));
+  border-radius: 16px;
+  border: 2px solid rgba(251, 191, 36, 0.3);
+  animation: slideDown 0.5s ease;
+}
+
+.ngp-cycle-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #fbbf24, #f472b6);
+  color: white;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.cycle-icon {
+  font-size: 1.2rem;
+}
+
+.ngp-stats-row {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.ngp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ngp-stat-icon {
+  font-size: 1.5rem;
+}
+
+.ngp-stat-value {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #7c3aed;
+}
+
+.ngp-stat-label {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.ngp-inheritance-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 12px;
+  color: #7c3aed;
+  font-weight: 500;
+}
+
+.ngp-btn {
+  background: linear-gradient(135deg, #fef3c7, #fce7f3);
+  border: 2px solid #fbbf24;
+  color: #b45309;
+}
+
+.ngp-btn:hover {
+  background: linear-gradient(135deg, #fde68a, #fbcfe8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.ngp-stats-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.ngp-stats-modal {
+  background: white;
+  border-radius: 20px;
+  max-width: 700px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 30px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.modal-title {
+  font-size: 1.8rem;
+  color: #7c3aed;
+  margin: 0;
+}
+
+.ngp-overview {
+  margin-bottom: 30px;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 15px;
+}
+
+.overview-card {
+  text-align: center;
+  padding: 20px 15px;
+  background: linear-gradient(135deg, #faf5ff, #fdf4ff);
+  border-radius: 16px;
+  border: 2px solid #e9d5ff;
+  transition: all 0.3s ease;
+}
+
+.overview-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.2);
+}
+
+.overview-card-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.overview-card-value {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #7c3aed;
+}
+
+.overview-card-label {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.ngp-section {
+  margin-bottom: 30px;
+}
+
+.section-subtitle {
+  font-size: 1.2rem;
+  color: #1f2937;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.achievement-item.unlocked {
+  background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+  border-color: #10b981;
+}
+
+.achievement-item.locked {
+  background: #f9fafb;
+  opacity: 0.7;
+}
+
+.achievement-icon {
+  font-size: 2rem;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.achievement-item.unlocked .achievement-icon {
+  background: linear-gradient(135deg, #fef3c7, #fce7f3);
+}
+
+.achievement-info {
+  flex: 1;
+}
+
+.achievement-name {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.achievement-desc {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.achievement-unlocked-at {
+  font-size: 0.8rem;
+  color: #10b981;
+}
+
+.achievement-status {
+  font-size: 1.5rem;
+  color: #10b981;
+  font-weight: bold;
+}
+
+.achievement-status.locked {
+  color: #d1d5db;
+}
+
+.hidden-materials-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hidden-material-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.hidden-material-item.unlocked {
+  background: linear-gradient(135deg, #fff7ed, #fff1f2);
+  border-color: #f97316;
+}
+
+.hidden-material-item.locked {
+  background: #f9fafb;
+  opacity: 0.7;
+}
+
+.material-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.material-info {
+  flex: 1;
+}
+
+.material-name {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.material-desc {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.material-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.rarity-badge {
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.rarity-badge.rare {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.rarity-badge.legendary {
+  background: linear-gradient(135deg, #fbbf24, #f472b6);
+  color: white;
+}
+
+.emotion-bonus {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: #fce7f3;
+  color: #be185d;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.material-status {
+  font-size: 1.5rem;
+  color: #f97316;
+  font-weight: bold;
+}
+
+.material-status.locked {
+  color: #d1d5db;
+  font-size: 0.8rem;
+}
+
+.unlock-hint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.endings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ending-collection-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.ending-collection-item.discovered {
+  background: linear-gradient(135deg, #f0f9ff, #f0fdfa);
+  border-color: #0ea5e9;
+}
+
+.ending-collection-item.not_discovered {
+  background: #f9fafb;
+  opacity: 0.7;
+}
+
+.ending-type-icon {
+  font-size: 2rem;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ending-collection-item.discovered .ending-type-icon {
+  background: linear-gradient(135deg, #dbeafe, #ccfbf1);
+}
+
+.ending-collection-info {
+  flex: 1;
+}
+
+.ending-collection-title {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.ending-collection-type {
+  font-size: 0.85rem;
+  color: #0ea5e9;
+}
+
+.ending-status {
+  font-size: 1.5rem;
+  color: #0ea5e9;
+  font-weight: bold;
+}
+
+.ending-status.locked {
+  color: #d1d5db;
+}
+
+.ngp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px solid #f3f4f6;
+}
+
+.btn-block {
+  width: 100%;
 }
 
 .chapters-grid {

@@ -13,6 +13,9 @@ const BACKUP_KEY = 'journal_game_saves_backup'
 const CHAPTER_SCORE_KEY = 'journal_game_chapter_scores'
 const BRANCH_STATS_KEY = 'journal_game_branch_stats'
 const TUTORIAL_KEY = 'journal_game_tutorial'
+const NEW_GAME_PLUS_KEY = 'journal_game_ngp'
+const HIDDEN_MATERIALS_KEY = 'journal_game_hidden_materials'
+const CYCLE_ACHIEVEMENTS_KEY = 'journal_game_cycle_achievements'
 const AUTO_SAVE_DIALOGUE_INTERVAL = 5
 const HEARTBEAT_INTERVAL = 20000
 const CRASH_RECOVERY_THRESHOLD = 180000
@@ -101,6 +104,189 @@ export const useGameStore = defineStore('game', () => {
       endingRules: false
     }
   })
+
+  const newGamePlus = ref({
+    currentCycle: 1,
+    maxCycleUnlocked: 1,
+    totalPlaythroughs: 0,
+    inheritedEmotion: 0,
+    emotionInheritanceConfig: {
+      enabled: true,
+      baseRatio: 0.12,
+      bonusRatioPerCycle: 0.02,
+      maxRatio: 0.35,
+      maxInheritedEmotion: 80,
+      minFinalEmotionForInheritance: 30
+    },
+    unlockedHiddenMaterialIds: [],
+    discoveredEndingIds: [],
+    perfectCycleHistory: [],
+    cycleRewards: {}
+  })
+
+  const hiddenMaterialsRegistry = ref([
+    {
+      id: 'memory_locket',
+      name: '记忆吊坠',
+      description: '承载着珍贵回忆的吊坠，只有在经历过完整的四季后才会显现。',
+      shape: 'heart',
+      color: '#f472b6',
+      category: 'nature',
+      emotion: 25,
+      rarity: 'legendary',
+      unlockCycle: 2,
+      unlockCondition: 'complete_cycle_1',
+      tags: ['memory', 'precious', 'legendary'],
+      isHidden: true
+    },
+    {
+      id: 'time_compass',
+      name: '时光罗盘',
+      description: '指向命运交汇点的神秘罗盘，能够感知时间的流动。',
+      shape: 'circle',
+      color: '#8b5cf6',
+      category: 'stationery',
+      emotion: 20,
+      rarity: 'legendary',
+      unlockCycle: 2,
+      unlockCondition: 'all_endings_discovered',
+      tags: ['time', 'mystery', 'legendary'],
+      isHidden: true
+    },
+    {
+      id: 'starlight_quill',
+      name: '星光羽毛笔',
+      description: '用星光编织而成的羽毛笔，写下的文字会化作真实。',
+      shape: 'note',
+      color: '#fbbf24',
+      category: 'stationery',
+      emotion: 22,
+      rarity: 'rare',
+      unlockCycle: 3,
+      unlockCondition: 'perfect_cycle',
+      tags: ['star', 'write', 'rare'],
+      isHidden: true
+    },
+    {
+      id: 'eternal_bloom',
+      name: '永恒之花',
+      description: '永不凋零的花朵，象征着跨越时间的羁绊。',
+      shape: 'flower',
+      color: '#ec4899',
+      category: 'nature',
+      emotion: 30,
+      rarity: 'legendary',
+      unlockCycle: 3,
+      unlockCondition: 'true_ending',
+      tags: ['eternal', 'flower', 'legendary'],
+      isHidden: true
+    },
+    {
+      id: 'frozen_teardrop',
+      name: '冰封泪滴',
+      description: '凝结了冬日离别的泪水，却蕴含着最温暖的心意。',
+      shape: 'snowflake',
+      color: '#60a5fa',
+      category: 'nature',
+      emotion: 18,
+      rarity: 'rare',
+      unlockCycle: 2,
+      unlockCondition: 'chapter4_perfect',
+      tags: ['winter', 'tear', 'rare'],
+      isHidden: true
+    },
+    {
+      id: 'echo_shell',
+      name: '回声贝壳',
+      description: '贴近耳边，能听到过去与未来的对话交织回响。',
+      shape: 'circle',
+      color: '#06b6d4',
+      category: 'nature',
+      emotion: 15,
+      rarity: 'rare',
+      unlockCycle: 2,
+      unlockCondition: 'all_hidden_dialogues',
+      tags: ['echo', 'sound', 'rare'],
+      isHidden: true
+    }
+  ])
+
+  const crossCycleAchievements = ref([
+    {
+      id: 'first_cycle_complete',
+      name: '初次邂逅',
+      description: '完成第一周目游戏',
+      icon: '🌸',
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 5 }
+    },
+    {
+      id: 'seasoned_traveler',
+      name: '四季旅人',
+      description: '完成3次完整周目',
+      icon: '🌍',
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'inheritance_ratio', value: 0.05 }
+    },
+    {
+      id: 'perfectionist',
+      name: '完美主义者',
+      description: '在任意周目中达成所有章节完美通关',
+      icon: '👑',
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'unlock_material', value: 'starlight_quill' }
+    },
+    {
+      id: 'ending_collector',
+      name: '结局收藏家',
+      description: '发现所有不同类型的结局',
+      icon: '📚',
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'unlock_material', value: 'time_compass' }
+    },
+    {
+      id: 'true_destiny',
+      name: '真命天女',
+      description: '达成真结局',
+      icon: '💎',
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'unlock_material', value: 'eternal_bloom' }
+    },
+    {
+      id: 'memory_hunter',
+      name: '记忆猎人',
+      description: '发现所有隐藏对话',
+      icon: '🔍',
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'unlock_material', value: 'echo_shell' }
+    },
+    {
+      id: 'cycle_master',
+      name: '轮回宗师',
+      description: '完成5次完整周目',
+      icon: '🔄',
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'max_inheritance', value: 10 }
+    },
+    {
+      id: 'winter_wonder',
+      name: '冬日奇迹',
+      description: '在冬日暖阳章节达成完美通关',
+      icon: '❄️',
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'unlock_material', value: 'frozen_teardrop' }
+    }
+  ])
+
+  const ngpNotification = ref(null)
 
   const currentChapter = computed(() => {
     return chapters.value.find(c => c.id === currentChapterId.value)
@@ -1011,6 +1197,8 @@ export const useGameStore = defineStore('game', () => {
     keyDialogueLines.value = []
     hiddenDialogueSequence.value = []
 
+    emotionValue.value = newGamePlus.value.inheritedEmotion
+
     const firstScene = scenes.value[chapter.scenes[0]]
     if (firstScene) {
       currentTimeOfDay.value = firstScene.timeOfDay || 'day'
@@ -1525,7 +1713,22 @@ export const useGameStore = defineStore('game', () => {
       totalCombos: 0,
       triggeredCombos: 0,
       triggeredComboIds: [],
-      placedMaterialIds: []
+      placedMaterialIds: [],
+      currentCycle: newGamePlus.value.currentCycle,
+      totalPlaythroughs: newGamePlus.value.totalPlaythroughs,
+      hasInheritedEmotion: newGamePlus.value.inheritedEmotion > 0,
+      inheritedEmotionAmount: newGamePlus.value.inheritedEmotion,
+      hiddenMaterialsUnlocked: newGamePlus.value.unlockedHiddenMaterialIds.length,
+      totalHiddenMaterials: hiddenMaterialsRegistry.value.length,
+      allHiddenMaterialsUnlocked: newGamePlus.value.unlockedHiddenMaterialIds.length === hiddenMaterialsRegistry.value.length,
+      discoveredEndingsCount: newGamePlus.value.discoveredEndingIds.length,
+      allEndingsDiscovered: newGamePlus.value.discoveredEndingIds.length === endings.value.length,
+      isNgpCycle: newGamePlus.value.currentCycle > 1,
+      perfectCyclesCount: newGamePlus.value.perfectCycleHistory.length,
+      hasPerfectCycle: newGamePlus.value.perfectCycleHistory.length > 0,
+      unlockedAchievementsCount: crossCycleAchievements.value.filter(a => a.unlocked).length,
+      totalAchievements: crossCycleAchievements.value.length,
+      allAchievementsUnlocked: crossCycleAchievements.value.filter(a => a.unlocked).length === crossCycleAchievements.value.length
     }
 
     let totalHidden = 0
@@ -1691,6 +1894,27 @@ export const useGameStore = defineStore('game', () => {
     branchStats.value.totalPlaythroughs++
     saveBranchStats()
 
+    const endingId = currentEnding.value?.id
+    if (endingId && !newGamePlus.value.discoveredEndingIds.includes(endingId)) {
+      newGamePlus.value.discoveredEndingIds.push(endingId)
+    }
+
+    const allPerfect = chapters.value.every(ch => {
+      const detail = chapterCompletionDetails.value[ch.id]
+      return detail?.isPerfect
+    })
+    if (allPerfect && completedChapters.value.length === chapters.value.length) {
+      const cycleRecord = {
+        cycle: newGamePlus.value.currentCycle,
+        finalEmotion: emotionValue.value,
+        completedAt: Date.now(),
+        endingId
+      }
+      newGamePlus.value.perfectCycleHistory.push(cycleRecord)
+    }
+
+    saveNewGamePlusData()
+
     const completedChapterCount = completedChapters.value.length
     const totalMaterialCount = Object.values(scenes.value).filter(s => s.requiredMaterial).length
     const placedCount = placedMaterials.value.length
@@ -1712,6 +1936,12 @@ export const useGameStore = defineStore('game', () => {
     const branchStatsReport = generateBranchStatsReport()
     const nextGoals = generateNextGoals(finalScore, completedChapterCount, branchStatus)
 
+    checkCrossCycleAchievements(ending)
+    checkHiddenMaterialUnlockConditions()
+
+    const ngpNextGoals = generateNgpNextGoals(ending, endingConditions)
+    const ngpSummary = getNgpSummary()
+
     if (ending) {
       ending = {
         ...ending,
@@ -1728,7 +1958,11 @@ export const useGameStore = defineStore('game', () => {
         materialReview,
         branchStatus,
         branchStatsReport,
-        nextGoals
+        nextGoals,
+        ngpSummary,
+        ngpNextGoals,
+        isNgpAvailable: true,
+        estimatedInheritance: calculateInheritedEmotion(emotionValue.value, newGamePlus.value.currentCycle)
       }
     }
 
@@ -1749,6 +1983,405 @@ export const useGameStore = defineStore('game', () => {
       globalSet.add(comboId)
     })
     return globalSet
+  }
+
+  const calculateInheritedEmotion = (finalEmotion, cycle) => {
+    const config = newGamePlus.value.emotionInheritanceConfig
+    if (!config.enabled) return 0
+    if (finalEmotion < config.minFinalEmotionForInheritance) return 0
+
+    const ratio = Math.min(
+      config.maxRatio,
+      config.baseRatio + (cycle - 1) * config.bonusRatioPerCycle
+    )
+
+    const achievementBonus = crossCycleAchievements.value
+      .filter(a => a.unlocked && a.reward.type === 'inheritance_ratio')
+      .reduce((sum, a) => sum + a.reward.value, 0)
+
+    const finalRatio = Math.min(config.maxRatio + achievementBonus, ratio + achievementBonus)
+    const maxBonus = crossCycleAchievements.value
+      .filter(a => a.unlocked && a.reward.type === 'max_inheritance')
+      .reduce((sum, a) => sum + a.reward.value, 0)
+
+    const baseInherited = Math.floor(finalEmotion * finalRatio)
+    const emotionBonus = crossCycleAchievements.value
+      .filter(a => a.unlocked && a.reward.type === 'emotion_bonus')
+      .reduce((sum, a) => sum + a.reward.value, 0)
+
+    return Math.min(
+      config.maxInheritedEmotion + maxBonus,
+      baseInherited + emotionBonus
+    )
+  }
+
+  const getEffectiveInheritanceRatio = () => {
+    const config = newGamePlus.value.emotionInheritanceConfig
+    const cycle = newGamePlus.value.currentCycle
+    const baseRatio = Math.min(
+      config.maxRatio,
+      config.baseRatio + (cycle - 1) * config.bonusRatioPerCycle
+    )
+    const achievementBonus = crossCycleAchievements.value
+      .filter(a => a.unlocked && a.reward.type === 'inheritance_ratio')
+      .reduce((sum, a) => sum + a.reward.value, 0)
+    return Math.min(config.maxRatio + achievementBonus, baseRatio + achievementBonus)
+  }
+
+  const getUnlockedHiddenMaterials = () => {
+    return hiddenMaterialsRegistry.value.filter(mat =>
+      newGamePlus.value.unlockedHiddenMaterialIds.includes(mat.id)
+    )
+  }
+
+  const isMaterialUnlocked = (materialId) => {
+    const mat = hiddenMaterialsRegistry.value.find(m => m.id === materialId)
+    if (!mat) return true
+    return newGamePlus.value.unlockedHiddenMaterialIds.includes(materialId)
+  }
+
+  const checkHiddenMaterialUnlockConditions = () => {
+    const newlyUnlocked = []
+
+    hiddenMaterialsRegistry.value.forEach(mat => {
+      if (newGamePlus.value.unlockedHiddenMaterialIds.includes(mat.id)) return
+
+      let unlocked = false
+      const ngp = newGamePlus.value
+
+      switch (mat.unlockCondition) {
+        case 'complete_cycle_1':
+          unlocked = ngp.totalPlaythroughs >= 1
+          break
+        case 'all_endings_discovered':
+          unlocked = ngp.discoveredEndingIds.length >= 5
+          break
+        case 'perfect_cycle':
+          unlocked = ngp.perfectCycleHistory.length >= 1
+          break
+        case 'true_ending':
+          unlocked = ngp.discoveredEndingIds.includes('ending_true')
+          break
+        case 'chapter4_perfect':
+          const ch4Detail = chapterCompletionDetails.value['chapter4']
+          unlocked = ch4Detail?.isPerfect || false
+          break
+        case 'all_hidden_dialogues':
+          const totalHidden = chapters.value.reduce((sum, ch) =>
+            sum + getChapterTotalHiddenDialogues(ch.id), 0)
+          const foundHidden = chapters.value.reduce((sum, ch) =>
+            sum + getChapterTriggeredHiddenDialogues(ch.id), 0)
+          unlocked = totalHidden > 0 && foundHidden >= totalHidden
+          break
+        default:
+          unlocked = ngp.currentCycle >= mat.unlockCycle
+      }
+
+      if (unlocked) {
+        ngp.unlockedHiddenMaterialIds.push(mat.id)
+        newlyUnlocked.push(mat)
+      }
+    })
+
+    if (newlyUnlocked.length > 0) {
+      const names = newlyUnlocked.map(m => `「${m.name}」`).join('、')
+      showNgpNotification(`🎁 解锁隐藏素材：${names}`, 'success', 4000)
+      saveNewGamePlusData()
+    }
+
+    return newlyUnlocked
+  }
+
+  const checkCrossCycleAchievements = (endingData) => {
+    const newlyUnlocked = []
+    const ngp = newGamePlus.value
+
+    const checkAchievement = (achievementId) => {
+      const achievement = crossCycleAchievements.value.find(a => a.id === achievementId)
+      if (!achievement || achievement.unlocked) return
+
+      let unlocked = false
+
+      switch (achievementId) {
+        case 'first_cycle_complete':
+          unlocked = ngp.totalPlaythroughs >= 1
+          break
+        case 'seasoned_traveler':
+          unlocked = ngp.totalPlaythroughs >= 3
+          break
+        case 'perfectionist':
+          unlocked = chapters.value.every(ch => {
+            const detail = chapterCompletionDetails.value[ch.id]
+            return detail?.isPerfect
+          })
+          break
+        case 'ending_collector':
+          unlocked = ngp.discoveredEndingIds.length >= 6
+          break
+        case 'true_destiny':
+          unlocked = ngp.discoveredEndingIds.includes('ending_true')
+          break
+        case 'memory_hunter':
+          const totalHidden = chapters.value.reduce((sum, ch) =>
+            sum + getChapterTotalHiddenDialogues(ch.id), 0)
+          const foundHidden = chapters.value.reduce((sum, ch) =>
+            sum + getChapterTriggeredHiddenDialogues(ch.id), 0)
+          unlocked = totalHidden > 0 && foundHidden >= totalHidden
+          break
+        case 'cycle_master':
+          unlocked = ngp.totalPlaythroughs >= 5
+          break
+        case 'winter_wonder':
+          const ch4Detail = chapterCompletionDetails.value['chapter4']
+          unlocked = ch4Detail?.isPerfect || false
+          break
+      }
+
+      if (unlocked) {
+        achievement.unlocked = true
+        achievement.unlockedAt = Date.now()
+        newlyUnlocked.push(achievement)
+
+        if (achievement.reward.type === 'unlock_material') {
+          const matId = achievement.reward.value
+          if (!ngp.unlockedHiddenMaterialIds.includes(matId)) {
+            ngp.unlockedHiddenMaterialIds.push(matId)
+          }
+        }
+      }
+    }
+
+    crossCycleAchievements.value.forEach(a => checkAchievement(a.id))
+
+    if (newlyUnlocked.length > 0) {
+      newlyUnlocked.forEach(achievement => {
+        showNgpNotification(
+          `🏆 成就解锁：${achievement.name} - ${achievement.description}`,
+          'success',
+          4000
+        )
+      })
+      saveCrossCycleAchievements()
+      saveNewGamePlusData()
+    }
+
+    return newlyUnlocked
+  }
+
+  const saveNewGamePlusData = () => {
+    try {
+      localStorage.setItem(NEW_GAME_PLUS_KEY, JSON.stringify(newGamePlus.value))
+      localStorage.setItem(HIDDEN_MATERIALS_KEY, JSON.stringify(
+        newGamePlus.value.unlockedHiddenMaterialIds
+      ))
+    } catch (e) {
+      console.error('Failed to save New Game+ data:', e)
+    }
+  }
+
+  const loadNewGamePlusData = () => {
+    try {
+      const saved = localStorage.getItem(NEW_GAME_PLUS_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        newGamePlus.value = {
+          ...newGamePlus.value,
+          ...parsed
+        }
+      }
+
+      const savedMaterials = localStorage.getItem(HIDDEN_MATERIALS_KEY)
+      if (savedMaterials) {
+        newGamePlus.value.unlockedHiddenMaterialIds = JSON.parse(savedMaterials)
+      }
+    } catch (e) {
+      console.error('Failed to load New Game+ data:', e)
+    }
+  }
+
+  const saveCrossCycleAchievements = () => {
+    try {
+      localStorage.setItem(CYCLE_ACHIEVEMENTS_KEY, JSON.stringify(
+        crossCycleAchievements.value.map(a => ({
+          id: a.id,
+          unlocked: a.unlocked,
+          unlockedAt: a.unlockedAt
+        }))
+      ))
+    } catch (e) {
+      console.error('Failed to save cross-cycle achievements:', e)
+    }
+  }
+
+  const loadCrossCycleAchievements = () => {
+    try {
+      const saved = localStorage.getItem(CYCLE_ACHIEVEMENTS_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        parsed.forEach(saved => {
+          const achievement = crossCycleAchievements.value.find(a => a.id === saved.id)
+          if (achievement) {
+            achievement.unlocked = saved.unlocked
+            achievement.unlockedAt = saved.unlockedAt
+          }
+        })
+      }
+    } catch (e) {
+      console.error('Failed to load cross-cycle achievements:', e)
+    }
+  }
+
+  const startNewCycle = (keepProgress = true) => {
+    const finalEmotion = emotionValue.value
+    const currentCycle = newGamePlus.value.currentCycle
+    const inheritedEmotion = calculateInheritedEmotion(finalEmotion, currentCycle)
+
+    newGamePlus.value.totalPlaythroughs++
+    newGamePlus.value.currentCycle++
+    newGamePlus.value.maxCycleUnlocked = Math.max(
+      newGamePlus.value.maxCycleUnlocked,
+      newGamePlus.value.currentCycle
+    )
+    newGamePlus.value.inheritedEmotion = inheritedEmotion
+
+    checkHiddenMaterialUnlockConditions()
+
+    saveNewGamePlusData()
+
+    resetGame()
+
+    if (keepProgress) {
+      unlockedChapters.value = ['chapter1', 'chapter2', 'chapter3', 'chapter4']
+      saveNewGamePlusData()
+    }
+
+    if (inheritedEmotion > 0) {
+      setTimeout(() => {
+        showNgpNotification(
+          `🌟 新周目开始！继承情绪值 +${inheritedEmotion}`,
+          'success',
+          4000
+        )
+      }, 500)
+    }
+
+    return {
+      newCycle: newGamePlus.value.currentCycle,
+      inheritedEmotion,
+      unlockedMaterials: newGamePlus.value.unlockedHiddenMaterialIds.length
+    }
+  }
+
+  const getAllMaterialsWithHidden = () => {
+    const baseMaterials = materials.value
+    const unlockedHidden = getUnlockedHiddenMaterials()
+    return [...baseMaterials, ...unlockedHidden]
+  }
+
+  const isNgpConditionMet = (condition) => {
+    const { type, value, cycle } = condition
+
+    switch (type) {
+      case 'cycle_reached':
+        return newGamePlus.value.currentCycle >= (cycle || 1)
+      case 'total_playthroughs':
+        return newGamePlus.value.totalPlaythroughs >= (value || 1)
+      case 'has_inherited_emotion':
+        return newGamePlus.value.inheritedEmotion > 0
+      case 'hidden_material_unlocked':
+        return condition.materialId
+          ? isMaterialUnlocked(condition.materialId)
+          : newGamePlus.value.unlockedHiddenMaterialIds.length > 0
+      case 'achievement_unlocked':
+        return condition.achievementId
+          ? crossCycleAchievements.value.find(a => a.id === condition.achievementId)?.unlocked || false
+          : false
+      case 'ending_discovered':
+        return condition.endingId
+          ? newGamePlus.value.discoveredEndingIds.includes(condition.endingId)
+          : newGamePlus.value.discoveredEndingIds.length > 0
+      default:
+        return false
+    }
+  }
+
+  const showNgpNotification = (message, type = 'info', duration = 3000) => {
+    ngpNotification.value = { message, type, id: Date.now() }
+    showNotification(message, type, duration)
+  }
+
+  const getNgpSummary = () => {
+    const ngp = newGamePlus.value
+    return {
+      currentCycle: ngp.currentCycle,
+      maxCycleUnlocked: ngp.maxCycleUnlocked,
+      totalPlaythroughs: ngp.totalPlaythroughs,
+      inheritedEmotion: ngp.inheritedEmotion,
+      inheritanceRatio: getEffectiveInheritanceRatio(),
+      unlockedHiddenMaterials: ngp.unlockedHiddenMaterialIds.length,
+      totalHiddenMaterials: hiddenMaterialsRegistry.value.length,
+      discoveredEndings: ngp.discoveredEndingIds.length,
+      totalEndings: endings.value.length,
+      unlockedAchievements: crossCycleAchievements.value.filter(a => a.unlocked).length,
+      totalAchievements: crossCycleAchievements.value.length,
+      perfectCycles: ngp.perfectCycleHistory.length
+    }
+  }
+
+  const generateNgpNextGoals = (ending, endingConditions) => {
+    const goals = []
+    const ngp = newGamePlus.value
+    const summary = getNgpSummary()
+
+    if (summary.unlockedHiddenMaterials < summary.totalHiddenMaterials) {
+      const locked = hiddenMaterialsRegistry.value.filter(
+        m => !ngp.unlockedHiddenMaterialIds.includes(m.id)
+      )
+      if (locked.length > 0) {
+        const next = locked[0]
+        goals.push({
+          type: 'hidden_material',
+          icon: '🎁',
+          title: `解锁隐藏素材：${next.name}`,
+          description: next.description,
+          priority: 2
+        })
+      }
+    }
+
+    if (summary.discoveredEndings < summary.totalEndings) {
+      goals.push({
+        type: 'ending',
+        icon: '🎬',
+        title: '发现更多结局',
+        description: `已发现 ${summary.discoveredEndings}/${summary.totalEndings} 个结局`,
+        priority: 3
+      })
+    }
+
+    if (summary.unlockedAchievements < summary.totalAchievements) {
+      const locked = crossCycleAchievements.value.filter(a => !a.unlocked)
+      if (locked.length > 0) {
+        const next = locked[0]
+        goals.push({
+          type: 'achievement',
+          icon: '🏆',
+          title: `成就：${next.name}`,
+          description: next.description,
+          priority: 4
+        })
+      }
+    }
+
+    goals.push({
+      type: 'ngp_cycle',
+      icon: '🔄',
+      title: `开启第 ${ngp.currentCycle + 1} 周目`,
+      description: `预计继承情绪值：约 ${calculateInheritedEmotion(emotionValue.value, ngp.currentCycle)} 点`,
+      priority: 1
+    })
+
+    return goals.sort((a, b) => a.priority - b.priority)
   }
 
   const generatePlaySummary = (finalScore, completedChapterCount, perfectRate) => {
@@ -2090,7 +2723,7 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
-  const resetGame = () => {
+  const resetGame = (resetNgp = false) => {
     currentChapterId.value = null
     currentSceneId.value = null
     currentDialogueIndex.value = 0
@@ -2127,6 +2760,28 @@ export const useGameStore = defineStore('game', () => {
       localStorage.removeItem(BACKUP_KEY)
       localStorage.removeItem(CHAPTER_SCORE_KEY)
       localStorage.removeItem(BRANCH_STATS_KEY)
+    }
+
+    if (resetNgp) {
+      newGamePlus.value = {
+        currentCycle: 1,
+        maxCycleUnlocked: 1,
+        totalPlaythroughs: 0,
+        inheritedEmotion: 0,
+        emotionInheritanceConfig: newGamePlus.value.emotionInheritanceConfig,
+        unlockedHiddenMaterialIds: [],
+        discoveredEndingIds: [],
+        perfectCycleHistory: [],
+        cycleRewards: {}
+      }
+      crossCycleAchievements.value.forEach(a => {
+        a.unlocked = false
+        a.unlockedAt = null
+      })
+      localStorage.removeItem(NEW_GAME_PLUS_KEY)
+      localStorage.removeItem(HIDDEN_MATERIALS_KEY)
+      localStorage.removeItem(CYCLE_ACHIEVEMENTS_KEY)
+      localStorage.removeItem(TUTORIAL_KEY)
     }
   }
 
@@ -2572,7 +3227,7 @@ export const useGameStore = defineStore('game', () => {
 
   const isChapterConditionMet = (chapterId, condition) => {
     if (!condition) return true
-    const { type, target, value, minCount } = condition
+    const { type, target, value, minCount, cycle, materialId, achievementId, endingId } = condition
 
     switch (type) {
       case 'chapter_completed':
@@ -2598,8 +3253,32 @@ export const useGameStore = defineStore('game', () => {
         return hiddenCount >= (minCount || 1)
       }
 
+      case 'cycle_reached':
+        return newGamePlus.value.currentCycle >= (cycle || 1)
+
+      case 'total_playthroughs':
+        return newGamePlus.value.totalPlaythroughs >= (value || 1)
+
+      case 'has_inherited_emotion':
+        return newGamePlus.value.inheritedEmotion > 0
+
+      case 'hidden_material_unlocked':
+        return materialId
+          ? isMaterialUnlocked(materialId)
+          : newGamePlus.value.unlockedHiddenMaterialIds.length > 0
+
+      case 'achievement_unlocked':
+        return achievementId
+          ? crossCycleAchievements.value.find(a => a.id === achievementId)?.unlocked || false
+          : false
+
+      case 'ending_discovered':
+        return endingId
+          ? newGamePlus.value.discoveredEndingIds.includes(endingId)
+          : newGamePlus.value.discoveredEndingIds.length > 0
+
       default:
-        return true
+        return isNgpConditionMet(condition)
     }
   }
 
@@ -2629,7 +3308,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   const getConditionProgress = (chapterId, condition) => {
-    const { type, target, value, minCount } = condition
+    const { type, target, value, minCount, cycle, materialId, achievementId, endingId } = condition
 
     switch (type) {
       case 'chapter_completed':
@@ -2653,6 +3332,38 @@ export const useGameStore = defineStore('game', () => {
         if (!scoreData?.allCombos) return 0
         const hiddenCount = scoreData.allCombos.filter(c => c.triggered && c.hasHiddenDialogue).length
         return Math.min(1, hiddenCount / (minCount || 1))
+      }
+
+      case 'cycle_reached':
+        return Math.min(1, newGamePlus.value.currentCycle / Math.max(1, cycle || 1))
+
+      case 'total_playthroughs':
+        return Math.min(1, newGamePlus.value.totalPlaythroughs / Math.max(1, value || 1))
+
+      case 'has_inherited_emotion':
+        return newGamePlus.value.inheritedEmotion > 0 ? 1 : 0
+
+      case 'hidden_material_unlocked': {
+        if (materialId) {
+          return isMaterialUnlocked(materialId) ? 1 : 0
+        }
+        return Math.min(1, newGamePlus.value.unlockedHiddenMaterialIds.length / Math.max(1, hiddenMaterialsRegistry.value.length))
+      }
+
+      case 'achievement_unlocked': {
+        if (achievementId) {
+          const ach = crossCycleAchievements.value.find(a => a.id === achievementId)
+          return ach?.unlocked ? 1 : 0
+        }
+        const unlocked = crossCycleAchievements.value.filter(a => a.unlocked).length
+        return Math.min(1, unlocked / Math.max(1, crossCycleAchievements.value.length))
+      }
+
+      case 'ending_discovered': {
+        if (endingId) {
+          return newGamePlus.value.discoveredEndingIds.includes(endingId) ? 1 : 0
+        }
+        return Math.min(1, newGamePlus.value.discoveredEndingIds.length / Math.max(1, endings.value.length))
       }
 
       default:
@@ -2925,7 +3636,10 @@ export const useGameStore = defineStore('game', () => {
   loadChapterScoreData()
   loadBranchStats()
   loadTutorialState()
+  loadNewGamePlusData()
+  loadCrossCycleAchievements()
   checkAndUnlockChapters()
+  checkHiddenMaterialUnlockConditions()
 
   const startChapterWithTracking = (chapterId) => {
     const chapter = getChapterById(chapterId)
@@ -3147,6 +3861,26 @@ export const useGameStore = defineStore('game', () => {
     getCurrentTutorialStep,
     generateSaveThumbnail,
     latestSaveSlotIndex,
-    getSaveThumbnail
+    getSaveThumbnail,
+    newGamePlus,
+    hiddenMaterialsRegistry,
+    crossCycleAchievements,
+    ngpNotification,
+    calculateInheritedEmotion,
+    getEffectiveInheritanceRatio,
+    getUnlockedHiddenMaterials,
+    isMaterialUnlocked,
+    checkHiddenMaterialUnlockConditions,
+    checkCrossCycleAchievements,
+    saveNewGamePlusData,
+    loadNewGamePlusData,
+    saveCrossCycleAchievements,
+    loadCrossCycleAchievements,
+    startNewCycle,
+    getAllMaterialsWithHidden,
+    isNgpConditionMet,
+    showNgpNotification,
+    getNgpSummary,
+    generateNgpNextGoals
   }
 })

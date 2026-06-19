@@ -23,10 +23,16 @@ export const useEditorStore = defineStore('editor', () => {
   const notification = ref(null)
 
   const unlockConditionTypes = [
-    { id: 'chapter_completed', name: '章节完成', needsTarget: true, needsValue: false, needsMinCount: false },
-    { id: 'emotion_reached', name: '情绪值达到', needsTarget: true, needsValue: true, needsMinCount: false },
-    { id: 'combo_triggered', name: '组合触发', needsTarget: true, needsValue: false, needsMinCount: true },
-    { id: 'hidden_dialogue_found', name: '隐藏对话发现', needsTarget: true, needsValue: false, needsMinCount: true }
+    { id: 'chapter_completed', name: '章节完成', needsTarget: true, needsValue: false, needsMinCount: false, needsCycle: false, needsMaterialId: false, needsAchievementId: false, needsEndingId: false },
+    { id: 'emotion_reached', name: '情绪值达到', needsTarget: true, needsValue: true, needsMinCount: false, needsCycle: false, needsMaterialId: false, needsAchievementId: false, needsEndingId: false },
+    { id: 'combo_triggered', name: '组合触发', needsTarget: true, needsValue: false, needsMinCount: true, needsCycle: false, needsMaterialId: false, needsAchievementId: false, needsEndingId: false },
+    { id: 'hidden_dialogue_found', name: '隐藏对话发现', needsTarget: true, needsValue: false, needsMinCount: true, needsCycle: false, needsMaterialId: false, needsAchievementId: false, needsEndingId: false },
+    { id: 'cycle_reached', name: '周目数达到', needsTarget: false, needsValue: false, needsMinCount: false, needsCycle: true, needsMaterialId: false, needsAchievementId: false, needsEndingId: false },
+    { id: 'total_playthroughs', name: '总通关次数', needsTarget: false, needsValue: true, needsMinCount: false, needsCycle: false, needsMaterialId: false, needsAchievementId: false, needsEndingId: false },
+    { id: 'has_inherited_emotion', name: '有继承情绪值', needsTarget: false, needsValue: false, needsMinCount: false, needsCycle: false, needsMaterialId: false, needsAchievementId: false, needsEndingId: false },
+    { id: 'hidden_material_unlocked', name: '隐藏素材解锁', needsTarget: false, needsValue: false, needsMinCount: false, needsCycle: false, needsMaterialId: true, needsAchievementId: false, needsEndingId: false },
+    { id: 'achievement_unlocked', name: '成就解锁', needsTarget: false, needsValue: false, needsMinCount: false, needsCycle: false, needsMaterialId: false, needsAchievementId: true, needsEndingId: false },
+    { id: 'ending_discovered', name: '结局已发现', needsTarget: false, needsValue: false, needsMinCount: false, needsCycle: false, needsMaterialId: false, needsAchievementId: false, needsEndingId: true }
   ]
 
   const dialogueTriggerTypes = [

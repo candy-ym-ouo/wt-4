@@ -257,10 +257,131 @@
           </div>
         </div>
 
+        <div v-if="ngpSummary.currentCycle > 1 || ngpSummary.totalPlaythroughs > 0 || newlyUnlockedAchievements.length > 0 || newlyUnlockedMaterials.length > 0" class="section-block ngp-section">
+          <div class="section-header">
+            <span class="section-icon">🔄</span>
+            <span class="section-title">多周目成长</span>
+          </div>
+
+          <div class="ngp-cycle-info">
+            <div class="cycle-badge">
+              <span class="cycle-icon">🌟</span>
+              <span class="cycle-text">第 {{ ngpSummary.currentCycle }} 周目完成</span>
+            </div>
+            <div class="cycle-stats">
+              <div class="cycle-stat">
+                <span class="stat-icon">🎮</span>
+                <span class="stat-value">{{ ngpSummary.totalPlaythroughs }}</span>
+                <span class="stat-label">总通关</span>
+              </div>
+              <div class="cycle-stat">
+                <span class="stat-icon">👑</span>
+                <span class="stat-value">{{ ngpSummary.perfectCycles }}</span>
+                <span class="stat-label">完美周目</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="ngpSummary.inheritedEmotion > 0 || ngpSummary.nextInheritedEmotion > 0" class="inheritance-card">
+            <div class="inheritance-header">
+              <span class="inheritance-icon">💕</span>
+              <span class="inheritance-title">情绪继承</span>
+            </div>
+            <div class="inheritance-content">
+              <div class="inheritance-detail">
+                <span class="inheritance-label">下一周目继承比例</span>
+                <span class="inheritance-value">{{ Math.round(ngpSummary.nextInheritanceRatio * 100) }}%</span>
+              </div>
+              <div class="inheritance-detail">
+                <span class="inheritance-label">预计继承情绪值</span>
+                <span class="inheritance-value highlight">+{{ ngpSummary.nextInheritedEmotion }}</span>
+              </div>
+              <div class="inheritance-bar">
+                <div 
+                  class="inheritance-bar-fill" 
+                  :style="{ width: (ngpSummary.nextInheritanceRatio * 100) + '%' }"
+                ></div>
+              </div>
+              <div class="inheritance-note">
+                继承比例随周目数递增，最高可达 {{ Math.round(ngpSummary.maxInheritanceRatio * 100) }}%
+              </div>
+            </div>
+          </div>
+
+          <div v-if="newlyUnlockedAchievements.length > 0" class="new-unlocks">
+            <div class="unlocks-header">
+              <span class="unlocks-icon">🏆</span>
+              <span class="unlocks-title">新解锁成就</span>
+            </div>
+            <div class="unlocks-list">
+              <div 
+                v-for="ach in newlyUnlockedAchievements" 
+                :key="ach.id" 
+                class="unlock-item achievement-unlock"
+              >
+                <span class="unlock-item-icon">{{ ach.icon }}</span>
+                <div class="unlock-item-info">
+                  <span class="unlock-item-name">{{ ach.name }}</span>
+                  <span class="unlock-item-desc">{{ ach.description }}</span>
+                </div>
+                <div class="unlock-item-reward">
+                  <span v-if="ach.reward?.type === 'emotion_bonus'">+{{ ach.reward.value }}💕</span>
+                  <span v-else-if="ach.reward?.type === 'inheritance_boost'">继承+{{ ach.reward.value }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="newlyUnlockedMaterials.length > 0" class="new-unlocks">
+            <div class="unlocks-header">
+              <span class="unlocks-icon">🎁</span>
+              <span class="unlocks-title">新解锁隐藏素材</span>
+            </div>
+            <div class="unlocks-list">
+              <div 
+                v-for="mat in newlyUnlockedMaterials" 
+                :key="mat.id" 
+                class="unlock-item material-unlock"
+              >
+                <span class="unlock-item-icon" :style="{ background: mat.color }">{{ getEmoji(mat.shape) }}</span>
+                <div class="unlock-item-info">
+                  <span class="unlock-item-name">{{ mat.name }}</span>
+                  <span class="unlock-item-desc">{{ mat.description }}</span>
+                </div>
+                <div class="unlock-item-reward">
+                  <span class="rarity-tag" :class="mat.rarity">{{ mat.rarity === 'legendary' ? '传说' : '稀有' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="isPerfectCycle" class="perfect-cycle-banner">
+            <span class="perfect-icon">👑</span>
+            <span class="perfect-text">完美周目达成！继承比例额外提升</span>
+          </div>
+
+          <div v-if="ngpNextGoals.length > 0" class="ngp-goals">
+            <div class="goals-header">
+              <span class="goals-icon">🎯</span>
+              <span class="goals-title">下一周目目标</span>
+            </div>
+            <div class="ngp-goals-list">
+              <div 
+                v-for="(goal, idx) in ngpNextGoals" 
+                :key="idx" 
+                class="ngp-goal-item"
+              >
+                <span class="goal-check">{{ goal.completed ? '✓' : '○' }}</span>
+                <span class="goal-text">{{ goal.text }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="ending?.nextGoals && ending.nextGoals.length > 0" class="section-block goals-section">
           <div class="section-header">
             <span class="section-icon">🎯</span>
-            <span class="section-title">下一目标</span>
+            <span class="section-title">本周目改进目标</span>
           </div>
 
           <div class="goals-list">
@@ -285,10 +406,13 @@
         </div>
 
         <div class="ending-actions">
-          <button class="btn btn-primary" @click="playAgain">
-            🔄 重新开始
+          <button v-if="ngpSummary.totalPlaythroughs > 0" class="btn btn-primary ngp-btn" @click="startNewCycle">
+            🔄 开启第 {{ ngpSummary.currentCycle + 1 }} 周目
           </button>
-          <button class="btn btn-secondary" @click="goToChapters">
+          <button class="btn btn-secondary" @click="playAgain">
+            � 重新开始本周目
+          </button>
+          <button class="btn btn-ghost" @click="goToChapters">
             📖 章节选择
           </button>
         </div>
@@ -307,12 +431,40 @@ const gameStore = useGameStore()
 
 const ending = computed(() => gameStore.currentEnding)
 const totalChapters = computed(() => gameStore.chapters.length)
+const ngpSummary = computed(() => gameStore.getNgpSummary())
 
 const endingParagraphs = computed(() => {
   if (ending.value?.content) {
     return ending.value.content.split('\n\n').filter(p => p.trim())
   }
   return []
+})
+
+const isPerfectCycle = computed(() => {
+  const stats = ending.value?.stats
+  if (!stats) return false
+  return stats.finalScore >= 90 && 
+         stats.emotionValue >= 80 && 
+         stats.perfectPlacements >= stats.placedMaterials * 0.8
+})
+
+const newlyUnlockedAchievements = computed(() => {
+  return gameStore.crossCycleAchievements.filter(
+    ach => ach.unlocked && ach.unlockedAt && 
+    new Date(ach.unlockedAt) > new Date(Date.now() - 60000)
+  )
+})
+
+const newlyUnlockedMaterials = computed(() => {
+  const unlockedIds = gameStore.newGamePlus.unlockedHiddenMaterialIds
+  return gameStore.hiddenMaterialsRegistry.filter(
+    mat => unlockedIds.includes(mat.id) && 
+    mat.unlockedAt && new Date(mat.unlockedAt) > new Date(Date.now() - 60000)
+  )
+})
+
+const ngpNextGoals = computed(() => {
+  return gameStore.generateNgpNextGoals()
 })
 
 const getEndingIcon = () => {
@@ -364,8 +516,17 @@ const getEmoji = (shape) => {
 }
 
 const playAgain = () => {
-  gameStore.resetGame()
-  router.push('/chapter-select')
+  if (confirm('确定要重新开始本周目吗？当前进度将被清空（保留多周目数据）。')) {
+    gameStore.resetGame(false)
+    router.push('/chapter-select')
+  }
+}
+
+const startNewCycle = () => {
+  if (confirm(`确定要开启第 ${ngpSummary.value.currentCycle + 1} 周目吗？\n\n下一周目将继承 ${Math.round(ngpSummary.value.nextInheritanceRatio * 100)}% 的情绪值（预计 +${ngpSummary.value.nextInheritedEmotion} 点）。`)) {
+    gameStore.startNewCycle()
+    router.push('/chapter-select')
+  }
 }
 
 const goToChapters = () => {
@@ -1134,6 +1295,329 @@ onMounted(() => {
   gap: 15px;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.ngp-btn {
+  background: linear-gradient(135deg, #fbbf24, #f472b6) !important;
+  border: none !important;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(251, 191, 36, 0); }
+}
+
+.ngp-section {
+  background: linear-gradient(135deg, #fffbeb, #fdf2f8);
+  border: 2px solid #fbbf24;
+}
+
+.ngp-cycle-info {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.cycle-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #fbbf24, #f472b6);
+  color: white;
+  border-radius: 24px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+}
+
+.cycle-icon {
+  font-size: 1.4rem;
+}
+
+.cycle-stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+}
+
+.cycle-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.cycle-stat .stat-icon {
+  font-size: 1.3rem;
+}
+
+.cycle-stat .stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #7c3aed;
+}
+
+.cycle-stat .stat-label {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.inheritance-card {
+  background: linear-gradient(135deg, #fef3c7, #fce7f3);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 2px solid #fcd34d;
+}
+
+.inheritance-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.inheritance-icon {
+  font-size: 1.5rem;
+}
+
+.inheritance-title {
+  font-weight: bold;
+  color: #b45309;
+  font-size: 1.1rem;
+}
+
+.inheritance-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inheritance-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inheritance-label {
+  color: #78350f;
+  font-weight: 500;
+}
+
+.inheritance-value {
+  font-weight: bold;
+  color: #92400e;
+  font-size: 1.3rem;
+}
+
+.inheritance-value.highlight {
+  color: #be185d;
+  font-size: 1.5rem;
+}
+
+.inheritance-bar {
+  height: 10px;
+  background: rgba(251, 191, 36, 0.2);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.inheritance-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #fbbf24, #f472b6);
+  border-radius: 5px;
+  transition: width 1s ease-out;
+}
+
+.inheritance-note {
+  font-size: 0.85rem;
+  color: #92400e;
+  text-align: center;
+  font-style: italic;
+}
+
+.new-unlocks {
+  margin-bottom: 20px;
+}
+
+.unlocks-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.unlocks-icon {
+  font-size: 1.3rem;
+}
+
+.unlocks-title {
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.unlocks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unlock-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.unlock-item.achievement-unlock {
+  border-left: 4px solid #10b981;
+}
+
+.unlock-item.material-unlock {
+  border-left: 4px solid #f97316;
+}
+
+.unlock-item-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.unlock-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.unlock-item-name {
+  display: block;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.unlock-item-desc {
+  display: block;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.unlock-item-reward {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+.rarity-tag {
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.rarity-tag.rare {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.rarity-tag.legendary {
+  background: linear-gradient(135deg, #fbbf24, #f472b6);
+  color: white;
+}
+
+.perfect-cycle-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #fef3c7, #fce7f3);
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.8); }
+}
+
+.perfect-icon {
+  font-size: 1.5rem;
+}
+
+.perfect-text {
+  font-weight: bold;
+  color: #92400e;
+  font-size: 1.05rem;
+}
+
+.ngp-goals {
+  margin-top: 15px;
+}
+
+.goals-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.goals-icon {
+  font-size: 1.3rem;
+}
+
+.goals-title {
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.ngp-goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ngp-goal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+}
+
+.goal-check {
+  font-size: 1.1rem;
+  color: #10b981;
+  font-weight: bold;
+}
+
+.goal-text {
+  color: #374151;
+  font-size: 0.95rem;
 }
 
 @keyframes float {
