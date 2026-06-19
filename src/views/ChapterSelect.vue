@@ -323,7 +323,24 @@ const getTapeClass = (index) => {
 }
 
 const selectChapter = (chapter) => {
-  if (!isChapterUnlocked(chapter.id)) return
+  if (!isChapterUnlocked(chapter.id)) {
+    const unmet = getUnmetConditions(chapter.id)
+    if (unmet.length > 0) {
+      const messages = unmet.map((c, i) => `${i + 1}. ${c.description}`).join('\n')
+      gameStore.showNotification(
+        `章节「${chapter.title}」暂未解锁，还差以下条件：\n${messages}`,
+        'warning',
+        5000
+      )
+    } else if (chapter.hidden) {
+      gameStore.showNotification(
+        chapter.hiddenHint || '这是一个神秘章节，请继续探索...',
+        'warning',
+        4000
+      )
+    }
+    return
+  }
   
   gameStore.startChapterWithTracking(chapter.id)
   router.push(`/game/${chapter.id}`)
@@ -888,6 +905,9 @@ onMounted(() => {
   font-weight: 500;
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(10px);
+  white-space: pre-line;
+  line-height: 1.6;
+  max-width: 90vw;
 }
 
 .notification-info {

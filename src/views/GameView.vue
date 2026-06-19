@@ -176,9 +176,9 @@
       <div class="chapter-complete-card slide-up">
         <div class="complete-icon float">🎉</div>
         <h2 class="handwriting complete-title">章节完成！</h2>
-        <p class="complete-text">{{ currentChapter?.title }} 已解锁新章节</p>
+        <p class="complete-text">{{ chapterCompleteMessage }}</p>
         <div class="complete-actions">
-          <button class="btn btn-primary" @click="goToNextChapter">
+          <button v-if="hasNextUnlockedChapter" class="btn btn-primary" @click="goToNextChapter">
             继续冒险 ▸
           </button>
           <button class="btn btn-secondary" @click="viewChapterScore">
@@ -234,6 +234,26 @@ const comboJustTriggered = computed(() => gameStore.comboJustTriggered)
 const currentEmotionTier = computed(() => gameStore.currentEmotionTier)
 const emotionSceneTint = computed(() => gameStore.emotionSceneTint)
 const chapterEmotionProgress = computed(() => gameStore.chapterEmotionProgress)
+
+const chapterCompleteMessage = computed(() => {
+  const newlyUnlocked = gameStore.chapters.filter(c =>
+    gameStore.unlockedChapters.includes(c.id) &&
+    !gameStore.completedChapters.includes(c.id) &&
+    c.id !== currentChapter.value?.id
+  )
+  if (newlyUnlocked.length > 0) {
+    const names = newlyUnlocked.map(c => `「${c.title}」`).join('、')
+    return `「${currentChapter.value?.title}」完成！已解锁 ${names}`
+  }
+  return `「${currentChapter.value?.title}」完成！`
+})
+
+const hasNextUnlockedChapter = computed(() => {
+  return gameStore.chapters.some(c =>
+    gameStore.unlockedChapters.includes(c.id) &&
+    !gameStore.completedChapters.includes(c.id)
+  )
+})
 
 const currentSceneBackground = computed(() => {
   if (currentScene.value?.background) {
@@ -390,11 +410,13 @@ const goBack = () => {
 
 const goToNextChapter = () => {
   showChapterComplete.value = false
-  const currentIndex = gameStore.chapters.findIndex(c => c.id === currentChapter.value.id)
-  if (currentIndex < gameStore.chapters.length - 1) {
-    const nextChapter = gameStore.chapters[currentIndex + 1]
-    gameStore.startChapterWithTracking(nextChapter.id)
-    router.push(`/game/${nextChapter.id}`)
+  const nextUnlocked = gameStore.chapters.find(c =>
+    gameStore.unlockedChapters.includes(c.id) &&
+    !gameStore.completedChapters.includes(c.id)
+  )
+  if (nextUnlocked) {
+    gameStore.startChapterWithTracking(nextUnlocked.id)
+    router.push(`/game/${nextUnlocked.id}`)
   } else {
     goBack()
   }
@@ -889,6 +911,9 @@ onUnmounted(() => {
   font-weight: 500;
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(10px);
+  white-space: pre-line;
+  line-height: 1.6;
+  max-width: 90vw;
 }
 
 .notification-info {

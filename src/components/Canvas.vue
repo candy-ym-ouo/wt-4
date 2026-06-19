@@ -231,7 +231,7 @@
       </div>
     </transition>
 
-    <div v-else-if="canPlaceOptionalMaterial && availableOptionalMaterials.length > 0" class="material-hint optional-hint pulse">
+    <div v-if="(!placementValidation || placementValidation.valid) && canPlaceOptionalMaterial && availableOptionalMaterials.length > 0" class="material-hint optional-hint pulse">
       <span class="hint-icon">🎨</span>
       <span class="hint-text">可放置额外素材：{{ availableOptionalMaterialNames }}，尝试解锁组合！</span>
     </div>
