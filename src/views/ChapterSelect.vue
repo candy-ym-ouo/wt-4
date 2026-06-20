@@ -198,6 +198,9 @@
       <button class="btn btn-ghost" @click="goToCharacterRelation">
         💕 角色关系
       </button>
+      <button class="btn btn-ghost" @click="goToUserProfile">
+        📊 成长档案
+      </button>
       <button class="btn btn-ghost calendar-btn" @click="goToStoryCalendar">
         📅 剧情日历
       </button>
@@ -428,12 +431,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '../stores/gameStore'
 import { useDecorationStore } from '../stores/decorationStore'
+import { useProfileStore } from '../stores/profileStore'
 import TutorialOverlay from '../components/TutorialOverlay.vue'
 import AchievementPanel from '../components/AchievementPanel.vue'
 
 const router = useRouter()
 const gameStore = useGameStore()
 const decorationStore = useDecorationStore()
+const profileStore = useProfileStore()
 
 const showNgpStats = ref(false)
 const showAchievementPanel = ref(false)
@@ -707,6 +712,10 @@ const goToCharacterRelation = () => {
   router.push('/character-relation')
 }
 
+const goToUserProfile = () => {
+  router.push('/user-profile')
+}
+
 const goToStoryCalendar = () => {
   router.push('/story-calendar')
 }
@@ -724,6 +733,7 @@ onMounted(() => {
   gameStore.isInitialized = true
   decorationStore.initialize()
   decorationStore.checkDecorationUnlockConditions()
+  profileStore.initialize()
   
   if (gameStore.shouldShowFirstTimeTutorial()) {
     setTimeout(() => {
