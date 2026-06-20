@@ -57,6 +57,15 @@
         <button class="btn btn-ghost action-btn" @click="goBack" title="返回章节">
           🏠
         </button>
+        <button
+          v-if="gameStore.runtimeWarnings.length > 0"
+          class="btn btn-ghost action-btn runtime-warning-btn"
+          @click="showRuntimeWarnings = true"
+          title="数据预警"
+        >
+          🚨
+          <span class="runtime-warning-badge">{{ gameStore.runtimeWarnings.filter(w => w.severity === 'error').length }}</span>
+        </button>
       </div>
     </div>
 
@@ -241,6 +250,33 @@
     <QuestNotification />
     <QuestPanel />
     <QuestDetail />
+
+    <div v-if="showRuntimeWarnings || gameStore.showRuntimeWarningModal" class="runtime-warning-overlay" @click.self="dismissRuntimeWarning">
+      <div class="runtime-warning-card slide-up">
+        <div class="runtime-warning-header">
+          <span class="runtime-warning-icon">🚨</span>
+          <h3 class="handwriting runtime-warning-title">数据预警</h3>
+        </div>
+        <p class="runtime-warning-desc">检测到以下数据问题，可能影响游戏体验：</p>
+        <div class="runtime-warning-list">
+          <div
+            v-for="(w, i) in gameStore.runtimeWarnings"
+            :key="i"
+            class="runtime-warning-item"
+            :class="'severity-' + w.severity"
+          >
+            <span class="runtime-warning-severity">
+              {{ w.severity === 'error' ? '❌' : '⚠️' }}
+            </span>
+            <span class="runtime-warning-message">{{ w.message }}</span>
+          </div>
+        </div>
+        <div class="runtime-warning-actions">
+          <button class="btn btn-ghost" @click="dismissRuntimeWarning">忽略并继续</button>
+          <button class="btn btn-primary" @click="goBack">返回章节选择</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -268,6 +304,7 @@ const showLoadModal = ref(false)
 const showChapterComplete = ref(false)
 const showRollbackConfirm = ref(false)
 const showComboAchievement = ref(false)
+const showRuntimeWarnings = ref(false)
 const latestCombo = ref(null)
 const comboQueue = ref([])
 const activeAffinityNotif = ref(null)
@@ -476,6 +513,11 @@ const openQuestPanel = () => {
   gameStore.openQuestPanel()
 }
 
+const dismissRuntimeWarning = () => {
+  showRuntimeWarnings.value = false
+  gameStore.dismissRuntimeWarning()
+}
+
 const goBack = () => {
   gameStore.autoSave()
   gameStore.goToChapterSelect()
@@ -572,6 +614,7 @@ onMounted(() => {
     gameStore.startGameSession()
   }
   gameStore.isInitialized = true
+  gameStore.validateRuntimeData()
 })
 
 const checkShouldResume = (chapterId) => {
@@ -1407,4 +1450,115 @@ onUnmounted(() => {
     font-size: 0.75rem;
   }
 }
+
+.runtime-warning-btn {
+  position: relative;
+  background: linear-gradient(135deg, #fef2f2, #fee2e2) !important;
+  color: #ef4444 !important;
+}
+
+.runtime-warning-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 2px solid white;
+}
+
+.runtime-warning-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2500;
+  backdrop-filter: blur(6px);
+}
+
+.runtime-warning-card {
+  background: white;
+  border-radius: 20px;
+  padding: 35px 30px;
+  max-width: 460px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+}
+
+.runtime-warning-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.runtime-warning-icon {
+  font-size: 2rem;
+}
+
+.runtime-warning-title {
+  font-size: 1.5rem;
+  color: #ef4444;
+  margin: 0;
+}
+
+.runtime-warning-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.runtime-warning-list {
+  max-height: 250px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+.runtime-warning-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.runtime-warning-item.severity-error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.runtime-warning-item.severity-warning {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.runtime-warning-severity {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.runtime-warning-message {
+  flex: 1;
+}
+
+.runtime-warning-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
 </style>

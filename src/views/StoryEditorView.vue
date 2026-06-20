@@ -12,6 +12,14 @@
         </span>
       </div>
       <div class="header-right">
+        <button
+          class="btn btn-secondary warning-btn"
+          :class="{ 'has-errors': warningStore.hasErrors }"
+          @click="toggleWarningPanel"
+        >
+          🚨 预警
+          <span v-if="warningStore.errorCount > 0" class="warning-badge">{{ warningStore.errorCount }}</span>
+        </button>
         <button class="btn btn-secondary" @click="handleValidate">
           🔍 校验
         </button>
@@ -40,7 +48,12 @@
           </button>
         </div>
         <div class="sidebar-content">
-          <slot name="sidebar"></slot>
+          <StoryWarningPanel
+            v-if="editorStore.activeTab === 'warnings'"
+            @close="editorStore.activeTab = 'chapters'"
+            @navigate="handleWarningNavigate"
+          />
+          <slot v-else name="sidebar"></slot>
         </div>
       </nav>
 
@@ -99,9 +112,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEditorStore } from '../stores/editorStore'
+import { useWarningStore } from '../stores/warningStore'
+import StoryWarningPanel from '../components/StoryWarningPanel.vue'
 
 const props = defineProps({
   hasDetail: {
@@ -116,8 +131,10 @@ const props = defineProps({
 
 const router = useRouter()
 const editorStore = useEditorStore()
+const warningStore = useWarningStore()
 
 const showValidateModal = ref(false)
+const showWarningPanel = ref(false)
 const validationResult = ref({ errors: [], warnings: [], isValid: true })
 
 const tabs = [
@@ -126,6 +143,7 @@ const tabs = [
   { id: 'dialogues', label: '对白', icon: '💬' },
   { id: 'combos', label: '组合', icon: '✨' },
   { id: 'endings', label: '结局', icon: '🌟' },
+  { id: 'warnings', label: '预警', icon: '🚨' },
   { id: 'io', label: '数据', icon: '📦' }
 ]
 
@@ -138,6 +156,7 @@ const getTabCount = (tabId) => {
     case 'combos':
       return Object.values(editorStore.scenes).reduce((sum, s) => sum + (s.materialCombos?.length || 0), 0)
     case 'endings': return editorStore.endings.length
+    case 'warnings': return warningStore.errorCount || ''
     default: return ''
   }
 }
@@ -158,6 +177,32 @@ const handleValidate = () => {
   validationResult.value = editorStore.validateData()
   showValidateModal.value = true
 }
+
+const handleWarningNavigate = (tab, id) => {
+  editorStore.activeTab = tab
+}
+
+const toggleWarningPanel = () => {
+  if (editorStore.activeTab === 'warnings') {
+    editorStore.activeTab = 'chapters'
+  } else {
+    editorStore.activeTab = 'warnings'
+  }
+}
+
+watch(() => editorStore.activeTab, (tab) => {
+  if (tab === 'warnings') {
+    warningStore.runFullValidation(
+      editorStore.chapters,
+      editorStore.scenes,
+      editorStore.endings,
+      editorStore.materials
+    )
+    showWarningPanel.value = true
+  } else {
+    showWarningPanel.value = false
+  }
+})
 </script>
 
 <style scoped>
@@ -216,6 +261,32 @@ const handleValidate = () => {
 .header-right {
   display: flex;
   gap: 10px;
+}
+
+.warning-btn {
+  position: relative;
+}
+
+.warning-btn.has-errors {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.warning-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 9px;
+  padding: 0 4px;
 }
 
 .editor-body {
