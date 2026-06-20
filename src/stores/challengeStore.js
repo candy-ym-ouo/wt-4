@@ -5,6 +5,8 @@ import challengesData from '../data/challenges.json'
 const CHALLENGE_RECORDS_KEY = 'journal_game_challenge_records'
 const CHALLENGE_LEADERBOARD_KEY = 'journal_game_challenge_leaderboard'
 const UNLOCKED_CHALLENGES_KEY = 'journal_game_unlocked_challenges'
+const ACTIVE_CHALLENGE_KEY = 'journal_game_active_challenge'
+const LAST_CHALLENGE_RESULT_KEY = 'journal_game_last_challenge_result'
 
 export const useChallengeStore = defineStore('challenge', () => {
   const challenges = ref(challengesData)
@@ -67,6 +69,8 @@ export const useChallengeStore = defineStore('challenge', () => {
     challengeCompleted.value = false
     challengeResult.value = null
 
+    saveActiveChallengeToStorage()
+    clearLastChallengeResultFromStorage()
     startTimer()
     return true
   }
@@ -160,6 +164,7 @@ export const useChallengeStore = defineStore('challenge', () => {
     challengeResult.value = result
     saveChallengeRecord(challenge.id, result)
     updateLeaderboard(challenge.id, result)
+    saveLastChallengeResultToStorage(result)
 
     return result
   }
@@ -193,6 +198,7 @@ export const useChallengeStore = defineStore('challenge', () => {
       timeUsed: currentChallenge.value.timeLimit,
       completedAt: Date.now()
     }
+    saveLastChallengeResultToStorage(challengeResult.value)
   }
 
   const failChallengeByRounds = () => {
@@ -205,6 +211,7 @@ export const useChallengeStore = defineStore('challenge', () => {
       roundsUsed: challengeRoundsUsed.value,
       completedAt: Date.now()
     }
+    saveLastChallengeResultToStorage(challengeResult.value)
   }
 
   const saveChallengeRecord = (challengeId, result) => {
@@ -263,6 +270,7 @@ export const useChallengeStore = defineStore('challenge', () => {
     challengeMaterialUsed.value = []
     challengeCompleted.value = false
     challengeResult.value = null
+    clearActiveChallengeFromStorage()
   }
 
   const checkAndUnlockChallenges = (gameStore) => {
@@ -422,10 +430,86 @@ export const useChallengeStore = defineStore('challenge', () => {
     return playerEntry ? playerEntry.rank : null
   }
 
+  const saveActiveChallengeToStorage = () => {
+    try {
+      const data = {
+        currentChallengeId: currentChallengeId.value,
+        isChallengeMode: isChallengeMode.value,
+        challengeStartTime: challengeStartTime.value,
+        challengeTimeRemaining: challengeTimeRemaining.value,
+        challengeRoundsUsed: challengeRoundsUsed.value,
+        challengeMaterialUsed: challengeMaterialUsed.value,
+        challengeCompleted: challengeCompleted.value
+      }
+      localStorage.setItem(ACTIVE_CHALLENGE_KEY, JSON.stringify(data))
+    } catch (e) {
+      console.error('Failed to save active challenge:', e)
+    }
+  }
+
+  const loadActiveChallengeFromStorage = () => {
+    try {
+      const saved = localStorage.getItem(ACTIVE_CHALLENGE_KEY)
+      if (saved) {
+        const data = JSON.parse(saved)
+        currentChallengeId.value = data.currentChallengeId
+        isChallengeMode.value = data.isChallengeMode
+        challengeStartTime.value = data.challengeStartTime
+        challengeTimeRemaining.value = data.challengeTimeRemaining
+        challengeRoundsUsed.value = data.challengeRoundsUsed
+        challengeMaterialUsed.value = data.challengeMaterialUsed || []
+        challengeCompleted.value = data.challengeCompleted
+      }
+    } catch (e) {
+      console.error('Failed to load active challenge:', e)
+    }
+  }
+
+  const clearActiveChallengeFromStorage = () => {
+    try {
+      localStorage.removeItem(ACTIVE_CHALLENGE_KEY)
+    } catch (e) {
+      console.error('Failed to clear active challenge:', e)
+    }
+  }
+
+  const saveLastChallengeResultToStorage = (result) => {
+    try {
+      localStorage.setItem(LAST_CHALLENGE_RESULT_KEY, JSON.stringify(result))
+    } catch (e) {
+      console.error('Failed to save last challenge result:', e)
+    }
+  }
+
+  const loadLastChallengeResultFromStorage = () => {
+    try {
+      const saved = localStorage.getItem(LAST_CHALLENGE_RESULT_KEY)
+      if (saved) {
+        const result = JSON.parse(saved)
+        challengeResult.value = result
+        if (result.challengeId) {
+          currentChallengeId.value = result.challengeId
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load last challenge result:', e)
+    }
+  }
+
+  const clearLastChallengeResultFromStorage = () => {
+    try {
+      localStorage.removeItem(LAST_CHALLENGE_RESULT_KEY)
+    } catch (e) {
+      console.error('Failed to clear last challenge result:', e)
+    }
+  }
+
   const initialize = (gameStore) => {
     loadChallengeRecordsFromStorage()
     loadLeaderboardFromStorage()
     loadUnlockedChallengesFromStorage()
+    loadActiveChallengeFromStorage()
+    loadLastChallengeResultFromStorage()
     if (gameStore) {
       checkAndUnlockChallenges(gameStore)
     }

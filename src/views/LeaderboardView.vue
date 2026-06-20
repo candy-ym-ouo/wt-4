@@ -196,8 +196,9 @@ const goToChallenge = () => {
 
 onMounted(() => {
   challengeStore.initialize(gameStore)
-  if (route.params.challengeId) {
-    selectedChallengeId.value = route.params.challengeId
+  const challengeId = route.params.challengeId || route.query.challengeId
+  if (challengeId) {
+    selectedChallengeId.value = challengeId
   } else if (unlockedChallenges.value.length > 0) {
     selectedChallengeId.value = unlockedChallenges.value[0].id
   }

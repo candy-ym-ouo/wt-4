@@ -65,6 +65,11 @@ const routes = [
     path: '/leaderboard',
     name: 'Leaderboard',
     component: () => import('../views/LeaderboardView.vue')
+  },
+  {
+    path: '/leaderboard/:challengeId',
+    name: 'LeaderboardForChallenge',
+    component: () => import('../views/LeaderboardView.vue')
   }
 ]
 

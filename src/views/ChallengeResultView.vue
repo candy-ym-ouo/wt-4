@@ -218,6 +218,7 @@ const backToChallenges = () => {
 }
 
 onMounted(() => {
+  challengeStore.initialize(gameStore)
   if (!result.value) {
     router.push('/challenge-select')
   }
