@@ -144,6 +144,8 @@ const gameStore = useGameStore()
 const activeTab = ref('all')
 const selectedAchievement = ref(null)
 
+const ACHIEVEMENT_CATEGORIES = gameStore.ACHIEVEMENT_CATEGORIES
+
 const tabs = [
   { id: 'all', name: '全部', icon: '🏆' },
   { id: 'unlocked', name: '已解锁', icon: '✅' },
@@ -153,8 +155,6 @@ const tabs = [
   { id: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH, name: '隐藏', icon: '🔮' },
   { id: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION, name: '情绪', icon: '💖' }
 ]
-
-const ACHIEVEMENT_CATEGORIES = gameStore.ACHIEVEMENT_CATEGORIES
 
 const stats = computed(() => gameStore.getAchievementStats())
 

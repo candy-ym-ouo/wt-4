@@ -2989,6 +2989,7 @@ export const useGameStore = defineStore('game', () => {
     const branchStatsReport = generateBranchStatsReport()
     const nextGoals = generateNextGoals(finalScore, completedChapterCount, branchStatus)
 
+    clearNewlyUnlockedAchievements()
     checkCrossCycleAchievements(ending)
     checkAchievements()
     checkHiddenMaterialUnlockConditions()
@@ -3215,8 +3216,13 @@ export const useGameStore = defineStore('game', () => {
     const rarityInfo = ACHIEVEMENT_RARITY[achievement.rarity.toUpperCase()] || ACHIEVEMENT_RARITY.COMMON
     achievementNotification.value = {
       id: Date.now(),
-      achievement,
-      rarityInfo
+      visible: true,
+      icon: achievement.icon,
+      name: achievement.name,
+      description: achievement.description,
+      rarity: achievement.rarity,
+      rarityInfo,
+      reward: achievement.reward
     }
 
     showNgpNotification(
@@ -3226,8 +3232,8 @@ export const useGameStore = defineStore('game', () => {
     )
 
     setTimeout(() => {
-      if (achievementNotification.value?.id === achievementNotification.value?.id) {
-        achievementNotification.value = null
+      if (achievementNotification.value) {
+        achievementNotification.value.visible = false
       }
     }, 5000)
   }
@@ -3244,8 +3250,8 @@ export const useGameStore = defineStore('game', () => {
     return ACHIEVEMENT_RARITY[rarityId.toUpperCase()] || ACHIEVEMENT_RARITY.COMMON
   }
 
-  const getAchievementCategoryInfo = () => {
-    return {
+  const getAchievementCategoryInfo = (categoryId = null) => {
+    const allCategories = {
       [ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION]: {
         id: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
         name: '章节完成',
@@ -3277,6 +3283,10 @@ export const useGameStore = defineStore('game', () => {
         description: '多周目游玩解锁的成就'
       }
     }
+    if (categoryId) {
+      return allCategories[categoryId] || allCategories[ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION]
+    }
+    return allCategories
   }
 
   const getAchievementStats = () => {
@@ -3292,10 +3302,35 @@ export const useGameStore = defineStore('game', () => {
       }
     })
 
+    const chapterStats = byCategory[ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION] || { total: 0, unlocked: 0 }
+    const comboStats = byCategory[ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO] || { total: 0, unlocked: 0 }
+    const hiddenStats = byCategory[ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH] || { total: 0, unlocked: 0 }
+    const emotionStats = byCategory[ACHIEVEMENT_CATEGORIES.HIGH_EMOTION] || { total: 0, unlocked: 0 }
+
+    const rarityCounts = {}
+    Object.keys(ACHIEVEMENT_RARITY).forEach(rarity => {
+      rarityCounts[rarity.toLowerCase()] = crossCycleAchievements.value.filter(
+        a => a.unlocked && a.rarity === rarity.toLowerCase()
+      ).length
+    })
+
     return {
       total,
       unlocked,
+      percent: total > 0 ? Math.round((unlocked / total) * 100) : 0,
       percentage: total > 0 ? Math.round((unlocked / total) * 100) : 0,
+      chapterTotal: chapterStats.total,
+      chapterCompleted: chapterStats.unlocked,
+      comboTotal: comboStats.total,
+      comboCompleted: comboStats.unlocked,
+      hiddenTotal: hiddenStats.total,
+      hiddenCompleted: hiddenStats.unlocked,
+      emotionTotal: emotionStats.total,
+      emotionCompleted: emotionStats.unlocked,
+      commonCount: rarityCounts.common || 0,
+      rareCount: rarityCounts.rare || 0,
+      epicCount: rarityCounts.epic || 0,
+      legendaryCount: rarityCounts.legendary || 0,
       byCategory
     }
   }
@@ -3397,6 +3432,7 @@ export const useGameStore = defineStore('game', () => {
     )
     newGamePlus.value.inheritedEmotion = inheritedEmotion
 
+    clearNewlyUnlockedAchievements()
     checkHiddenMaterialUnlockConditions()
 
     saveNewGamePlusData()

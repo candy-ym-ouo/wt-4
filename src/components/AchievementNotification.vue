@@ -72,7 +72,9 @@ const handleClick = (notification) => {
 }
 
 const dismiss = (id) => {
-  gameStore.achievementNotification.visible = false
+  if (gameStore.achievementNotification) {
+    gameStore.achievementNotification.visible = false
+  }
 }
 </script>
 
