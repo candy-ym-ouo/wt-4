@@ -5,6 +5,7 @@ import materialsData from '../data/materials.json'
 import scenesData from '../data/scenes.json'
 import endingsData from '../data/endings.json'
 import questsData from '../data/quests.json'
+import { validateStoryData } from './warningStore.js'
 
 const AUTO_SAVE_KEY = 'journal_game_autosave'
 const AUTO_SAVE_BACKUP_KEY = 'journal_game_autosave_backup'
@@ -2153,51 +2154,21 @@ export const useGameStore = defineStore('game', () => {
   const showRuntimeWarningModal = ref(false)
 
   const validateRuntimeData = () => {
-    const errors = []
-    const warnings = []
-    const allMaterialIds = new Set(materials.value.map(m => m.id))
-    const allSceneIds = new Set(Object.keys(scenes.value))
-    const allChapterIds = new Set(chapters.value.map(c => c.id))
-
-    for (const chapter of chapters.value) {
-      if (!chapter.scenes || chapter.scenes.length === 0) {
-        warnings.push({ severity: 'warning', message: `章节「${chapter.title}」没有场景`, code: 'EMPTY_CHAPTER' })
-        continue
-      }
-      for (const sceneId of chapter.scenes) {
-        if (!scenes.value[sceneId]) {
-          errors.push({ severity: 'error', message: `章节「${chapter.title}」引用了不存在的场景: ${sceneId}`, code: 'BROKEN_SCENE_REF' })
-        }
-      }
-    }
-
-    for (const scene of Object.values(scenes.value)) {
-      if (!scene.dialogues || scene.dialogues.length === 0) {
-        errors.push({ severity: 'error', message: `场景「${scene.id}」没有对白`, code: 'EMPTY_DIALOGUES' })
-      }
-      if (scene.nextScene && !allSceneIds.has(scene.nextScene)) {
-        errors.push({ severity: 'error', message: `场景「${scene.id}」的下一场景不存在: ${scene.nextScene}`, code: 'BROKEN_NEXT_SCENE' })
-      }
-      if (scene.requiredMaterial && !allMaterialIds.has(scene.requiredMaterial)) {
-        errors.push({ severity: 'error', message: `场景「${scene.id}」的必需素材不存在: ${scene.requiredMaterial}`, code: 'MISSING_MATERIAL' })
-      }
-    }
-
-    for (const ending of endings.value) {
-      if (ending.minEmotion !== undefined && ending.minEmotion > 0) {
-        let maxPossible = 0
-        for (const scene of Object.values(scenes.value)) {
-          if (scene.dialogues) {
-            maxPossible += scene.dialogues.reduce((sum, d) => sum + (d.emotionChange || 0), 0)
-          }
-        }
-        if (ending.minEmotion > maxPossible) {
-          errors.push({ severity: 'error', message: `结局「${ending.title}」所需情绪值 ${ending.minEmotion} 超出可获取上限 ${maxPossible}`, code: 'UNREACHABLE_ENDING' })
-        }
-      }
-    }
-
-    runtimeWarnings.value = [...errors, ...warnings]
+    const fullResult = validateStoryData(
+      chapters.value,
+      scenes.value,
+      endings.value,
+      materials.value
+    )
+    runtimeWarnings.value = fullResult.map(w => ({
+      severity: w.severity,
+      message: w.message,
+      code: w.code,
+      category: w.category,
+      targetId: w.targetId
+    }))
+    const errors = runtimeWarnings.value.filter(w => w.severity === 'error')
+    const warnings = runtimeWarnings.value.filter(w => w.severity !== 'error')
     showRuntimeWarningModal.value = errors.length > 0
     return { errors, warnings, hasErrors: errors.length > 0 }
   }

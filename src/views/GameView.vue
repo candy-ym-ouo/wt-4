@@ -256,6 +256,10 @@
         <div class="runtime-warning-header">
           <span class="runtime-warning-icon">🚨</span>
           <h3 class="handwriting runtime-warning-title">数据预警</h3>
+          <div class="runtime-warning-stats">
+            <span class="stat-chip stat-error">{{ errorCount }} 错误</span>
+            <span class="stat-chip stat-warning">{{ warningCount }} 警告</span>
+          </div>
         </div>
         <p class="runtime-warning-desc">检测到以下数据问题，可能影响游戏体验：</p>
         <div class="runtime-warning-list">
@@ -265,8 +269,9 @@
             class="runtime-warning-item"
             :class="'severity-' + w.severity"
           >
+            <span class="runtime-warning-cat">{{ getCategoryIcon(w.category) }}</span>
             <span class="runtime-warning-severity">
-              {{ w.severity === 'error' ? '❌' : '⚠️' }}
+              {{ w.severity === 'error' ? '❌' : (w.severity === 'warning' ? '⚠️' : 'ℹ️') }}
             </span>
             <span class="runtime-warning-message">{{ w.message }}</span>
           </div>
@@ -330,6 +335,19 @@ const currentEmotionTier = computed(() => gameStore.currentEmotionTier)
 const emotionSceneTint = computed(() => gameStore.emotionSceneTint)
 const chapterEmotionProgress = computed(() => gameStore.chapterEmotionProgress)
 const currentEnvironment = computed(() => gameStore.currentEnvironmentInfo)
+
+const errorCount = computed(() => gameStore.runtimeWarnings.filter(w => w.severity === 'error').length)
+const warningCount = computed(() => gameStore.runtimeWarnings.filter(w => w.severity !== 'error').length)
+
+const CATEGORY_ICON = {
+  broken_chain: '🔗',
+  missing_dialogue: '💬',
+  unconfigured_asset: '🧩',
+  unreachable_ending: '🌟'
+}
+function getCategoryIcon(cat) {
+  return CATEGORY_ICON[cat] || '•'
+}
 
 const pendingRewardCount = computed(() => {
   return gameStore.activeQuests.filter(questId => {
@@ -1500,7 +1518,23 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
+
+.runtime-warning-stats {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.stat-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.stat-chip.stat-error { background: #fef2f2; color: #dc2626; }
+.stat-chip.stat-warning { background: #fffbeb; color: #d97706; }
 
 .runtime-warning-icon {
   font-size: 2rem;
@@ -1546,9 +1580,23 @@ onUnmounted(() => {
   color: #92400e;
 }
 
+.runtime-warning-item.severity-info {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.runtime-warning-cat {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  width: 20px;
+  text-align: center;
+}
+
 .runtime-warning-severity {
   flex-shrink: 0;
   font-size: 0.85rem;
+  width: 20px;
+  text-align: center;
 }
 
 .runtime-warning-message {
