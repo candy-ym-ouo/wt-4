@@ -40,6 +40,11 @@ const routes = [
     path: '/character-relation',
     name: 'CharacterRelation',
     component: () => import('../views/CharacterRelationView.vue')
+  },
+  {
+    path: '/story-calendar',
+    name: 'StoryCalendar',
+    component: () => import('../views/StoryCalendar.vue')
   }
 ]
 

@@ -194,6 +194,9 @@
       <button class="btn btn-ghost" @click="goToCharacterRelation">
         💕 角色关系
       </button>
+      <button class="btn btn-ghost calendar-btn" @click="goToStoryCalendar">
+        📅 剧情日历
+      </button>
       <button class="btn btn-ghost" @click="goToEditor">
         📝 剧情编辑器
       </button>
@@ -685,7 +688,8 @@ const goToCharacterRelation = () => {
   router.push('/character-relation')
 }
 
-const handleTutorialClose = () => {
+const goToStoryCalendar = () => {
+  router.push('/story-calendar')
 }
 
 onMounted(() => {
@@ -821,6 +825,18 @@ onMounted(() => {
   background: linear-gradient(135deg, #fde68a, #fbcfe8);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.calendar-btn {
+  background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+  border: 2px solid #818cf8;
+  color: #4338ca;
+}
+
+.calendar-btn:hover {
+  background: linear-gradient(135deg, #bfdbfe, #c7d2fe);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .ngp-stats-modal-overlay {

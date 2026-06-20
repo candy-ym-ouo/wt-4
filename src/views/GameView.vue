@@ -47,6 +47,13 @@
           📜
           <span v-if="pendingRewardCount > 0" class="quest-badge">{{ pendingRewardCount }}</span>
         </button>
+        <button 
+          class="btn btn-ghost action-btn calendar-action-btn" 
+          @click="goToStoryCalendar" 
+          title="剧情日历"
+        >
+          📅
+        </button>
         <button class="btn btn-ghost action-btn" @click="goBack" title="返回章节">
           🏠
         </button>
@@ -475,6 +482,11 @@ const goBack = () => {
   router.push('/chapter-select')
 }
 
+const goToStoryCalendar = () => {
+  gameStore.autoSave()
+  router.push('/story-calendar')
+}
+
 const goToNextChapter = () => {
   showChapterComplete.value = false
   const nextUnlocked = gameStore.chapters.find(c =>
@@ -696,6 +708,16 @@ onUnmounted(() => {
 .quest-action-btn:hover {
   background: linear-gradient(135deg, #fce7f3, #f3e8ff);
   box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+.calendar-action-btn {
+  background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+  color: #4338ca;
+}
+
+.calendar-action-btn:hover {
+  background: linear-gradient(135deg, #bfdbfe, #c7d2fe);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .quest-badge {
