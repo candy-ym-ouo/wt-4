@@ -204,6 +204,9 @@
       <button class="btn btn-ghost decoration-btn" @click="goToDecorationGallery">
         🎨 手账装扮
       </button>
+      <button class="btn btn-primary challenge-entry-btn" @click="goToChallengeSelect">
+        ⚡ 限时挑战
+      </button>
       <button class="btn btn-ghost" @click="goToEditor">
         📝 剧情编辑器
       </button>
@@ -710,6 +713,10 @@ const goToStoryCalendar = () => {
 
 const goToDecorationGallery = () => {
   router.push('/decoration-gallery')
+}
+
+const goToChallengeSelect = () => {
+  router.push('/challenge-select')
 }
 
 onMounted(() => {
@@ -1870,6 +1877,19 @@ onMounted(() => {
 
 .save-empty {
   color: var(--text-secondary);
+}
+
+.challenge-entry-btn {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.challenge-entry-btn:hover {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(251, 191, 36, 0.5);
 }
 
 @media (max-width: 768px) {

@@ -3,7 +3,8 @@
     <div class="panel-header">
       <h3 class="handwriting" style="font-size: 1.2rem; margin: 0;">素材库</h3>
       <div class="panel-status">
-        <span v-if="isWaitingForMaterial" class="panel-hint pulse">请选择「{{ requiredMaterialName }}」</span>
+        <span v-if="isChallengeMode" class="challenge-hint">⚡ 挑战模式 - 限定 {{ allowedMaterials.length }} 种素材</span>
+        <span v-else-if="isWaitingForMaterial" class="panel-hint pulse">请选择「{{ requiredMaterialName }}」</span>
         <span v-else-if="canPlaceOptionalMaterial" class="panel-hint optional-hint pulse">✨ 还可放置额外素材解锁组合</span>
         <span v-else class="panel-hint done">本场景素材已放置完毕</span>
       </div>
@@ -15,7 +16,7 @@
         <span class="rec-subtitle">基于当前场景智能排序</span>
       </div>
 
-      <div v-if="recommendations.required.length > 0" class="rec-section rec-required">
+      <div v-if="filteredRecommendations.required.length > 0" class="rec-section rec-required">
         <div class="rec-section-header">
           <span class="rec-icon">🔴</span>
           <span class="rec-section-title">主线必放</span>
@@ -23,7 +24,7 @@
         </div>
         <div class="rec-items">
           <div
-            v-for="mat in recommendations.required"
+            v-for="mat in filteredRecommendations.required"
             :key="mat.id"
             class="rec-item"
             :class="{ used: isMaterialUsed(mat.id) }"
@@ -36,7 +37,7 @@
         </div>
       </div>
 
-      <div v-if="recommendations.hiddenCombo.length > 0" class="rec-section rec-hidden">
+      <div v-if="filteredRecommendations.hiddenCombo.length > 0" class="rec-section rec-hidden">
         <div class="rec-section-header">
           <span class="rec-icon">🟣</span>
           <span class="rec-section-title">隐藏组合优先</span>
@@ -44,7 +45,7 @@
         </div>
         <div class="rec-items">
           <div
-            v-for="mat in recommendations.hiddenCombo"
+            v-for="mat in filteredRecommendations.hiddenCombo"
             :key="mat.id"
             class="rec-item"
             :class="{ used: isMaterialUsed(mat.id) }"
@@ -59,7 +60,7 @@
         </div>
       </div>
 
-      <div v-if="recommendations.normalCombo.length > 0" class="rec-section rec-normal">
+      <div v-if="filteredRecommendations.normalCombo.length > 0" class="rec-section rec-normal">
         <div class="rec-section-header">
           <span class="rec-icon">🔵</span>
           <span class="rec-section-title">组合补充</span>
@@ -67,7 +68,7 @@
         </div>
         <div class="rec-items">
           <div
-            v-for="mat in recommendations.normalCombo"
+            v-for="mat in filteredRecommendations.normalCombo"
             :key="mat.id"
             class="rec-item"
             :class="{ used: isMaterialUsed(mat.id) }"
@@ -82,7 +83,7 @@
         </div>
       </div>
 
-      <div v-if="recommendations.optional.length > 0" class="rec-section rec-optional">
+      <div v-if="filteredRecommendations.optional.length > 0" class="rec-section rec-optional">
         <div class="rec-section-header">
           <span class="rec-icon">⚪</span>
           <span class="rec-section-title">可选加成</span>
@@ -90,7 +91,7 @@
         </div>
         <div class="rec-items">
           <div
-            v-for="mat in recommendations.optional"
+            v-for="mat in filteredRecommendations.optional"
             :key="mat.id"
             class="rec-item"
             :class="{ used: isMaterialUsed(mat.id) }"
@@ -212,13 +213,31 @@
 <script setup>
 import { computed } from 'vue'
 import { useGameStore } from '../stores/gameStore'
+import { useChallengeStore } from '../stores/challengeStore'
 
 const emit = defineEmits(['select'])
 
 const gameStore = useGameStore()
+const challengeStore = useChallengeStore()
 
-const availableMaterials = computed(() => gameStore.availableMaterials)
-const filteredAvailableMaterials = computed(() => gameStore.filteredAvailableMaterials)
+const isChallengeMode = computed(() => challengeStore.isChallengeMode)
+const allowedMaterials = computed(() => challengeStore.currentChallenge?.allowedMaterials || [])
+
+const availableMaterials = computed(() => {
+  const materials = gameStore.availableMaterials
+  if (isChallengeMode.value && allowedMaterials.value.length > 0) {
+    return materials.filter(m => allowedMaterials.value.includes(m.id))
+  }
+  return materials
+})
+
+const filteredAvailableMaterials = computed(() => {
+  const materials = gameStore.filteredAvailableMaterials
+  if (isChallengeMode.value && allowedMaterials.value.length > 0) {
+    return materials.filter(m => allowedMaterials.value.includes(m.id))
+  }
+  return materials
+})
 const isWaitingForMaterial = computed(() => gameStore.isWaitingForMaterial)
 const requiredMaterialId = computed(() => gameStore.requiredMaterialId)
 const optionalMaterialsPlaced = computed(() => gameStore.optionalMaterialsPlaced)
@@ -231,8 +250,22 @@ const materialCategories = computed(() => gameStore.materialCategories)
 const activeMaterialFilter = computed(() => gameStore.activeMaterialFilter)
 const recommendations = computed(() => gameStore.sceneRecommendedMaterials)
 
-const recommendedSections = computed(() => {
+const filteredRecommendations = computed(() => {
   const rec = recommendations.value
+  if (!isChallengeMode.value || allowedMaterials.value.length === 0) {
+    return rec
+  }
+  const filterFn = (m) => allowedMaterials.value.includes(m.id)
+  return {
+    required: rec.required.filter(filterFn),
+    hiddenCombo: rec.hiddenCombo.filter(filterFn),
+    normalCombo: rec.normalCombo.filter(filterFn),
+    optional: rec.optional.filter(filterFn)
+  }
+})
+
+const recommendedSections = computed(() => {
+  const rec = filteredRecommendations.value
   return [
     rec.required.length > 0 && 'required',
     rec.hiddenCombo.length > 0 && 'hiddenCombo',
@@ -391,6 +424,16 @@ const selectMaterial = (material) => {
 .panel-hint.done {
   color: #10b981;
   font-size: 0.8rem;
+}
+
+.challenge-hint {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #92400e;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: inline-block;
 }
 
 .smart-recommendations {

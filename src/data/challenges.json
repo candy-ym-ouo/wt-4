@@ -1,0 +1,210 @@
+[
+  {
+    "id": "challenge_spring_speed",
+    "chapterId": "chapter1",
+    "title": "春日速通",
+    "subtitle": "三分钟挑战",
+    "description": "在限定时间内完成春日序章，考验你的手速与决策力。",
+    "icon": "⚡",
+    "background": "linear-gradient(135deg, #fef3c7, #fce7f3)",
+    "difficulty": "easy",
+    "unlocked": true,
+    "targetEmotion": 40,
+    "timeLimit": 180,
+    "allowedMaterials": ["flower", "butterfly", "letter"],
+    "maxRounds": 12,
+    "scoring": {
+      "baseScore": 1000,
+      "timeBonusPerSecond": 5,
+      "emotionMultiplier": 10,
+      "perfectBonus": 500,
+      "comboBonus": 200
+    },
+    "rewards": {
+      "emotionBonus": 10,
+      "achievement": "spring_speedster"
+    },
+    "unlockConditions": []
+  },
+  {
+    "id": "challenge_summer_perfect",
+    "chapterId": "chapter2",
+    "title": "盛夏完美主义",
+    "subtitle": "全组合挑战",
+    "description": "在盛夏光年中触发所有素材组合，追求极致完美。",
+    "icon": "🎯",
+    "background": "linear-gradient(135deg, #d1fae5, #fef3c7)",
+    "difficulty": "normal",
+    "unlocked": false,
+    "targetEmotion": 70,
+    "timeLimit": 300,
+    "allowedMaterials": ["sun", "cicada", "book", "flower", "music"],
+    "maxRounds": 20,
+    "scoring": {
+      "baseScore": 1500,
+      "timeBonusPerSecond": 4,
+      "emotionMultiplier": 12,
+      "perfectBonus": 800,
+      "comboBonus": 300
+    },
+    "rewards": {
+      "emotionBonus": 15,
+      "achievement": "summer_perfectionist"
+    },
+    "unlockConditions": [
+      {
+        "type": "chapter_completed",
+        "target": "chapter1",
+        "description": "完成「春日序章」"
+      }
+    ]
+  },
+  {
+    "id": "challenge_autumn_restricted",
+    "chapterId": "chapter3",
+    "title": "秋日限材挑战",
+    "subtitle": "素材大作战",
+    "description": "只能使用指定的3种素材完成秋日私语，看看你能拿到多少分。",
+    "icon": "🎨",
+    "background": "linear-gradient(135deg, #fed7aa, #fef3c7)",
+    "difficulty": "hard",
+    "unlocked": false,
+    "targetEmotion": 60,
+    "timeLimit": 240,
+    "allowedMaterials": ["leaf", "coffee", "watch"],
+    "maxRounds": 15,
+    "scoring": {
+      "baseScore": 2000,
+      "timeBonusPerSecond": 6,
+      "emotionMultiplier": 15,
+      "perfectBonus": 1000,
+      "comboBonus": 400
+    },
+    "rewards": {
+      "emotionBonus": 20,
+      "achievement": "autumn_resourceful"
+    },
+    "unlockConditions": [
+      {
+        "type": "chapter_completed",
+        "target": "chapter2",
+        "description": "完成「盛夏光年」"
+      },
+      {
+        "type": "challenge_completed",
+        "target": "challenge_summer_perfect",
+        "description": "完成「盛夏完美主义」挑战"
+      }
+    ]
+  },
+  {
+    "id": "challenge_winter_ultimate",
+    "chapterId": "chapter4",
+    "title": "冬日终极考验",
+    "subtitle": "大师级挑战",
+    "description": "在最短时间内完美通关冬日暖阳，只有真正的大师才能做到。",
+    "icon": "👑",
+    "background": "linear-gradient(135deg, #dbeafe, #ede9fe)",
+    "difficulty": "legendary",
+    "unlocked": false,
+    "targetEmotion": 100,
+    "timeLimit": 200,
+    "allowedMaterials": ["snowflake", "scarf", "heart", "star", "music"],
+    "maxRounds": 18,
+    "scoring": {
+      "baseScore": 3000,
+      "timeBonusPerSecond": 8,
+      "emotionMultiplier": 20,
+      "perfectBonus": 1500,
+      "comboBonus": 500
+    },
+    "rewards": {
+      "emotionBonus": 30,
+      "achievement": "winter_legend"
+    },
+    "unlockConditions": [
+      {
+        "type": "chapter_completed",
+        "target": "chapter3",
+        "description": "完成「秋日私语」"
+      },
+      {
+        "type": "challenge_completed",
+        "target": "challenge_autumn_restricted",
+        "description": "完成「秋日限材挑战」"
+      }
+    ]
+  },
+  {
+    "id": "challenge_heart_only",
+    "chapterId": "chapter1",
+    "title": "一心一意",
+    "subtitle": "单素材挑战",
+    "description": "仅使用「心」这一个素材完成章节，看看你能创造怎样的奇迹。",
+    "icon": "❤️",
+    "background": "linear-gradient(135deg, #fce7f3, #fbcfe8)",
+    "difficulty": "hard",
+    "unlocked": false,
+    "targetEmotion": 35,
+    "timeLimit": 150,
+    "allowedMaterials": ["heart"],
+    "maxRounds": 10,
+    "scoring": {
+      "baseScore": 2500,
+      "timeBonusPerSecond": 10,
+      "emotionMultiplier": 25,
+      "perfectBonus": 1200,
+      "comboBonus": 600
+    },
+    "rewards": {
+      "emotionBonus": 25,
+      "achievement": "single_minded"
+    },
+    "unlockConditions": [
+      {
+        "type": "chapter_completed",
+        "target": "chapter1",
+        "description": "完成「春日序章」"
+      },
+      {
+        "type": "emotion_reached",
+        "target": "chapter1",
+        "value": 60,
+        "description": "在「春日序章」中情绪值达到 60"
+      }
+    ]
+  },
+  {
+    "id": "challenge_combo_master",
+    "chapterId": "chapter3",
+    "title": "组合大师",
+    "subtitle": "连击达人",
+    "description": "在秋日私语中触发尽可能多的素材组合，组合越多分数越高！",
+    "icon": "🔮",
+    "background": "linear-gradient(135deg, #ede9fe, #fce7f3)",
+    "difficulty": "normal",
+    "unlocked": false,
+    "targetEmotion": 50,
+    "timeLimit": 300,
+    "allowedMaterials": ["leaf", "coffee", "watch", "heart", "star", "music", "flower"],
+    "maxRounds": 25,
+    "scoring": {
+      "baseScore": 800,
+      "timeBonusPerSecond": 2,
+      "emotionMultiplier": 5,
+      "perfectBonus": 300,
+      "comboBonus": 800
+    },
+    "rewards": {
+      "emotionBonus": 15,
+      "achievement": "combo_master_challenge"
+    },
+    "unlockConditions": [
+      {
+        "type": "chapter_completed",
+        "target": "chapter2",
+        "description": "完成「盛夏光年」"
+      }
+    ]
+  }
+]

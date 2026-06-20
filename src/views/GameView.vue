@@ -9,7 +9,11 @@
       <div class="chapter-info">
         <h2 class="handwriting chapter-title">{{ currentChapter?.title }}</h2>
         <span class="chapter-subtitle">{{ currentChapter?.subtitle }}</span>
-        <div v-if="lastAutoSaveTime" class="autosave-indicator">
+        <div v-if="isChallengeMode" class="challenge-badge">
+          <span class="challenge-icon">{{ currentChallenge?.icon }}</span>
+          <span class="challenge-name">{{ currentChallenge?.title }}</span>
+        </div>
+        <div v-if="lastAutoSaveTime && !isChallengeMode" class="autosave-indicator">
           💾 上次自动保存: {{ formatLastAutoSave }}
         </div>
       </div>
@@ -71,6 +75,27 @@
 
     <div class="game-content">
       <EmotionMeter />
+
+      <div v-if="isChallengeMode" class="challenge-status-bar" :class="{ 
+        'time-warning': isChallengeTimeWarning,
+        'time-critical': isChallengeTimeCritical 
+      }">
+        <div class="challenge-status-item">
+          <span class="status-icon">⏱️</span>
+          <span class="status-label">剩余时间</span>
+          <span class="status-value time-value">{{ formattedChallengeTime }}</span>
+        </div>
+        <div class="challenge-status-item">
+          <span class="status-icon">🔄</span>
+          <span class="status-label">已用回合</span>
+          <span class="status-value">{{ challengeRoundsUsed }} / {{ currentChallenge?.maxRounds }}</span>
+        </div>
+        <div class="challenge-status-item">
+          <span class="status-icon">🎯</span>
+          <span class="status-label">目标情绪</span>
+          <span class="status-value">{{ currentChallenge?.targetEmotion }} 💕</span>
+        </div>
+      </div>
 
       <div v-if="currentSceneCombos.length > 0" class="combo-progress-bar">
         <div class="combo-progress-header">
@@ -289,6 +314,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGameStore } from '../stores/gameStore'
+import { useChallengeStore } from '../stores/challengeStore'
 import Canvas from '../components/Canvas.vue'
 import DialogueBox from '../components/DialogueBox.vue'
 import EmotionMeter from '../components/EmotionMeter.vue'
@@ -302,6 +328,7 @@ import QuestNotification from '../components/QuestNotification.vue'
 const route = useRoute()
 const router = useRouter()
 const gameStore = useGameStore()
+const challengeStore = useChallengeStore()
 
 const canvasRef = ref(null)
 const showSaveModal = ref(false)
@@ -335,6 +362,25 @@ const currentEmotionTier = computed(() => gameStore.currentEmotionTier)
 const emotionSceneTint = computed(() => gameStore.emotionSceneTint)
 const chapterEmotionProgress = computed(() => gameStore.chapterEmotionProgress)
 const currentEnvironment = computed(() => gameStore.currentEnvironmentInfo)
+
+const isChallengeMode = computed(() => challengeStore.isChallengeMode)
+const currentChallenge = computed(() => challengeStore.currentChallenge)
+const challengeTimeRemaining = computed(() => challengeStore.challengeTimeRemaining)
+const challengeRoundsUsed = computed(() => challengeStore.challengeRoundsUsed)
+
+const formattedChallengeTime = computed(() => {
+  return challengeStore.formatTime(challengeTimeRemaining.value)
+})
+
+const isChallengeTimeWarning = computed(() => {
+  const challenge = currentChallenge.value
+  if (!challenge) return false
+  return challengeTimeRemaining.value < challenge.timeLimit * 0.2
+})
+
+const isChallengeTimeCritical = computed(() => {
+  return challengeTimeRemaining.value < 30
+})
 
 const errorCount = computed(() => gameStore.runtimeWarnings.filter(w => w.severity === 'error').length)
 const warningCount = computed(() => gameStore.runtimeWarnings.filter(w => w.severity !== 'error').length)
@@ -416,6 +462,21 @@ const handleMaterialSelect = (material) => {
 
 const handleMaterialPlaced = (data) => {
   console.log('Material placed:', data)
+  
+  if (isChallengeMode.value) {
+    const canPlace = challengeStore.incrementRound()
+    if (!canPlace) {
+      alert('已达到最大回合数！挑战结束。')
+      const result = challengeStore.completeChallenge(gameStore)
+      if (result) {
+        setTimeout(() => {
+          router.push(`/challenge-result`)
+        }, 500)
+      }
+      return
+    }
+  }
+  
   if (data?.result?.combosTriggered && data.result.combosTriggered.length > 0) {
     data.result.combosTriggered.forEach((combo, idx) => {
       const fullCombo = currentSceneCombos.value.find(c => c.name === combo.name)
@@ -537,6 +598,14 @@ const dismissRuntimeWarning = () => {
 }
 
 const goBack = () => {
+  if (isChallengeMode.value) {
+    if (confirm('确定要退出挑战吗？当前进度将不会保存。')) {
+      challengeStore.exitChallenge()
+      gameStore.goToChapterSelect()
+      router.push('/challenge-select')
+    }
+    return
+  }
   gameStore.autoSave()
   gameStore.goToChapterSelect()
   router.push('/chapter-select')
@@ -578,9 +647,29 @@ watch(gameCompleted, (completed) => {
 
 watch(() => gameStore.completedChapters, (completed) => {
   if (completed.includes(currentChapter.value?.id) && !gameCompleted.value) {
-    showChapterComplete.value = true
+    if (isChallengeMode.value) {
+      const result = challengeStore.completeChallenge(gameStore)
+      if (result) {
+        setTimeout(() => {
+          router.push(`/challenge-result`)
+        }, 500)
+      }
+    } else {
+      showChapterComplete.value = true
+    }
   }
 }, { deep: true })
+
+watch(() => challengeStore.challengeCompleted, (completed) => {
+  if (completed && isChallengeMode.value) {
+    const result = challengeStore.challengeResult
+    if (result && result.failed) {
+      setTimeout(() => {
+        router.push('/challenge-result')
+      }, 1000)
+    }
+  }
+})
 
 watch(() => gameStore.affinityNotifications, (notifs) => {
   if (notifs.length === 0) return
@@ -1609,4 +1698,80 @@ onUnmounted(() => {
   justify-content: center;
 }
 
+.challenge-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #92400e;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+}
+
+.challenge-icon {
+  font-size: 1rem;
+}
+
+.challenge-status-bar {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 12px 20px;
+  margin-bottom: 15px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  border: 2px solid #fde68a;
+}
+
+.challenge-status-bar.time-warning {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(254, 243, 199, 0.95));
+}
+
+.challenge-status-bar.time-critical {
+  border-color: #ef4444;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(254, 202, 202, 0.95));
+  animation: pulse-critical 1s ease-in-out infinite;
+}
+
+@keyframes pulse-critical {
+  0%, 100% { box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+  50% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5); }
+}
+
+.challenge-status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-icon {
+  font-size: 1.3rem;
+}
+
+.status-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.status-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.time-value {
+  font-family: 'Courier New', monospace;
+  color: #92400e;
+}
+
+.time-critical .time-value {
+  color: #dc2626;
+}
 </style>

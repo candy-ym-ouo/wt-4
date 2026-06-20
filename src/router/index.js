@@ -50,6 +50,21 @@ const routes = [
     path: '/decoration-gallery',
     name: 'DecorationGallery',
     component: () => import('../views/DecorationGallery.vue')
+  },
+  {
+    path: '/challenge-select',
+    name: 'ChallengeSelect',
+    component: () => import('../views/ChallengeSelectView.vue')
+  },
+  {
+    path: '/challenge-result',
+    name: 'ChallengeResult',
+    component: () => import('../views/ChallengeResultView.vue')
+  },
+  {
+    path: '/leaderboard',
+    name: 'Leaderboard',
+    component: () => import('../views/LeaderboardView.vue')
   }
 ]
 
