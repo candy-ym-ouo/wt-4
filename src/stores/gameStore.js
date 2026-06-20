@@ -1280,6 +1280,14 @@ export const useGameStore = defineStore('game', () => {
     })
 
     showNotification(`环境变化：${getTimeOfDayLabel(currentTimeOfDay.value)} · ${getWeatherLabel(currentWeather.value)}`, 'info', 2000)
+
+    try {
+      import('./audioStore').then(({ useAudioStore }) => {
+        const audioStore = useAudioStore()
+        audioStore.changeSceneAudio(currentSceneId.value, currentTimeOfDay.value, currentWeather.value)
+      })
+    } catch (e) {
+    }
   }
 
   const getTimeOfDayLabel = (timeOfDay) => {
@@ -1799,6 +1807,17 @@ export const useGameStore = defineStore('game', () => {
       currentTimeOfDay.value = 'day'
       currentWeather.value = 'clear'
     }
+
+    try {
+      import('./audioStore').then(({ useAudioStore }) => {
+        const audioStore = useAudioStore()
+        audioStore.initAudio()
+        audioStore.clearNarrationQueue()
+        audioStore.changeSceneAudio(currentSceneId.value, currentTimeOfDay.value, currentWeather.value)
+      })
+    } catch (e) {
+      console.warn('[Audio] Failed to initialize chapter audio:', e)
+    }
   }
 
   const addToDialogueHistory = (dialogue) => {
@@ -1817,6 +1836,37 @@ export const useGameStore = defineStore('game', () => {
     perfectPlacementCount.value = 0
     totalDialogueCount.value = 0
     positiveBonus.value = 0
+  }
+
+  const getAudioStoreLazy = () => {
+    try {
+      const { useAudioStore } = require('./audioStore')
+      return useAudioStore()
+    } catch (e) {
+      return null
+    }
+  }
+
+  const playNarrationForDialogue = (dialogue) => {
+    try {
+      import('./audioStore').then(({ useAudioStore }) => {
+        const audioStore = useAudioStore()
+        if (audioStore.isNarrationEnabled && dialogue?.speaker) {
+          audioStore.playDialogueNarration(dialogue)
+        }
+      })
+    } catch (e) {
+    }
+  }
+
+  const playSfxSafe = (sfxId) => {
+    try {
+      import('./audioStore').then(({ useAudioStore }) => {
+        const audioStore = useAudioStore()
+        audioStore.playSfx(sfxId)
+      })
+    } catch (e) {
+    }
   }
 
   const nextDialogue = () => {
@@ -1843,6 +1893,8 @@ export const useGameStore = defineStore('game', () => {
     if (!dialogue) return
 
     addToDialogueHistory(dialogue)
+
+    playNarrationForDialogue(dialogue)
 
     if (dialogue.isKeyLine) {
       keyDialogueLines.value.push({
@@ -1904,6 +1956,14 @@ export const useGameStore = defineStore('game', () => {
       if (nextScene) {
         currentTimeOfDay.value = nextScene.timeOfDay || 'day'
         currentWeather.value = nextScene.weather || 'clear'
+      }
+
+      try {
+        import('./audioStore').then(({ useAudioStore }) => {
+          const audioStore = useAudioStore()
+          audioStore.changeSceneAudio(currentSceneId.value, currentTimeOfDay.value, currentWeather.value)
+        })
+      } catch (e) {
       }
 
       recordSceneTransition(prevSceneId, currentScene.value.nextScene)
@@ -1978,8 +2038,11 @@ export const useGameStore = defineStore('game', () => {
       hasHiddenDialogue: !!combo.hiddenDialogue
     })
 
+    playSfxSafe('sfx_combo_trigger')
+
     if (combo.hiddenDialogue) {
       pendingHiddenDialogues.value.push({ ...combo.hiddenDialogue })
+      playSfxSafe('sfx_discovery')
     }
 
     if (combo.sceneFeedback) {
@@ -2058,7 +2121,10 @@ export const useGameStore = defineStore('game', () => {
     emotionValue.value += material.emotion + placementBonus
     if (isPerfect) {
       perfectPlacementCount.value++
+      playSfxSafe('sfx_emotion_up')
     }
+
+    playSfxSafe('sfx_material_place')
 
     processMaterialAffinity(materialId, isPerfect)
 
@@ -2140,7 +2206,10 @@ export const useGameStore = defineStore('game', () => {
     emotionValue.value += material.emotion + placementBonus
     if (isPerfect) {
       perfectPlacementCount.value++
+      playSfxSafe('sfx_emotion_up')
     }
+
+    playSfxSafe('sfx_material_place')
 
     addEmotionLog('material', material.emotion, {
       materialId,
@@ -2208,6 +2277,8 @@ export const useGameStore = defineStore('game', () => {
   const completeChapter = () => {
     const chapter = currentChapter.value
     if (!chapter) return
+
+    playSfxSafe('sfx_chapter_complete')
 
     if (!completedChapters.value.includes(chapter.id)) {
       completedChapters.value.push(chapter.id)
@@ -2571,6 +2642,17 @@ export const useGameStore = defineStore('game', () => {
     }
 
     currentEnding.value = ending
+    
+    if (ending?.id) {
+      try {
+        import('./audioStore').then(({ useAudioStore }) => {
+          const audioStore = useAudioStore()
+          audioStore.playEndingAudio(ending.id)
+        })
+      } catch (e) {
+      }
+    }
+    
     autoSave()
   }
 

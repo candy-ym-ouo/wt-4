@@ -480,15 +480,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '../stores/gameStore'
+import { useAudioStore } from '../stores/audioStore'
 import AchievementBadge from '../components/AchievementBadge.vue'
 import AchievementPanel from '../components/AchievementPanel.vue'
 import { encodeShareData } from '../utils/shareCodec'
 
 const router = useRouter()
 const gameStore = useGameStore()
+const audioStore = useAudioStore()
 
 const ending = computed(() => gameStore.currentEnding)
 const totalChapters = computed(() => gameStore.chapters.length)
@@ -652,7 +654,17 @@ const generateAndShareStory = () => {
 onMounted(() => {
   if (!ending.value) {
     router.push('/chapter-select')
+    return
   }
+  
+  if (ending.value?.id) {
+    audioStore.initAudio()
+    audioStore.playEndingAudio(ending.value.id)
+  }
+})
+
+onUnmounted(() => {
+  audioStore.fadeOutMusic(1500)
 })
 </script>
 

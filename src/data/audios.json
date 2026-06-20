@@ -1,0 +1,395 @@
+{
+  "ambient": {
+    "spring_day": {
+      "id": "spring_day",
+      "name": "春日白昼",
+      "type": "ambient",
+      "src": "/audio/ambient/spring_day.mp3",
+      "loop": true,
+      "volume": 0.4,
+      "fadeIn": 2000,
+      "fadeOut": 1500,
+      "tags": ["spring", "day", "peaceful"]
+    },
+    "spring_night": {
+      "id": "spring_night",
+      "name": "春夜",
+      "type": "ambient",
+      "src": "/audio/ambient/spring_night.mp3",
+      "loop": true,
+      "volume": 0.3,
+      "fadeIn": 2000,
+      "fadeOut": 1500,
+      "tags": ["spring", "night", "quiet"]
+    },
+    "summer_day": {
+      "id": "summer_day",
+      "name": "夏日白昼",
+      "type": "ambient",
+      "src": "/audio/ambient/summer_day.mp3",
+      "loop": true,
+      "volume": 0.35,
+      "fadeIn": 2000,
+      "fadeOut": 1500,
+      "tags": ["summer", "day", "cicada"]
+    },
+    "summer_rain": {
+      "id": "summer_rain",
+      "name": "夏雨",
+      "type": "ambient",
+      "src": "/audio/ambient/summer_rain.mp3",
+      "loop": true,
+      "volume": 0.4,
+      "fadeIn": 1500,
+      "fadeOut": 1500,
+      "tags": ["summer", "rain", "refreshing"]
+    },
+    "autumn_day": {
+      "id": "autumn_day",
+      "name": "秋日白昼",
+      "type": "ambient",
+      "src": "/audio/ambient/autumn_day.mp3",
+      "loop": true,
+      "volume": 0.35,
+      "fadeIn": 2000,
+      "fadeOut": 1500,
+      "tags": ["autumn", "day", "nostalgic"]
+    },
+    "autumn_night": {
+      "id": "autumn_night",
+      "name": "秋夜",
+      "type": "ambient",
+      "src": "/audio/ambient/autumn_night.mp3",
+      "loop": true,
+      "volume": 0.3,
+      "fadeIn": 2000,
+      "fadeOut": 1500,
+      "tags": ["autumn", "night", "quiet"]
+    },
+    "winter_day": {
+      "id": "winter_day",
+      "name": "冬日白昼",
+      "type": "ambient",
+      "src": "/audio/ambient/winter_day.mp3",
+      "loop": true,
+      "volume": 0.3,
+      "fadeIn": 2000,
+      "fadeOut": 1500,
+      "tags": ["winter", "day", "serene"]
+    },
+    "winter_night": {
+      "id": "winter_night",
+      "name": "冬夜",
+      "type": "ambient",
+      "src": "/audio/ambient/winter_night.mp3",
+      "loop": true,
+      "volume": 0.25,
+      "fadeIn": 2000,
+      "fadeOut": 1500,
+      "tags": ["winter", "night", "quiet"]
+    },
+    "starry_night": {
+      "id": "starry_night",
+      "name": "星空",
+      "type": "ambient",
+      "src": "/audio/ambient/starry_night.mp3",
+      "loop": true,
+      "volume": 0.35,
+      "fadeIn": 2500,
+      "fadeOut": 2000,
+      "tags": ["night", "star", "dreamy"]
+    },
+    "rain": {
+      "id": "rain",
+      "name": "雨声",
+      "type": "ambient",
+      "src": "/audio/ambient/rain.mp3",
+      "loop": true,
+      "volume": 0.4,
+      "fadeIn": 1500,
+      "fadeOut": 1500,
+      "tags": ["rain", "nature"]
+    },
+    "library": {
+      "id": "library",
+      "name": "图书馆",
+      "type": "ambient",
+      "src": "/audio/ambient/library.mp3",
+      "loop": true,
+      "volume": 0.3,
+      "fadeIn": 2000,
+      "fadeOut": 1500,
+      "tags": ["indoor", "quiet", "study"]
+    },
+    "cafe": {
+      "id": "cafe",
+      "name": "咖啡馆",
+      "type": "ambient",
+      "src": "/audio/ambient/cafe.mp3",
+      "loop": true,
+      "volume": 0.35,
+      "fadeIn": 2000,
+      "fadeOut": 1500,
+      "tags": ["indoor", "warm", "cozy"]
+    }
+  },
+  "narration": {
+    "default": {
+      "id": "narration_default",
+      "name": "默认旁白",
+      "type": "narration",
+      "speaker": "narrator",
+      "volume": 0.8,
+      "tags": ["narrator"]
+    },
+    "memory": {
+      "id": "narration_memory",
+      "name": "回忆旁白",
+      "type": "narration",
+      "speaker": "memory",
+      "volume": 0.75,
+      "tags": ["memory", "soft"]
+    },
+    "inner": {
+      "id": "narration_inner",
+      "name": "内心独白",
+      "type": "narration",
+      "speaker": "inner",
+      "volume": 0.7,
+      "tags": ["inner", "thought"]
+    },
+    "time": {
+      "id": "narration_time",
+      "name": "时光旁白",
+      "type": "narration",
+      "speaker": "time",
+      "volume": 0.8,
+      "tags": ["time", "mysterious"]
+    }
+  },
+  "sfx": {
+    "page_turn": {
+      "id": "sfx_page_turn",
+      "name": "翻页声",
+      "type": "sfx",
+      "src": "/audio/sfx/page_turn.mp3",
+      "volume": 0.5,
+      "tags": ["ui", "page"]
+    },
+    "button_click": {
+      "id": "sfx_button_click",
+      "name": "按钮点击",
+      "type": "sfx",
+      "src": "/audio/sfx/button_click.mp3",
+      "volume": 0.4,
+      "tags": ["ui", "button"]
+    },
+    "material_place": {
+      "id": "sfx_material_place",
+      "name": "素材放置",
+      "type": "sfx",
+      "src": "/audio/sfx/material_place.mp3",
+      "volume": 0.4,
+      "tags": ["game", "material"]
+    },
+    "combo_trigger": {
+      "id": "sfx_combo_trigger",
+      "name": "组合触发",
+      "type": "sfx",
+      "src": "/audio/sfx/combo_trigger.mp3",
+      "volume": 0.6,
+      "tags": ["game", "combo"]
+    },
+    "emotion_up": {
+      "id": "sfx_emotion_up",
+      "name": "情绪提升",
+      "type": "sfx",
+      "src": "/audio/sfx/emotion_up.mp3",
+      "volume": 0.5,
+      "tags": ["game", "emotion"]
+    },
+    "chapter_complete": {
+      "id": "sfx_chapter_complete",
+      "name": "章节完成",
+      "type": "sfx",
+      "src": "/audio/sfx/chapter_complete.mp3",
+      "volume": 0.7,
+      "tags": ["game", "chapter"]
+    },
+    "discovery": {
+      "id": "sfx_discovery",
+      "name": "发现音效",
+      "type": "sfx",
+      "src": "/audio/sfx/discovery.mp3",
+      "volume": 0.6,
+      "tags": ["game", "discovery"]
+    }
+  },
+  "music": {
+    "main_theme": {
+      "id": "music_main_theme",
+      "name": "主旋律",
+      "type": "music",
+      "src": "/audio/music/main_theme.mp3",
+      "loop": true,
+      "volume": 0.3,
+      "fadeIn": 3000,
+      "fadeOut": 2000,
+      "tags": ["theme", "main"]
+    },
+    "romantic": {
+      "id": "music_romantic",
+      "name": "浪漫",
+      "type": "music",
+      "src": "/audio/music/romantic.mp3",
+      "loop": true,
+      "volume": 0.35,
+      "fadeIn": 2500,
+      "fadeOut": 2000,
+      "tags": ["romantic", "warm"]
+    },
+    "nostalgic": {
+      "id": "music_nostalgic",
+      "name": "怀旧",
+      "type": "music",
+      "src": "/audio/music/nostalgic.mp3",
+      "loop": true,
+      "volume": 0.3,
+      "fadeIn": 2500,
+      "fadeOut": 2000,
+      "tags": ["nostalgic", "soft"]
+    },
+    "ending_good": {
+      "id": "music_ending_good",
+      "name": "好结局",
+      "type": "music",
+      "src": "/audio/music/ending_good.mp3",
+      "loop": false,
+      "volume": 0.4,
+      "fadeIn": 2000,
+      "fadeOut": 3000,
+      "tags": ["ending", "good"]
+    },
+    "ending_true": {
+      "id": "music_ending_true",
+      "name": "真结局",
+      "type": "music",
+      "src": "/audio/music/ending_true.mp3",
+      "loop": false,
+      "volume": 0.45,
+      "fadeIn": 2500,
+      "fadeOut": 4000,
+      "tags": ["ending", "true", "special"]
+    },
+    "ending_eternal": {
+      "id": "music_ending_eternal",
+      "name": "永恒结局",
+      "type": "music",
+      "src": "/audio/music/ending_eternal.mp3",
+      "loop": true,
+      "volume": 0.4,
+      "fadeIn": 3000,
+      "fadeOut": 3000,
+      "tags": ["ending", "eternal", "legendary"]
+    }
+  },
+  "sceneMapping": {
+    "scene1_1": {
+      "day_clear": { "ambient": "spring_day", "music": "nostalgic" },
+      "day_cloudy": { "ambient": "spring_day", "music": "nostalgic" },
+      "dusk_clear": { "ambient": "spring_day", "music": "romantic" },
+      "night_clear": { "ambient": "spring_night", "music": "nostalgic" },
+      "night_star": { "ambient": "starry_night", "music": "romantic" }
+    },
+    "scene1_2": {
+      "day_clear": { "ambient": "spring_day", "music": "romantic" },
+      "day_rain": { "ambient": "rain", "music": "nostalgic" },
+      "dusk_clear": { "ambient": "spring_day", "music": "romantic" }
+    },
+    "scene1_3": {
+      "day_clear": { "ambient": "spring_day", "music": "nostalgic" },
+      "dusk_clear": { "ambient": "spring_day", "music": "romantic" },
+      "night_clear": { "ambient": "spring_night", "music": "romantic" }
+    },
+    "scene2_1": {
+      "day_clear": { "ambient": "summer_day", "music": "main_theme" },
+      "day_cloudy": { "ambient": "summer_day", "music": "main_theme" },
+      "day_rain": { "ambient": "summer_rain", "music": "nostalgic" },
+      "dusk_clear": { "ambient": "summer_day", "music": "romantic" }
+    },
+    "scene2_2": {
+      "day_clear": { "ambient": "library", "music": "nostalgic" },
+      "dusk_clear": { "ambient": "library", "music": "warm" }
+    },
+    "scene2_3": {
+      "day_clear": { "ambient": "summer_day", "music": "nostalgic" },
+      "dusk_clear": { "ambient": "summer_day", "music": "romantic" },
+      "night_clear": { "ambient": "summer_night", "music": "romantic" }
+    },
+    "scene3_1": {
+      "day_clear": { "ambient": "autumn_day", "music": "nostalgic" },
+      "day_rain": { "ambient": "rain", "music": "nostalgic" },
+      "dusk_clear": { "ambient": "autumn_day", "music": "romantic" }
+    },
+    "scene3_2": {
+      "day_clear": { "ambient": "cafe", "music": "warm" },
+      "dusk_clear": { "ambient": "cafe", "music": "romantic" },
+      "night_clear": { "ambient": "autumn_night", "music": "nostalgic" }
+    },
+    "scene3_3": {
+      "day_clear": { "ambient": "autumn_day", "music": "romantic" },
+      "night_star": { "ambient": "starry_night", "music": "romantic" }
+    },
+    "scene4_1": {
+      "day_snow": { "ambient": "winter_day", "music": "nostalgic" },
+      "dusk_snow": { "ambient": "winter_day", "music": "warm" },
+      "night_snow": { "ambient": "winter_night", "music": "magical" },
+      "night_star": { "ambient": "starry_night", "music": "romantic" }
+    },
+    "scene4_2": {
+      "day_snow": { "ambient": "winter_day", "music": "romantic" },
+      "night_snow": { "ambient": "winter_night", "music": "intimate" }
+    },
+    "scene4_3": {
+      "day_clear": { "ambient": "spring_day", "music": "romantic" },
+      "night_star": { "ambient": "starry_night", "music": "ending_true" },
+      "night_clear": { "ambient": "spring_night", "music": "romantic" }
+    },
+    "scene_she_1": {
+      "day_clear": { "ambient": "spring_day", "music": "romantic" }
+    },
+    "scene_she_2": {
+      "dusk_clear": { "ambient": "spring_day", "music": "romantic" }
+    },
+    "scene_she_3": {
+      "night_star": { "ambient": "starry_night", "music": "ending_true" }
+    },
+    "scene_time_1": {
+      "day_cloudy": { "ambient": "autumn_day", "music": "nostalgic" }
+    },
+    "scene_time_2": {
+      "dusk_clear": { "ambient": "autumn_day", "music": "contemplative" }
+    },
+    "scene_time_3": {
+      "night_star": { "ambient": "starry_night", "music": "ethereal" }
+    },
+    "scene_self_1": {
+      "day_clear": { "ambient": "spring_day", "music": "warm" }
+    }
+  },
+  "endingMapping": {
+    "ending_eternal": { "music": "ending_eternal", "ambient": "starry_night" },
+    "ending_ngp_remember": { "music": "ending_good", "ambient": "spring_night" },
+    "ending_ngp_perfect": { "music": "ending_true", "ambient": "starry_night" },
+    "ending_true": { "music": "ending_true", "ambient": "starry_night" },
+    "ending_perfect_path": { "music": "ending_good", "ambient": "spring_day" },
+    "ending_dialogue_master": { "music": "ending_good", "ambient": "spring_night" },
+    "ending_time_sequence": { "music": "nostalgic", "ambient": "autumn_day" }
+  },
+  "speakerNarration": {
+    "旁白": "default",
+    "回忆": "memory",
+    "内心": "inner",
+    "时光": "time"
+  }
+}

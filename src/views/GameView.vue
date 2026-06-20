@@ -58,6 +58,9 @@
         >
           📅
         </button>
+        <button class="btn btn-ghost action-btn" @click="showAudioPanel = true" title="音频设置">
+          🔊
+        </button>
         <button class="btn btn-ghost action-btn" @click="goBack" title="返回章节">
           🏠
         </button>
@@ -307,6 +310,8 @@
         </div>
       </div>
     </div>
+    
+    <AudioPanel :show="showAudioPanel" @close="showAudioPanel = false" />
   </div>
 </template>
 
@@ -324,6 +329,7 @@ import TutorialOverlay from '../components/TutorialOverlay.vue'
 import QuestPanel from '../components/QuestPanel.vue'
 import QuestDetail from '../components/QuestDetail.vue'
 import QuestNotification from '../components/QuestNotification.vue'
+import AudioPanel from '../components/AudioPanel.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -337,6 +343,7 @@ const showChapterComplete = ref(false)
 const showRollbackConfirm = ref(false)
 const showComboAchievement = ref(false)
 const showRuntimeWarnings = ref(false)
+const showAudioPanel = ref(false)
 const latestCombo = ref(null)
 const comboQueue = ref([])
 const activeAffinityNotif = ref(null)
