@@ -12,7 +12,7 @@ const generateChecksum = (data) => {
   return Math.abs(hash).toString(16).padStart(8, '0')
 }
 
-const collectChapterDependencies = (chapters, scenes, endings, materials, chapterIds) => {
+export const collectChapterDependencies = (chapters, scenes, endings, materials, chapterIds) => {
   const selectedChapters = chapters.filter(c => chapterIds.includes(c.id))
   const sceneIds = new Set()
   const materialIds = new Set()
@@ -418,6 +418,34 @@ export const mergePackData = (packData, existingChapters, existingScenes, existi
       existingEndingIds.add(newId)
     } else {
       existingEndingIds.add(ending.id)
+    }
+
+    if (ending.triggerConditions) {
+      const cond = ending.triggerConditions
+      if (cond.materialOrder && Array.isArray(cond.materialOrder)) {
+        cond.materialOrder = cond.materialOrder.map(mid => idMap.materials[mid] || mid)
+      }
+      if (cond.requiredMaterials && Array.isArray(cond.requiredMaterials)) {
+        cond.requiredMaterials = cond.requiredMaterials.map(mid => idMap.materials[mid] || mid)
+      }
+      if (cond.requireChapter && idMap.chapters[cond.requireChapter]) {
+        cond.requireChapter = idMap.chapters[cond.requireChapter]
+      }
+      if (cond.requireEnding && idMap.endings[cond.requireEnding]) {
+        cond.requireEnding = idMap.endings[cond.requireEnding]
+      }
+      if (cond.requireScene && idMap.scenes[cond.requireScene]) {
+        cond.requireScene = idMap.scenes[cond.requireScene]
+      }
+      if (cond.requiredChapters && Array.isArray(cond.requiredChapters)) {
+        cond.requiredChapters = cond.requiredChapters.map(cid => idMap.chapters[cid] || cid)
+      }
+      if (cond.requiredEndings && Array.isArray(cond.requiredEndings)) {
+        cond.requiredEndings = cond.requiredEndings.map(eid => idMap.endings[eid] || eid)
+      }
+      if (cond.requiredScenes && Array.isArray(cond.requiredScenes)) {
+        cond.requiredScenes = cond.requiredScenes.map(sid => idMap.scenes[sid] || sid)
+      }
     }
   })
 

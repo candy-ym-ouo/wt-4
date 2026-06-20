@@ -54,19 +54,19 @@
         <div class="export-summary">
           <div class="summary-item">
             <span class="summary-label">章节</span>
-            <span class="summary-val">{{ exportChapterCount }}</span>
+            <span class="summary-val">{{ exportPackStats.chapters }}</span>
           </div>
           <div class="summary-item">
             <span class="summary-label">场景</span>
-            <span class="summary-val">{{ exportSceneCount }}</span>
+            <span class="summary-val">{{ exportPackStats.scenes }}</span>
           </div>
           <div class="summary-item">
             <span class="summary-label">结局</span>
-            <span class="summary-val">{{ editorStore.endings.length }}</span>
+            <span class="summary-val">{{ exportPackStats.endings }}</span>
           </div>
           <div class="summary-item">
             <span class="summary-label">素材</span>
-            <span class="summary-val">{{ editorStore.materials.length }}</span>
+            <span class="summary-val">{{ exportPackStats.materials }}</span>
           </div>
         </div>
 
@@ -239,6 +239,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useEditorStore } from '../../stores/editorStore'
+import { collectChapterDependencies } from '../../utils/storyPackCodec'
 
 const editorStore = useEditorStore()
 
@@ -256,24 +257,28 @@ const exportOptions = ref({
   selectedChapterIds: []
 })
 
-const exportChapterCount = computed(() => {
+const exportPackStats = computed(() => {
   if (exportOptions.value.selectedChapterIds.length === 0) {
-    return editorStore.chapters.length
-  }
-  return exportOptions.value.selectedChapterIds.length
-})
-
-const exportSceneCount = computed(() => {
-  if (exportOptions.value.selectedChapterIds.length === 0) {
-    return Object.keys(editorStore.scenes).length
-  }
-  const sceneIds = new Set()
-  editorStore.chapters.forEach(ch => {
-    if (exportOptions.value.selectedChapterIds.includes(ch.id) && ch.scenes) {
-      ch.scenes.forEach(sid => sceneIds.add(sid))
+    return {
+      chapters: editorStore.chapters.length,
+      scenes: Object.keys(editorStore.scenes).length,
+      endings: editorStore.endings.length,
+      materials: editorStore.materials.length
     }
-  })
-  return sceneIds.size
+  }
+  const packed = collectChapterDependencies(
+    editorStore.chapters,
+    editorStore.scenes,
+    editorStore.endings,
+    editorStore.materials,
+    exportOptions.value.selectedChapterIds
+  )
+  return {
+    chapters: packed.chapters.length,
+    scenes: Object.keys(packed.scenes).length,
+    endings: packed.endings.length,
+    materials: packed.materials.length
+  }
 })
 
 const canImport = computed(() => {
