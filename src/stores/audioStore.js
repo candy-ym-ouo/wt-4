@@ -120,6 +120,39 @@ export const useAudioStore = defineStore('audio', () => {
     saveAudioSettings()
   }
   
+  const setNarrationEnabled = (enabled) => {
+    isNarrationEnabled.value = enabled
+    audioManager.setChannelMuted(AUDIO_CHANNELS.narration, !enabled)
+    if (!enabled) {
+      stopNarration()
+    }
+    saveAudioSettings()
+  }
+  
+  const setAmbientEnabled = (enabled) => {
+    isAmbientEnabled.value = enabled
+    audioManager.setChannelMuted(AUDIO_CHANNELS.ambient, !enabled)
+    if (enabled && currentAmbientId.value) {
+      playAmbient(currentAmbientId.value)
+    }
+    saveAudioSettings()
+  }
+  
+  const setMusicEnabled = (enabled) => {
+    isMusicEnabled.value = enabled
+    audioManager.setChannelMuted(AUDIO_CHANNELS.music, !enabled)
+    if (enabled && currentMusicId.value) {
+      playMusic(currentMusicId.value)
+    }
+    saveAudioSettings()
+  }
+  
+  const setSfxEnabled = (enabled) => {
+    isSfxEnabled.value = enabled
+    audioManager.setChannelMuted(AUDIO_CHANNELS.sfx, !enabled)
+    saveAudioSettings()
+  }
+  
   const toggleMute = () => {
     isMuted.value = !isMuted.value
     audioManager.setGlobalMuted(isMuted.value)
@@ -366,6 +399,46 @@ export const useAudioStore = defineStore('audio', () => {
     showAudioPanel.value = !showAudioPanel.value
   }
   
+  const fadeOutMusic = (duration = 2000) => {
+    if (!isInitialized.value) return
+    if (currentMusicId.value) {
+      const track = audioManager.getTrack(currentMusicId.value)
+      if (track) {
+        track.fadeTo(0, duration, () => {
+          stopMusic()
+        })
+      }
+    }
+  }
+  
+  const fadeOutAmbient = (duration = 2000) => {
+    if (!isInitialized.value) return
+    if (currentAmbientId.value) {
+      const track = audioManager.getTrack(currentAmbientId.value)
+      if (track) {
+        track.fadeTo(0, duration, () => {
+          stopAmbient()
+        })
+      }
+    }
+  }
+  
+  const getAudioById = (audioId) => {
+    if (!audioId) return null
+    const categories = ['ambient', 'music', 'narration', 'sfx']
+    for (const category of categories) {
+      if (audiosData[category]) {
+        for (const key of Object.keys(audiosData[category])) {
+          const item = audiosData[category][key]
+          if (item.id === audioId || key === audioId) {
+            return item
+          }
+        }
+      }
+    }
+    return null
+  }
+  
   const audioState = computed(() => {
     return {
       isInitialized: isInitialized.value,
@@ -418,6 +491,10 @@ export const useAudioStore = defineStore('audio', () => {
     setMusicVolume,
     setNarrationVolume,
     setSfxVolume,
+    setNarrationEnabled,
+    setAmbientEnabled,
+    setMusicEnabled,
+    setSfxEnabled,
     toggleMute,
     toggleAmbient,
     toggleMusic,
@@ -443,6 +520,9 @@ export const useAudioStore = defineStore('audio', () => {
     pauseAll,
     resumeAll,
     stopAll,
-    toggleAudioPanel
+    toggleAudioPanel,
+    fadeOutMusic,
+    fadeOutAmbient,
+    getAudioById
   }
 })

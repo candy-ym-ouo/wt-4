@@ -664,7 +664,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  audioStore.fadeOutMusic(1500)
+  if (audioStore.isInitialized) {
+    audioStore.fadeOutMusic(1500)
+    audioStore.fadeOutAmbient(1500)
+  }
 })
 </script>
 
