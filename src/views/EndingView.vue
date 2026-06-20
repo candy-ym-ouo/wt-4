@@ -456,11 +456,14 @@
         </div>
 
         <div class="ending-actions">
+          <button class="btn btn-primary share-story-btn" @click="generateAndShareStory">
+            📖 生成我的故事页
+          </button>
           <button v-if="ngpSummary.totalPlaythroughs > 0" class="btn btn-primary ngp-btn" @click="startNewCycle">
             🔄 开启第 {{ ngpSummary.currentCycle + 1 }} 周目
           </button>
           <button class="btn btn-secondary" @click="playAgain">
-            � 重新开始本周目
+            🔁 重新开始本周目
           </button>
           <button class="btn btn-ghost" @click="goToChapters">
             📖 章节选择
@@ -620,6 +623,23 @@ const goToTarget = (goal) => {
   } else {
     gameStore.goToChapterSelect()
     router.push('/chapter-select')
+  }
+}
+
+const generateAndShareStory = () => {
+  if (ending.value) {
+    const shareData = gameStore.generateShareStoryData(
+      ending.value,
+      ending.value.stats?.finalScore || 0,
+      ending.value.stats?.completedChapters || 0,
+      ending.value.summary?.perfectRate || 0
+    )
+    
+    if (shareData && shareData.shareId) {
+      localStorage.setItem(`share_story_${shareData.shareId}`, JSON.stringify(shareData))
+    }
+    
+    router.push('/share-story')
   }
 }
 
@@ -1374,6 +1394,17 @@ onMounted(() => {
   gap: 15px;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.share-story-btn {
+  background: linear-gradient(135deg, #8b5cf6, #ec4899) !important;
+  border: none !important;
+  animation: rainbowPulse 3s ease-in-out infinite;
+}
+
+@keyframes rainbowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 0 20px 5px rgba(236, 72, 153, 0.3); }
 }
 
 .ngp-btn {

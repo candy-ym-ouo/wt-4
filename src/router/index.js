@@ -70,6 +70,16 @@ const routes = [
     path: '/leaderboard/:challengeId',
     name: 'LeaderboardForChallenge',
     component: () => import('../views/LeaderboardView.vue')
+  },
+  {
+    path: '/share-story',
+    name: 'ShareStory',
+    component: () => import('../views/ShareStoryView.vue')
+  },
+  {
+    path: '/share-story/:shareId',
+    name: 'ShareStoryById',
+    component: () => import('../views/ShareStoryView.vue')
   }
 ]
 

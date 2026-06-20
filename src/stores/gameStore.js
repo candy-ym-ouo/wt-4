@@ -83,6 +83,8 @@ export const useGameStore = defineStore('game', () => {
   const chapterCompletionDetails = ref({})
   const keyDialogueLines = ref([])
   const hiddenDialogueSequence = ref([])
+  const emotionHistory = ref([])
+  const shareStoryData = ref(null)
 
   const branchStats = ref({
     pathHistory: [],
@@ -1694,12 +1696,23 @@ export const useGameStore = defineStore('game', () => {
   }
 
   const addEmotionLog = (type, amount, detail = {}) => {
-    currentChapterLog.value.push({
+    const logEntry = {
       type,
       amount,
       sceneId: currentSceneId.value,
       timestamp: Date.now(),
       ...detail
+    }
+    currentChapterLog.value.push(logEntry)
+    
+    emotionHistory.value.push({
+      emotionValue: emotionValue.value,
+      chapterId: currentChapterId.value,
+      sceneId: currentSceneId.value,
+      type,
+      amount,
+      timestamp: Date.now(),
+      description: detail.text || detail.dialogueId || type
     })
   }
 
@@ -2210,8 +2223,18 @@ export const useGameStore = defineStore('game', () => {
     materialPlacementSequence.value = []
     keyDialogueLines.value = []
     hiddenDialogueSequence.value = []
+    emotionHistory.value = []
 
     emotionValue.value = newGamePlus.value.inheritedEmotion
+    emotionHistory.value.push({
+      emotionValue: emotionValue.value,
+      chapterId: chapterId,
+      sceneId: chapter.scenes[0],
+      type: 'start',
+      amount: 0,
+      timestamp: Date.now(),
+      description: '章节开始'
+    })
 
     trackQuestEvent('start_chapter', { chapterId })
 
@@ -3050,6 +3073,11 @@ export const useGameStore = defineStore('game', () => {
     }
 
     currentEnding.value = ending
+    
+    if (ending) {
+      shareStoryData.value = generateShareStoryData(ending, finalScore, completedChapterCount, perfectRate)
+    }
+    
     autoSave()
   }
 
@@ -4101,6 +4129,154 @@ export const useGameStore = defineStore('game', () => {
     return goals.sort((a, b) => a.priority - b.priority)
   }
 
+  const generateShareStoryData = (ending, finalScore, completedChapterCount, perfectRate) => {
+    const chapterEmotionCurves = []
+    chapters.value.forEach(chapter => {
+      const scoreData = chapterScoreData.value[chapter.id]
+      if (scoreData?.log) {
+        let runningEmotion = 0
+        const points = scoreData.log
+          .filter(e => e.type !== 'environment_change' && e.amount !== 0)
+          .map((entry, idx) => {
+            runningEmotion += entry.amount
+            return {
+              index: idx,
+              emotion: runningEmotion,
+              type: entry.type,
+              description: entry.text || entry.type,
+              timestamp: entry.timestamp,
+              sceneId: entry.sceneId
+            }
+          })
+        chapterEmotionCurves.push({
+          chapterId: chapter.id,
+          chapterTitle: chapter.title,
+          points,
+          maxEmotion: Math.max(...points.map(p => p.emotion), 0),
+          totalEmotion: scoreData.totalEmotion || 0
+        })
+      }
+    })
+
+    const keyChoices = currentPathSequence.value
+      .filter(c => c.choiceType === 'material' || c.choiceType === 'dialogue')
+      .map(c => ({
+        chapterId: c.chapterId,
+        sceneId: c.sceneId,
+        choiceType: c.choiceType,
+        materialId: c.materialId,
+        materialName: c.materialName,
+        choiceId: c.choiceId,
+        choiceText: c.choiceText,
+        emotionGain: c.emotionGain || 0,
+        isPerfect: c.isPerfect,
+        timestamp: c.timestamp
+      }))
+
+    const allPlacedMaterials = []
+    Object.values(chapterScoreData.value).forEach(scoreData => {
+      if (scoreData?.materialChoices) {
+        scoreData.materialChoices.forEach(mc => {
+          const material = getMaterialById(mc.materialId)
+          if (material) {
+            allPlacedMaterials.push({
+              ...material,
+              chapterId: scoreData.chapterId,
+              sceneId: mc.sceneId,
+              isOptional: mc.isOptional,
+              isPerfect: mc.isPerfect,
+              placementOrder: allPlacedMaterials.length + 1
+            })
+          }
+        })
+      }
+    })
+
+    const triggeredCombosList = []
+    Object.values(chapterScoreData.value).forEach(scoreData => {
+      if (scoreData?.allCombos) {
+        scoreData.allCombos
+          .filter(c => c.triggered)
+          .forEach(combo => {
+            triggeredCombosList.push({
+              ...combo,
+              chapterId: scoreData.chapterId
+            })
+          })
+      }
+    })
+
+    const keyLines = keyDialogueLines.value.map(kdl => ({
+      ...kdl,
+      chapterTitle: getChapterById(kdl.chapterId)?.title || ''
+    }))
+
+    return {
+      shareId: `story_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: Date.now(),
+      ending: {
+        id: ending.id,
+        title: ending.title,
+        type: ending.type,
+        description: ending.description,
+        content: ending.content,
+        background: ending.background,
+        icon: getEndingTypeIcon(ending.type),
+        typeLabel: getEndingTypeLabel(ending.type)
+      },
+      stats: {
+        finalScore: Math.round(finalScore),
+        emotionValue: emotionValue.value,
+        completedChapters: completedChapterCount,
+        totalChapters: chapters.value.length,
+        placedMaterials: allPlacedMaterials.length,
+        perfectPlacements: perfectPlacementCount.value,
+        perfectRate: Math.round(perfectRate * 100),
+        triggeredCombos: triggeredCombosList.length,
+        totalCombos: getAllCombosCount(),
+        keyLinesCount: keyLines.length,
+        cycle: newGamePlus.value.currentCycle,
+        playTime: dialogueHistory.value.length
+      },
+      emotionCurve: {
+        overall: emotionHistory.value.map((e, i) => ({
+          index: i,
+          emotion: e.emotionValue,
+          chapterId: e.chapterId,
+          type: e.type,
+          description: e.description,
+          timestamp: e.timestamp
+        })),
+        byChapter: chapterEmotionCurves,
+        peakEmotion: Math.max(...emotionHistory.value.map(e => e.emotionValue), 0),
+        finalEmotion: emotionValue.value
+      },
+      keyChoices,
+      placedMaterials: allPlacedMaterials,
+      triggeredCombos: triggeredCombosList,
+      keyLines,
+      chapterScores: Object.values(chapterCompletionDetails.value).map(detail => ({
+        ...detail,
+        chapterTitle: getChapterById(detail.chapterId)?.title || ''
+      })),
+      characterAffinities: { ...characterAffinities.value },
+      achievements: crossCycleAchievements.filter(a => a.unlocked).map(a => ({
+        id: a.id,
+        name: a.name,
+        icon: a.icon,
+        rarity: a.rarity
+      }))
+    }
+  }
+
+  const getShareStoryData = () => {
+    return shareStoryData.value
+  }
+
+  const clearShareStoryData = () => {
+    shareStoryData.value = null
+  }
+
   const saveGame = (slotIndex) => {
     const saveData = serializeGameState()
 
@@ -4174,6 +4350,8 @@ export const useGameStore = defineStore('game', () => {
     keyDialogueLines.value = []
     hiddenDialogueSequence.value = []
     currentPathSequence.value = []
+    emotionHistory.value = []
+    shareStoryData.value = null
     currentTimeOfDay.value = 'day'
     currentWeather.value = 'clear'
     resetStats()
@@ -4340,6 +4518,7 @@ export const useGameStore = defineStore('game', () => {
       keyDialogueLines: keyDialogueLines.value,
       hiddenDialogueSequence: hiddenDialogueSequence.value,
       currentPathSequence: currentPathSequence.value,
+      emotionHistory: emotionHistory.value,
       currentTimeOfDay: currentTimeOfDay.value,
       currentWeather: currentWeather.value,
       characterAffinities: characterAffinities.value,
@@ -4478,6 +4657,7 @@ export const useGameStore = defineStore('game', () => {
     keyDialogueLines.value = saveData.keyDialogueLines || []
     hiddenDialogueSequence.value = saveData.hiddenDialogueSequence || []
     currentPathSequence.value = saveData.currentPathSequence || []
+    emotionHistory.value = saveData.emotionHistory || []
     currentTimeOfDay.value = saveData.currentTimeOfDay || 'day'
     currentWeather.value = saveData.currentWeather || 'clear'
     if (saveData.characterAffinities) {
@@ -5934,6 +6114,8 @@ export const useGameStore = defineStore('game', () => {
     chapterCompletionDetails,
     keyDialogueLines,
     hiddenDialogueSequence,
+    emotionHistory,
+    shareStoryData,
     branchStats,
     currentPathSequence,
     currentTimeOfDay,
@@ -6090,6 +6272,9 @@ export const useGameStore = defineStore('game', () => {
     getGalleryStats,
     getEndingTypeLabel,
     getEndingTypeIcon,
+    generateShareStoryData,
+    getShareStoryData,
+    clearShareStoryData,
     characterRegistry,
     characterAffinities,
     affinityLog,
