@@ -40,6 +40,11 @@ const routes = [
     path: '/character-relation',
     name: 'CharacterRelation',
     component: () => import('../views/CharacterRelationView.vue')
+  },
+  {
+    path: '/story-review',
+    name: 'StoryReview',
+    component: () => import('../views/StoryReview.vue')
   }
 ]
 
