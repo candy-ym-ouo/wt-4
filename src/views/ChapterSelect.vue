@@ -7,6 +7,10 @@
         <span class="help-icon">❓</span>
         <span class="help-text">新手引导</span>
       </button>
+      <button class="help-btn achievement-btn" @click="showAchievementPanel = true" title="成就徽章">
+        <span class="help-icon">🏆</span>
+        <span class="help-text">成就</span>
+      </button>
 
       <div v-if="ngpSummary.currentCycle > 1 || ngpSummary.totalPlaythroughs > 0" class="ngp-header-info slide-down">
         <div class="ngp-cycle-badge">
@@ -405,6 +409,11 @@
     </div>
 
     <TutorialOverlay page="chapter-select" @close="handleTutorialClose" />
+
+    <AchievementPanel 
+      :show-achievement-panel="showAchievementPanel" 
+      @close="showAchievementPanel = false" 
+    />
   </div>
 </template>
 
@@ -413,11 +422,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '../stores/gameStore'
 import TutorialOverlay from '../components/TutorialOverlay.vue'
+import AchievementPanel from '../components/AchievementPanel.vue'
 
 const router = useRouter()
 const gameStore = useGameStore()
 
 const showNgpStats = ref(false)
+const showAchievementPanel = ref(false)
 
 const chapters = computed(() => gameStore.chapters)
 const saveSlots = computed(() => gameStore.saveSlots)
@@ -740,6 +751,18 @@ onMounted(() => {
   background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.achievement-btn {
+  right: 120px;
+  border-color: #fcd34d;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  color: #b45309;
+}
+
+.achievement-btn:hover {
+  background: linear-gradient(135deg, #fef3c7, #fcd34d);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 .help-icon {

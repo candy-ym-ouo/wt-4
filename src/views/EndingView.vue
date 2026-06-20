@@ -308,27 +308,77 @@
             </div>
           </div>
 
-          <div v-if="newlyUnlockedAchievements.length > 0" class="new-unlocks">
+          <div v-if="newlyUnlockedAchievements.length > 0" class="new-unlocks achievement-unlock-section">
             <div class="unlocks-header">
               <span class="unlocks-icon">🏆</span>
               <span class="unlocks-title">新解锁成就</span>
+              <span class="unlocks-count">{{ newlyUnlockedAchievements.length }}个</span>
             </div>
-            <div class="unlocks-list">
+            <TransitionGroup name="achievement-list" tag="div" class="unlocks-list new-achievements-list">
               <div 
-                v-for="ach in newlyUnlockedAchievements" 
+                v-for="(ach, index) in newlyUnlockedAchievements" 
                 :key="ach.id" 
-                class="unlock-item achievement-unlock"
+                class="new-achievement-wrapper"
+                :style="{ animationDelay: (index * 0.3) + 's' }"
               >
-                <span class="unlock-item-icon">{{ ach.icon }}</span>
-                <div class="unlock-item-info">
-                  <span class="unlock-item-name">{{ ach.name }}</span>
-                  <span class="unlock-item-desc">{{ ach.description }}</span>
+                <AchievementBadge 
+                  :achievement="ach"
+                  :show-reward="true"
+                  :show-animation="showNewAchievementsAnimation"
+                />
+              </div>
+            </TransitionGroup>
+          </div>
+
+          <div class="section-block achievements-overview-section">
+            <div class="section-header">
+              <span class="section-icon">🏆</span>
+              <span class="section-title">成就总览</span>
+              <button class="view-all-btn" @click="showAchievementPanel = true">
+                查看全部 →
+              </button>
+            </div>
+
+            <div class="achievement-overview-stats">
+              <div class="overview-stat">
+                <span class="overview-stat-value">{{ achievementStats.unlocked }}/{{ achievementStats.total }}</span>
+                <span class="overview-stat-label">已解锁成就</span>
+              </div>
+              <div class="overview-stat">
+                <span class="overview-stat-value">{{ achievementStats.percent }}%</span>
+                <span class="overview-stat-label">完成度</span>
+              </div>
+              <div class="overview-stat">
+                <span class="overview-stat-value">{{ achievementStats.legendaryCount }}</span>
+                <span class="overview-stat-label">传说成就</span>
+              </div>
+            </div>
+
+            <div v-if="allUnlockedAchievements.length > 0" class="achievement-preview">
+              <div class="preview-label">已解锁成就展示</div>
+              <div class="preview-grid">
+                <div 
+                  v-for="ach in allUnlockedAchievements.slice(0, 4)" 
+                  :key="ach.id"
+                  class="mini-achievement"
+                  :class="`rarity-${ach.rarity}`"
+                  :title="ach.name"
+                >
+                  <span class="mini-icon">{{ ach.icon }}</span>
                 </div>
-                <div class="unlock-item-reward">
-                  <span v-if="ach.reward?.type === 'emotion_bonus'">+{{ ach.reward.value }}💕</span>
-                  <span v-else-if="ach.reward?.type === 'inheritance_boost'">继承+{{ ach.reward.value }}%</span>
+                <div 
+                  v-if="allUnlockedAchievements.length > 4" 
+                  class="mini-achievement more"
+                  @click="showAchievementPanel = true"
+                >
+                  <span class="more-count">+{{ allUnlockedAchievements.length - 4 }}</span>
                 </div>
               </div>
+            </div>
+
+            <div v-else class="no-achievements-hint">
+              <span class="hint-icon">🔍</span>
+              <span class="hint-text">还没有解锁任何成就，继续探索吧！</span>
             </div>
           </div>
 
@@ -418,13 +468,20 @@
         </div>
       </div>
     </div>
+
+    <AchievementPanel 
+      :show-achievement-panel="showAchievementPanel" 
+      @close="showAchievementPanel = false" 
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '../stores/gameStore'
+import AchievementBadge from '../components/AchievementBadge.vue'
+import AchievementPanel from '../components/AchievementPanel.vue'
 
 const router = useRouter()
 const gameStore = useGameStore()
@@ -432,6 +489,8 @@ const gameStore = useGameStore()
 const ending = computed(() => gameStore.currentEnding)
 const totalChapters = computed(() => gameStore.chapters.length)
 const ngpSummary = computed(() => gameStore.getNgpSummary())
+const showAchievementPanel = ref(false)
+const showNewAchievementsAnimation = ref(false)
 
 const endingParagraphs = computed(() => {
   if (ending.value?.content) {
@@ -449,10 +508,23 @@ const isPerfectCycle = computed(() => {
 })
 
 const newlyUnlockedAchievements = computed(() => {
-  return gameStore.crossCycleAchievements.filter(
-    ach => ach.unlocked && ach.unlockedAt && 
-    new Date(ach.unlockedAt) > new Date(Date.now() - 60000)
-  )
+  return gameStore.newlyUnlockedAchievements || []
+})
+
+const achievementStats = computed(() => {
+  return gameStore.getAchievementStats()
+})
+
+const allUnlockedAchievements = computed(() => {
+  return gameStore.crossCycleAchievements.filter(a => a.unlocked)
+})
+
+onMounted(() => {
+  if (newlyUnlockedAchievements.value.length > 0) {
+    setTimeout(() => {
+      showNewAchievementsAnimation.value = true
+    }, 1000)
+  }
 })
 
 const newlyUnlockedMaterials = computed(() => {
@@ -1693,6 +1765,220 @@ onMounted(() => {
 
   .goal-desc {
     font-size: 0.72rem;
+  }
+}
+
+.achievement-unlock-section {
+  background: linear-gradient(135deg, #fef3c7, #fce7f3);
+  border: 2px solid #fbbf24;
+  animation: sectionGlow 2s ease-in-out infinite;
+}
+
+@keyframes sectionGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.5); }
+}
+
+.unlocks-count {
+  margin-left: auto;
+  padding: 4px 12px;
+  background: #fbbf24;
+  color: white;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.new-achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.new-achievement-wrapper {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: achievementSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: inherit;
+}
+
+@keyframes achievementSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.achievement-list-enter-active,
+.achievement-list-leave-active {
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.achievement-list-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.achievement-list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.achievements-overview-section {
+  background: linear-gradient(135deg, #faf5ff, #fdf4ff);
+  border: 1px solid #e9d5ff;
+}
+
+.view-all-btn {
+  margin-left: auto;
+  padding: 6px 14px;
+  border: none;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-all-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.achievement-overview-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.overview-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.overview-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #7c3aed;
+}
+
+.overview-stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.achievement-preview {
+  margin-top: 12px;
+}
+
+.preview-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+
+.preview-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mini-achievement {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  border: 2px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mini-achievement:hover {
+  transform: scale(1.1);
+}
+
+.mini-achievement.rarity-common {
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  border-color: #6b7280;
+}
+
+.mini-achievement.rarity-rare {
+  background: linear-gradient(135deg, #ede9fe, #c4b5fd);
+  border-color: #8b5cf6;
+}
+
+.mini-achievement.rarity-epic {
+  background: linear-gradient(135deg, #fce7f3, #f9a8d4);
+  border-color: #ec4899;
+}
+
+.mini-achievement.rarity-legendary {
+  background: linear-gradient(135deg, #fef3c7, #fbbf24);
+  border-color: #f59e0b;
+  animation: miniLegendaryPulse 2s ease-in-out infinite;
+}
+
+@keyframes miniLegendaryPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
+}
+
+.mini-icon {
+  font-size: 1.5rem;
+}
+
+.mini-achievement.more {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  border-style: dashed;
+}
+
+.more-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.no-achievements-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.hint-icon {
+  font-size: 1.2rem;
+}
+
+@media (max-width: 640px) {
+  .achievement-overview-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .preview-grid {
+    justify-content: center;
   }
 }
 </style>

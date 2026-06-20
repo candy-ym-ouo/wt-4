@@ -223,80 +223,446 @@ export const useGameStore = defineStore('game', () => {
     return [...baseMaterials.value, ...unlockedHidden]
   })
 
+  const ACHIEVEMENT_CATEGORIES = {
+    CHAPTER_COMPLETION: 'chapter_completion',
+    MATERIAL_COMBO: 'material_combo',
+    HIDDEN_BRANCH: 'hidden_branch',
+    HIGH_EMOTION: 'high_emotion',
+    CROSS_CYCLE: 'cross_cycle'
+  }
+
+  const ACHIEVEMENT_RARITY = {
+    COMMON: { id: 'common', name: '普通', color: '#6b7280', bgColor: '#f3f4f6' },
+    RARE: { id: 'rare', name: '稀有', color: '#8b5cf6', bgColor: '#ede9fe' },
+    EPIC: { id: 'epic', name: '史诗', color: '#ec4899', bgColor: '#fce7f3' },
+    LEGENDARY: { id: 'legendary', name: '传说', color: '#f59e0b', bgColor: '#fef3c7' }
+  }
+
   const crossCycleAchievements = ref([
     {
       id: 'first_cycle_complete',
       name: '初次邂逅',
       description: '完成第一周目游戏',
       icon: '🌸',
+      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
+      rarity: ACHIEVEMENT_RARITY.COMMON.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 5 }
+      reward: { type: 'emotion_bonus', value: 5 },
+      checkCondition: (state) => state.newGamePlus.totalPlaythroughs >= 1
     },
     {
       id: 'seasoned_traveler',
       name: '四季旅人',
       description: '完成3次完整周目',
       icon: '🌍',
+      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'inheritance_ratio', value: 0.05 }
+      reward: { type: 'inheritance_ratio', value: 0.05 },
+      checkCondition: (state) => state.newGamePlus.totalPlaythroughs >= 3
     },
     {
       id: 'perfectionist',
       name: '完美主义者',
       description: '在任意周目中达成所有章节完美通关',
       icon: '👑',
+      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
+      rarity: ACHIEVEMENT_RARITY.EPIC.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'unlock_material', value: 'starlight_quill' }
+      reward: { type: 'unlock_material', value: 'starlight_quill' },
+      checkCondition: (state) => {
+        return state.chapters.every(ch => {
+          const detail = state.chapterCompletionDetails[ch.id]
+          return detail?.isPerfect
+        })
+      }
     },
     {
       id: 'ending_collector',
       name: '结局收藏家',
       description: '发现所有不同类型的结局',
       icon: '📚',
+      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
+      rarity: ACHIEVEMENT_RARITY.EPIC.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'unlock_material', value: 'time_compass' }
+      reward: { type: 'unlock_material', value: 'time_compass' },
+      checkCondition: (state) => state.newGamePlus.discoveredEndingIds.length >= 6
     },
     {
       id: 'true_destiny',
       name: '真命天女',
       description: '达成真结局',
       icon: '💎',
+      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
+      rarity: ACHIEVEMENT_RARITY.LEGENDARY.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'unlock_material', value: 'eternal_bloom' }
+      reward: { type: 'unlock_material', value: 'eternal_bloom' },
+      checkCondition: (state) => state.newGamePlus.discoveredEndingIds.includes('ending_true')
     },
     {
       id: 'memory_hunter',
       name: '记忆猎人',
       description: '发现所有隐藏对话',
       icon: '🔍',
+      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
+      rarity: ACHIEVEMENT_RARITY.EPIC.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'unlock_material', value: 'echo_shell' }
+      reward: { type: 'unlock_material', value: 'echo_shell' },
+      checkCondition: (state) => {
+        const totalHidden = state.chapters.reduce((sum, ch) =>
+          sum + getChapterTotalHiddenDialogues(ch.id), 0)
+        const foundHidden = state.chapters.reduce((sum, ch) =>
+          sum + getChapterTriggeredHiddenDialogues(ch.id), 0)
+        return totalHidden > 0 && foundHidden >= totalHidden
+      }
     },
     {
       id: 'cycle_master',
       name: '轮回宗师',
       description: '完成5次完整周目',
       icon: '🔄',
+      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
+      rarity: ACHIEVEMENT_RARITY.LEGENDARY.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'max_inheritance', value: 10 }
+      reward: { type: 'max_inheritance', value: 10 },
+      checkCondition: (state) => state.newGamePlus.totalPlaythroughs >= 5
     },
     {
       id: 'winter_wonder',
       name: '冬日奇迹',
       description: '在冬日暖阳章节达成完美通关',
       icon: '❄️',
+      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'unlock_material', value: 'frozen_teardrop' }
+      reward: { type: 'unlock_material', value: 'frozen_teardrop' },
+      checkCondition: (state) => {
+        const ch4Detail = state.chapterCompletionDetails['chapter4']
+        return ch4Detail?.isPerfect || false
+      }
+    },
+    {
+      id: 'spring_blossom',
+      name: '春日绽放',
+      description: '完成春日序章',
+      icon: '🌸',
+      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
+      rarity: ACHIEVEMENT_RARITY.COMMON.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 3 },
+      checkCondition: (state) => state.completedChapters.includes('chapter1')
+    },
+    {
+      id: 'summer_heat',
+      name: '盛夏激情',
+      description: '完成盛夏光年',
+      icon: '☀️',
+      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
+      rarity: ACHIEVEMENT_RARITY.COMMON.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 3 },
+      checkCondition: (state) => state.completedChapters.includes('chapter2')
+    },
+    {
+      id: 'autumn_whisper',
+      name: '秋日私语',
+      description: '完成秋日私语',
+      icon: '🍂',
+      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
+      rarity: ACHIEVEMENT_RARITY.COMMON.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 3 },
+      checkCondition: (state) => state.completedChapters.includes('chapter3')
+    },
+    {
+      id: 'perfect_spring',
+      name: '完美春日',
+      description: '在春日序章达成完美通关',
+      icon: '🌷',
+      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 5 },
+      checkCondition: (state) => {
+        const detail = state.chapterCompletionDetails['chapter1']
+        return detail?.isPerfect || false
+      }
+    },
+    {
+      id: 'perfect_summer',
+      name: '完美盛夏',
+      description: '在盛夏光年达成完美通关',
+      icon: '🌻',
+      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 5 },
+      checkCondition: (state) => {
+        const detail = state.chapterCompletionDetails['chapter2']
+        return detail?.isPerfect || false
+      }
+    },
+    {
+      id: 'perfect_autumn',
+      name: '完美秋日',
+      description: '在秋日私语达成完美通关',
+      icon: '🍁',
+      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 5 },
+      checkCondition: (state) => {
+        const detail = state.chapterCompletionDetails['chapter3']
+        return detail?.isPerfect || false
+      }
+    },
+    {
+      id: 'combo_master',
+      name: '组合大师',
+      description: '在单个周目中触发10个以上素材组合',
+      icon: '🔮',
+      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 8 },
+      checkCondition: (state) => {
+        const globalComboSet = buildGlobalTriggeredComboSet()
+        return globalComboSet.size >= 10
+      }
+    },
+    {
+      id: 'combo_collector',
+      name: '组合收藏家',
+      description: '发现所有素材组合',
+      icon: '🎨',
+      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
+      rarity: ACHIEVEMENT_RARITY.EPIC.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'inheritance_ratio', value: 0.03 },
+      checkCondition: (state) => {
+        const totalCombos = getAllCombosCount()
+        const globalComboSet = buildGlobalTriggeredComboSet()
+        return totalCombos > 0 && globalComboSet.size >= totalCombos
+      }
+    },
+    {
+      id: 'season_combo',
+      name: '四季流转',
+      description: '触发四季流转特殊组合',
+      icon: '🌍',
+      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
+      rarity: ACHIEVEMENT_RARITY.EPIC.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 10 },
+      checkCondition: (state) => {
+        const globalComboSet = buildGlobalTriggeredComboSet()
+        return globalComboSet.has('combo4_full_four_seasons')
+      }
+    },
+    {
+      id: 'first_combo',
+      name: '初次组合',
+      description: '触发第一个素材组合',
+      icon: '✨',
+      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
+      rarity: ACHIEVEMENT_RARITY.COMMON.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 2 },
+      checkCondition: (state) => {
+        const globalComboSet = buildGlobalTriggeredComboSet()
+        return globalComboSet.size >= 1
+      }
+    },
+    {
+      id: 'hidden_seeker',
+      name: '隐藏探索者',
+      description: '发现第一段隐藏对话',
+      icon: '🔍',
+      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
+      rarity: ACHIEVEMENT_RARITY.COMMON.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 3 },
+      checkCondition: (state) => {
+        const foundHidden = state.chapters.reduce((sum, ch) =>
+          sum + getChapterTriggeredHiddenDialogues(ch.id), 0)
+        return foundHidden >= 1
+      }
+    },
+    {
+      id: 'she_secret_garden',
+      name: '她的秘密花园',
+      description: '解锁隐藏章节「她的秘密花园」',
+      icon: '🌺',
+      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 8 },
+      checkCondition: (state) => state.unlockedChapters.includes('chapter_she')
+    },
+    {
+      id: 'time_corridor',
+      name: '时光回廊',
+      description: '解锁隐藏章节「时光回廊」',
+      icon: '⏳',
+      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 8 },
+      checkCondition: (state) => state.unlockedChapters.includes('chapter_time')
+    },
+    {
+      id: 'mirror_self',
+      name: '镜中之我',
+      description: '解锁隐藏章节「镜中之我」',
+      icon: '🪞',
+      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 8 },
+      checkCondition: (state) => state.unlockedChapters.includes('chapter_self')
+    },
+    {
+      id: 'all_hidden_chapters',
+      name: '秘密发掘者',
+      description: '解锁所有隐藏章节',
+      icon: '🗝️',
+      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
+      rarity: ACHIEVEMENT_RARITY.LEGENDARY.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'inheritance_ratio', value: 0.05 },
+      checkCondition: (state) => {
+        return state.unlockedChapters.includes('chapter_she') &&
+               state.unlockedChapters.includes('chapter_time') &&
+               state.unlockedChapters.includes('chapter_self')
+      }
+    },
+    {
+      id: 'emotion_rookie',
+      name: '情感新手',
+      description: '单章节情绪值达到50',
+      icon: '💓',
+      category: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
+      rarity: ACHIEVEMENT_RARITY.COMMON.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 2 },
+      checkCondition: (state) => {
+        return Object.values(state.chapterCompletionDetails).some(d => d.totalEmotion >= 50)
+      }
+    },
+    {
+      id: 'emotion_expert',
+      name: '情感达人',
+      description: '单章节情绪值达到100',
+      icon: '💗',
+      category: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 5 },
+      checkCondition: (state) => {
+        return Object.values(state.chapterCompletionDetails).some(d => d.totalEmotion >= 100)
+      }
+    },
+    {
+      id: 'emotion_master',
+      name: '情感大师',
+      description: '最终情绪值达到150',
+      icon: '💖',
+      category: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
+      rarity: ACHIEVEMENT_RARITY.EPIC.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 10 },
+      checkCondition: (state) => state.emotionValue >= 150
+    },
+    {
+      id: 'emotion_legend',
+      name: '情感传说',
+      description: '最终情绪值达到200',
+      icon: '🌟',
+      category: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
+      rarity: ACHIEVEMENT_RARITY.LEGENDARY.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'max_inheritance', value: 15 },
+      checkCondition: (state) => state.emotionValue >= 200
+    },
+    {
+      id: 'all_chapters_high_emotion',
+      name: '四季情深',
+      description: '所有章节情绪值都达到目标值',
+      icon: '💕',
+      category: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
+      rarity: ACHIEVEMENT_RARITY.EPIC.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'inheritance_ratio', value: 0.04 },
+      checkCondition: (state) => {
+        return state.chapters.every(ch => {
+          const detail = state.chapterCompletionDetails[ch.id]
+          return detail?.emotionReached
+        })
+      }
+    },
+    {
+      id: 'perfect_placement',
+      name: '精准大师',
+      description: '单周目完美放置率达到80%',
+      icon: '🎯',
+      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
+      rarity: ACHIEVEMENT_RARITY.RARE.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 6 },
+      checkCondition: (state) => {
+        const totalMaterialCount = Object.values(state.scenes).filter(s => s.requiredMaterial).length
+        const perfectRate = totalMaterialCount > 0 ? state.perfectPlacementCount / totalMaterialCount : 0
+        return perfectRate >= 0.8
+      }
+    },
+    {
+      id: 'material_enthusiast',
+      name: '素材爱好者',
+      description: '使用过20次以上素材',
+      icon: '🎨',
+      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
+      rarity: ACHIEVEMENT_RARITY.COMMON.id,
+      unlocked: false,
+      unlockedAt: null,
+      reward: { type: 'emotion_bonus', value: 3 },
+      checkCondition: (state) => {
+        const totalUsage = Object.values(state.materialUsageHistory).reduce((sum, count) => sum + count, 0)
+        return totalUsage >= 20
+      }
     }
   ])
+
+  const achievementNotification = ref(null)
+  const newlyUnlockedAchievements = ref([])
 
   const quests = ref(questsData)
 
@@ -1981,6 +2347,8 @@ export const useGameStore = defineStore('game', () => {
       text: hiddenDialogue.text,
       isHidden: true
     })
+
+    checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH)
   }
 
   const checkMaterialCombos = () => {
@@ -2057,6 +2425,11 @@ export const useGameStore = defineStore('game', () => {
         comboJustTriggered.value = null
       }
     }, 4000)
+
+    checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO)
+    if (combo.hiddenDialogue) {
+      checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH)
+    }
 
     return {
       name: combo.name,
@@ -2364,6 +2737,10 @@ export const useGameStore = defineStore('game', () => {
     updateTotalEmotionAccumulated()
 
     checkAndUnlockChapters()
+
+    checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION)
+    checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.HIGH_EMOTION)
+    checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO)
   }
 
   const evaluateEndingConditions = (finalScore, completedChapterCount, perfectRate) => {
@@ -2613,6 +2990,7 @@ export const useGameStore = defineStore('game', () => {
     const nextGoals = generateNextGoals(finalScore, completedChapterCount, branchStatus)
 
     checkCrossCycleAchievements(ending)
+    checkAchievements()
     checkHiddenMaterialUnlockConditions()
 
     const ngpNextGoals = generateNgpNextGoals(ending, endingConditions)
@@ -2769,75 +3147,174 @@ export const useGameStore = defineStore('game', () => {
     return newlyUnlocked
   }
 
-  const checkCrossCycleAchievements = (endingData) => {
+  const getAchievementState = () => ({
+    chapters: chapters.value,
+    completedChapters: completedChapters.value,
+    chapterCompletionDetails: chapterCompletionDetails.value,
+    newGamePlus: newGamePlus.value,
+    emotionValue: emotionValue.value,
+    scenes: scenes.value,
+    perfectPlacementCount: perfectPlacementCount.value,
+    materialUsageHistory: materialUsageHistory.value,
+    unlockedChapters: unlockedChapters.value
+  })
+
+  const checkAchievements = (checkOnlyCategory = null) => {
     const newlyUnlocked = []
-    const ngp = newGamePlus.value
+    const state = getAchievementState()
 
-    const checkAchievement = (achievementId) => {
-      const achievement = crossCycleAchievements.value.find(a => a.id === achievementId)
-      if (!achievement || achievement.unlocked) return
+    crossCycleAchievements.value.forEach(achievement => {
+      if (achievement.unlocked) return
+      if (checkOnlyCategory && achievement.category !== checkOnlyCategory) return
+      if (!achievement.checkCondition) return
 
-      let unlocked = false
-
-      switch (achievementId) {
-        case 'first_cycle_complete':
-          unlocked = ngp.totalPlaythroughs >= 1
-          break
-        case 'seasoned_traveler':
-          unlocked = ngp.totalPlaythroughs >= 3
-          break
-        case 'perfectionist':
-          unlocked = chapters.value.every(ch => {
-            const detail = chapterCompletionDetails.value[ch.id]
-            return detail?.isPerfect
-          })
-          break
-        case 'ending_collector':
-          unlocked = ngp.discoveredEndingIds.length >= 6
-          break
-        case 'true_destiny':
-          unlocked = ngp.discoveredEndingIds.includes('ending_true')
-          break
-        case 'memory_hunter':
-          const totalHidden = chapters.value.reduce((sum, ch) =>
-            sum + getChapterTotalHiddenDialogues(ch.id), 0)
-          const foundHidden = chapters.value.reduce((sum, ch) =>
-            sum + getChapterTriggeredHiddenDialogues(ch.id), 0)
-          unlocked = totalHidden > 0 && foundHidden >= totalHidden
-          break
-        case 'cycle_master':
-          unlocked = ngp.totalPlaythroughs >= 5
-          break
-        case 'winter_wonder':
-          const ch4Detail = chapterCompletionDetails.value['chapter4']
-          unlocked = ch4Detail?.isPerfect || false
-          break
-      }
-
-      if (unlocked) {
-        achievement.unlocked = true
-        achievement.unlockedAt = Date.now()
-        newlyUnlocked.push(achievement)
-
-        if (achievement.reward.type === 'unlock_material') {
-          const matId = achievement.reward.value
-          if (!ngp.unlockedHiddenMaterialIds.includes(matId)) {
-            ngp.unlockedHiddenMaterialIds.push(matId)
-          }
+      try {
+        if (achievement.checkCondition(state)) {
+          unlockAchievement(achievement, newlyUnlocked)
         }
+      } catch (e) {
+        console.error('Error checking achievement:', achievement.id, e)
+      }
+    })
+
+    return newlyUnlocked
+  }
+
+  const unlockAchievement = (achievement, newlyUnlockedList = null) => {
+    if (achievement.unlocked) return null
+
+    achievement.unlocked = true
+    achievement.unlockedAt = Date.now()
+
+    const ngp = newGamePlus.value
+    if (achievement.reward.type === 'unlock_material') {
+      const matId = achievement.reward.value
+      if (!ngp.unlockedHiddenMaterialIds.includes(matId)) {
+        ngp.unlockedHiddenMaterialIds.push(matId)
+        ngp.hiddenMaterialUnlockTimes[matId] = Date.now()
       }
     }
 
-    crossCycleAchievements.value.forEach(a => checkAchievement(a.id))
+    showAchievementNotification(achievement)
+    saveCrossCycleAchievements()
+    saveNewGamePlusData()
+
+    if (newlyUnlockedList) {
+      newlyUnlockedList.push(achievement)
+    }
+
+    newlyUnlockedAchievements.value.push({
+      ...achievement,
+      unlockedAt: achievement.unlockedAt
+    })
+
+    return achievement
+  }
+
+  const showAchievementNotification = (achievement) => {
+    const rarityInfo = ACHIEVEMENT_RARITY[achievement.rarity.toUpperCase()] || ACHIEVEMENT_RARITY.COMMON
+    achievementNotification.value = {
+      id: Date.now(),
+      achievement,
+      rarityInfo
+    }
+
+    showNgpNotification(
+      `🏆 成就解锁：${achievement.name}`,
+      'success',
+      4000
+    )
+
+    setTimeout(() => {
+      if (achievementNotification.value?.id === achievementNotification.value?.id) {
+        achievementNotification.value = null
+      }
+    }, 5000)
+  }
+
+  const checkAchievementsByCategory = (category) => {
+    return checkAchievements(category)
+  }
+
+  const getAchievementsByCategory = (category) => {
+    return crossCycleAchievements.value.filter(a => a.category === category)
+  }
+
+  const getAchievementRarityInfo = (rarityId) => {
+    return ACHIEVEMENT_RARITY[rarityId.toUpperCase()] || ACHIEVEMENT_RARITY.COMMON
+  }
+
+  const getAchievementCategoryInfo = () => {
+    return {
+      [ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION]: {
+        id: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
+        name: '章节完成',
+        icon: '📚',
+        description: '完成各章节解锁的成就'
+      },
+      [ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO]: {
+        id: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
+        name: '素材组合',
+        icon: '🎨',
+        description: '触发素材组合解锁的成就'
+      },
+      [ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH]: {
+        id: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
+        name: '隐藏分支',
+        icon: '🔮',
+        description: '发现隐藏内容解锁的成就'
+      },
+      [ACHIEVEMENT_CATEGORIES.HIGH_EMOTION]: {
+        id: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
+        name: '高情绪通关',
+        icon: '💕',
+        description: '高情绪值通关解锁的成就'
+      },
+      [ACHIEVEMENT_CATEGORIES.CROSS_CYCLE]: {
+        id: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
+        name: '跨周目',
+        icon: '🔄',
+        description: '多周目游玩解锁的成就'
+      }
+    }
+  }
+
+  const getAchievementStats = () => {
+    const total = crossCycleAchievements.value.length
+    const unlocked = crossCycleAchievements.value.filter(a => a.unlocked).length
+    const byCategory = {}
+
+    Object.values(ACHIEVEMENT_CATEGORIES).forEach(cat => {
+      const catAchievements = crossCycleAchievements.value.filter(a => a.category === cat)
+      byCategory[cat] = {
+        total: catAchievements.length,
+        unlocked: catAchievements.filter(a => a.unlocked).length
+      }
+    })
+
+    return {
+      total,
+      unlocked,
+      percentage: total > 0 ? Math.round((unlocked / total) * 100) : 0,
+      byCategory
+    }
+  }
+
+  const getRecentlyUnlockedAchievements = (limit = 5) => {
+    return crossCycleAchievements.value
+      .filter(a => a.unlocked && a.unlockedAt)
+      .sort((a, b) => b.unlockedAt - a.unlockedAt)
+      .slice(0, limit)
+  }
+
+  const clearNewlyUnlockedAchievements = () => {
+    newlyUnlockedAchievements.value = []
+  }
+
+  const checkCrossCycleAchievements = (endingData) => {
+    const newlyUnlocked = checkAchievements()
 
     if (newlyUnlocked.length > 0) {
-      newlyUnlocked.forEach(achievement => {
-        showNgpNotification(
-          `🏆 成就解锁：${achievement.name} - ${achievement.description}`,
-          'success',
-          4000
-        )
-      })
       saveCrossCycleAchievements()
       saveNewGamePlusData()
     }
@@ -5513,12 +5990,25 @@ export const useGameStore = defineStore('game', () => {
     hiddenMaterialsRegistry,
     crossCycleAchievements,
     ngpNotification,
+    achievementNotification,
+    newlyUnlockedAchievements,
+    ACHIEVEMENT_CATEGORIES,
+    ACHIEVEMENT_RARITY,
     calculateInheritedEmotion,
     getEffectiveInheritanceRatio,
     getUnlockedHiddenMaterials,
     isMaterialUnlocked,
     checkHiddenMaterialUnlockConditions,
     checkCrossCycleAchievements,
+    checkAchievements,
+    checkAchievementsByCategory,
+    unlockAchievement,
+    getAchievementsByCategory,
+    getAchievementRarityInfo,
+    getAchievementCategoryInfo,
+    getAchievementStats,
+    getRecentlyUnlockedAchievements,
+    clearNewlyUnlockedAchievements,
     saveNewGamePlusData,
     loadNewGamePlusData,
     saveCrossCycleAchievements,
