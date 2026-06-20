@@ -36,8 +36,8 @@
         />
 
         <EmotionCurve 
-          :emotionData="storyData.emotionCurve"
-          :chapters="storyData.chapterScores"
+          :data="storyData.emotionCurve"
+          :showChapterDividers="true"
         />
 
         <ChoiceTimeline 
@@ -134,6 +134,7 @@ import EndingCard from '../components/share/EndingCard.vue'
 import EmotionCurve from '../components/share/EmotionCurve.vue'
 import ChoiceTimeline from '../components/share/ChoiceTimeline.vue'
 import MaterialPlacement from '../components/share/MaterialPlacement.vue'
+import { parseShareUrl, buildShareUrl } from '../utils/shareCodec'
 
 const route = useRoute()
 const router = useRouter()
@@ -149,9 +150,18 @@ const showToast = ref(false)
 const toastMessage = ref('')
 const toastIcon = ref('✅')
 const storyContent = ref(null)
+const isFromShareLink = ref(false)
 
 const loadStoryData = async () => {
   loading.value = true
+  
+  const fromUrl = parseShareUrl(window.location.href)
+  if (fromUrl) {
+    storyData.value = fromUrl
+    isFromShareLink.value = true
+    loading.value = false
+    return
+  }
   
   const shareId = route.params.shareId || route.query.shareId
   
@@ -159,6 +169,7 @@ const loadStoryData = async () => {
     const saved = localStorage.getItem(`share_story_${shareId}`)
     if (saved) {
       storyData.value = JSON.parse(saved)
+      isFromShareLink.value = true
     }
   }
   
@@ -166,6 +177,7 @@ const loadStoryData = async () => {
     const data = gameStore.getShareStoryData()
     if (data) {
       storyData.value = data
+      isFromShareLink.value = false
     }
   }
   
@@ -241,12 +253,20 @@ const saveImage = () => {
   showToastMessage('图片已保存！', '💾')
 }
 
+const getShareableUrl = () => {
+  if (storyData.value) {
+    const shareUrl = buildShareUrl(storyData.value)
+    if (shareUrl) return shareUrl
+  }
+  return window.location.href
+}
+
 const copyLink = async () => {
-  const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${storyData.value?.shareId}`
+  const shareUrl = getShareableUrl()
   
   try {
     await navigator.clipboard.writeText(shareUrl)
-    showToastMessage('链接已复制到剪贴板！', '📋')
+    showToastMessage('可传播链接已复制！', '📋')
   } catch (error) {
     const textarea = document.createElement('textarea')
     textarea.value = shareUrl
@@ -254,15 +274,16 @@ const copyLink = async () => {
     textarea.select()
     document.execCommand('copy')
     document.body.removeChild(textarea)
-    showToastMessage('链接已复制到剪贴板！', '📋')
+    showToastMessage('可传播链接已复制！', '📋')
   }
 }
 
 const shareToWeibo = () => {
   const text = `我在《Warm Tales》中达成了「${storyData.value?.ending?.title}」结局！综合评分 ${storyData.value?.stats?.finalScore} 分，来看看我的故事吧～`
-  const url = encodeURIComponent(window.location.href)
-  const shareUrl = `https://service.weibo.com/share/share.php?url=${url}&title=${encodeURIComponent(text)}`
-  window.open(shareUrl, '_blank', 'width=600,height=400')
+  const shareUrl = getShareableUrl()
+  const url = encodeURIComponent(shareUrl)
+  const weiboUrl = `https://service.weibo.com/share/share.php?url=${url}&title=${encodeURIComponent(text)}`
+  window.open(weiboUrl, '_blank', 'width=600,height=400')
   showShareOptions.value = false
 }
 

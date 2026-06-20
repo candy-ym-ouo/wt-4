@@ -4,8 +4,6 @@ import chaptersData from '../data/chapters.json'
 import materialsData from '../data/materials.json'
 import scenesData from '../data/scenes.json'
 import endingsData from '../data/endings.json'
-import questsData from '../data/quests.json'
-import { validateStoryData } from './warningStore.js'
 
 const AUTO_SAVE_KEY = 'journal_game_autosave'
 const AUTO_SAVE_BACKUP_KEY = 'journal_game_autosave_backup'
@@ -19,7 +17,6 @@ const NEW_GAME_PLUS_KEY = 'journal_game_ngp'
 const HIDDEN_MATERIALS_KEY = 'journal_game_hidden_materials'
 const CYCLE_ACHIEVEMENTS_KEY = 'journal_game_cycle_achievements'
 const CHARACTER_RELATION_KEY = 'journal_game_character_relation'
-const QUEST_PROGRESS_KEY = 'journal_game_quest_progress'
 const AUTO_SAVE_DIALOGUE_INTERVAL = 5
 const HEARTBEAT_INTERVAL = 20000
 const CRASH_RECOVERY_THRESHOLD = 180000
@@ -83,8 +80,6 @@ export const useGameStore = defineStore('game', () => {
   const chapterCompletionDetails = ref({})
   const keyDialogueLines = ref([])
   const hiddenDialogueSequence = ref([])
-  const emotionHistory = ref([])
-  const shareStoryData = ref(null)
 
   const branchStats = ref({
     pathHistory: [],
@@ -226,468 +221,80 @@ export const useGameStore = defineStore('game', () => {
     return [...baseMaterials.value, ...unlockedHidden]
   })
 
-  const ACHIEVEMENT_CATEGORIES = {
-    CHAPTER_COMPLETION: 'chapter_completion',
-    MATERIAL_COMBO: 'material_combo',
-    HIDDEN_BRANCH: 'hidden_branch',
-    HIGH_EMOTION: 'high_emotion',
-    CROSS_CYCLE: 'cross_cycle'
-  }
-
-  const ACHIEVEMENT_RARITY = {
-    COMMON: { id: 'common', name: '普通', color: '#6b7280', bgColor: '#f3f4f6' },
-    RARE: { id: 'rare', name: '稀有', color: '#8b5cf6', bgColor: '#ede9fe' },
-    EPIC: { id: 'epic', name: '史诗', color: '#ec4899', bgColor: '#fce7f3' },
-    LEGENDARY: { id: 'legendary', name: '传说', color: '#f59e0b', bgColor: '#fef3c7' }
-  }
-
   const crossCycleAchievements = ref([
     {
       id: 'first_cycle_complete',
       name: '初次邂逅',
       description: '完成第一周目游戏',
       icon: '🌸',
-      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
-      rarity: ACHIEVEMENT_RARITY.COMMON.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 5 },
-      checkCondition: (state) => state.newGamePlus.totalPlaythroughs >= 1
+      reward: { type: 'emotion_bonus', value: 5 }
     },
     {
       id: 'seasoned_traveler',
       name: '四季旅人',
       description: '完成3次完整周目',
       icon: '🌍',
-      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'inheritance_ratio', value: 0.05 },
-      checkCondition: (state) => state.newGamePlus.totalPlaythroughs >= 3
+      reward: { type: 'inheritance_ratio', value: 0.05 }
     },
     {
       id: 'perfectionist',
       name: '完美主义者',
       description: '在任意周目中达成所有章节完美通关',
       icon: '👑',
-      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
-      rarity: ACHIEVEMENT_RARITY.EPIC.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'unlock_material', value: 'starlight_quill' },
-      checkCondition: (state) => {
-        return state.chapters.every(ch => {
-          const detail = state.chapterCompletionDetails[ch.id]
-          return detail?.isPerfect
-        })
-      }
+      reward: { type: 'unlock_material', value: 'starlight_quill' }
     },
     {
       id: 'ending_collector',
       name: '结局收藏家',
       description: '发现所有不同类型的结局',
       icon: '📚',
-      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
-      rarity: ACHIEVEMENT_RARITY.EPIC.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'unlock_material', value: 'time_compass' },
-      checkCondition: (state) => state.newGamePlus.discoveredEndingIds.length >= 6
+      reward: { type: 'unlock_material', value: 'time_compass' }
     },
     {
       id: 'true_destiny',
       name: '真命天女',
       description: '达成真结局',
       icon: '💎',
-      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
-      rarity: ACHIEVEMENT_RARITY.LEGENDARY.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'unlock_material', value: 'eternal_bloom' },
-      checkCondition: (state) => state.newGamePlus.discoveredEndingIds.includes('ending_true')
+      reward: { type: 'unlock_material', value: 'eternal_bloom' }
     },
     {
       id: 'memory_hunter',
       name: '记忆猎人',
       description: '发现所有隐藏对话',
       icon: '🔍',
-      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
-      rarity: ACHIEVEMENT_RARITY.EPIC.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'unlock_material', value: 'echo_shell' },
-      checkCondition: (state) => {
-        const totalHidden = state.chapters.reduce((sum, ch) =>
-          sum + getChapterTotalHiddenDialogues(ch.id), 0)
-        const foundHidden = state.chapters.reduce((sum, ch) =>
-          sum + getChapterTriggeredHiddenDialogues(ch.id), 0)
-        return totalHidden > 0 && foundHidden >= totalHidden
-      }
+      reward: { type: 'unlock_material', value: 'echo_shell' }
     },
     {
       id: 'cycle_master',
       name: '轮回宗师',
       description: '完成5次完整周目',
       icon: '🔄',
-      category: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
-      rarity: ACHIEVEMENT_RARITY.LEGENDARY.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'max_inheritance', value: 10 },
-      checkCondition: (state) => state.newGamePlus.totalPlaythroughs >= 5
+      reward: { type: 'max_inheritance', value: 10 }
     },
     {
       id: 'winter_wonder',
       name: '冬日奇迹',
       description: '在冬日暖阳章节达成完美通关',
       icon: '❄️',
-      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
       unlocked: false,
       unlockedAt: null,
-      reward: { type: 'unlock_material', value: 'frozen_teardrop' },
-      checkCondition: (state) => {
-        const ch4Detail = state.chapterCompletionDetails['chapter4']
-        return ch4Detail?.isPerfect || false
-      }
-    },
-    {
-      id: 'spring_blossom',
-      name: '春日绽放',
-      description: '完成春日序章',
-      icon: '🌸',
-      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
-      rarity: ACHIEVEMENT_RARITY.COMMON.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 3 },
-      checkCondition: (state) => state.completedChapters.includes('chapter1')
-    },
-    {
-      id: 'summer_heat',
-      name: '盛夏激情',
-      description: '完成盛夏光年',
-      icon: '☀️',
-      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
-      rarity: ACHIEVEMENT_RARITY.COMMON.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 3 },
-      checkCondition: (state) => state.completedChapters.includes('chapter2')
-    },
-    {
-      id: 'autumn_whisper',
-      name: '秋日私语',
-      description: '完成秋日私语',
-      icon: '🍂',
-      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
-      rarity: ACHIEVEMENT_RARITY.COMMON.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 3 },
-      checkCondition: (state) => state.completedChapters.includes('chapter3')
-    },
-    {
-      id: 'perfect_spring',
-      name: '完美春日',
-      description: '在春日序章达成完美通关',
-      icon: '🌷',
-      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 5 },
-      checkCondition: (state) => {
-        const detail = state.chapterCompletionDetails['chapter1']
-        return detail?.isPerfect || false
-      }
-    },
-    {
-      id: 'perfect_summer',
-      name: '完美盛夏',
-      description: '在盛夏光年达成完美通关',
-      icon: '🌻',
-      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 5 },
-      checkCondition: (state) => {
-        const detail = state.chapterCompletionDetails['chapter2']
-        return detail?.isPerfect || false
-      }
-    },
-    {
-      id: 'perfect_autumn',
-      name: '完美秋日',
-      description: '在秋日私语达成完美通关',
-      icon: '🍁',
-      category: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 5 },
-      checkCondition: (state) => {
-        const detail = state.chapterCompletionDetails['chapter3']
-        return detail?.isPerfect || false
-      }
-    },
-    {
-      id: 'combo_master',
-      name: '组合大师',
-      description: '在单个周目中触发10个以上素材组合',
-      icon: '🔮',
-      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 8 },
-      checkCondition: (state) => {
-        const globalComboSet = buildGlobalTriggeredComboSet()
-        return globalComboSet.size >= 10
-      }
-    },
-    {
-      id: 'combo_collector',
-      name: '组合收藏家',
-      description: '发现所有素材组合',
-      icon: '🎨',
-      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
-      rarity: ACHIEVEMENT_RARITY.EPIC.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'inheritance_ratio', value: 0.03 },
-      checkCondition: (state) => {
-        const totalCombos = getAllCombosCount()
-        const globalComboSet = buildGlobalTriggeredComboSet()
-        return totalCombos > 0 && globalComboSet.size >= totalCombos
-      }
-    },
-    {
-      id: 'season_combo',
-      name: '四季流转',
-      description: '触发四季流转特殊组合',
-      icon: '🌍',
-      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
-      rarity: ACHIEVEMENT_RARITY.EPIC.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 10 },
-      checkCondition: (state) => {
-        const globalComboSet = buildGlobalTriggeredComboSet()
-        return globalComboSet.has('combo4_full_four_seasons')
-      }
-    },
-    {
-      id: 'first_combo',
-      name: '初次组合',
-      description: '触发第一个素材组合',
-      icon: '✨',
-      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
-      rarity: ACHIEVEMENT_RARITY.COMMON.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 2 },
-      checkCondition: (state) => {
-        const globalComboSet = buildGlobalTriggeredComboSet()
-        return globalComboSet.size >= 1
-      }
-    },
-    {
-      id: 'hidden_seeker',
-      name: '隐藏探索者',
-      description: '发现第一段隐藏对话',
-      icon: '🔍',
-      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
-      rarity: ACHIEVEMENT_RARITY.COMMON.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 3 },
-      checkCondition: (state) => {
-        const foundHidden = state.chapters.reduce((sum, ch) =>
-          sum + getChapterTriggeredHiddenDialogues(ch.id), 0)
-        return foundHidden >= 1
-      }
-    },
-    {
-      id: 'she_secret_garden',
-      name: '她的秘密花园',
-      description: '解锁隐藏章节「她的秘密花园」',
-      icon: '🌺',
-      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 8 },
-      checkCondition: (state) => state.unlockedChapters.includes('chapter_she')
-    },
-    {
-      id: 'time_corridor',
-      name: '时光回廊',
-      description: '解锁隐藏章节「时光回廊」',
-      icon: '⏳',
-      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 8 },
-      checkCondition: (state) => state.unlockedChapters.includes('chapter_time')
-    },
-    {
-      id: 'mirror_self',
-      name: '镜中之我',
-      description: '解锁隐藏章节「镜中之我」',
-      icon: '🪞',
-      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 8 },
-      checkCondition: (state) => state.unlockedChapters.includes('chapter_self')
-    },
-    {
-      id: 'all_hidden_chapters',
-      name: '秘密发掘者',
-      description: '解锁所有隐藏章节',
-      icon: '🗝️',
-      category: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
-      rarity: ACHIEVEMENT_RARITY.LEGENDARY.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'inheritance_ratio', value: 0.05 },
-      checkCondition: (state) => {
-        return state.unlockedChapters.includes('chapter_she') &&
-               state.unlockedChapters.includes('chapter_time') &&
-               state.unlockedChapters.includes('chapter_self')
-      }
-    },
-    {
-      id: 'emotion_rookie',
-      name: '情感新手',
-      description: '单章节情绪值达到50',
-      icon: '💓',
-      category: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
-      rarity: ACHIEVEMENT_RARITY.COMMON.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 2 },
-      checkCondition: (state) => {
-        return Object.values(state.chapterCompletionDetails).some(d => d.totalEmotion >= 50)
-      }
-    },
-    {
-      id: 'emotion_expert',
-      name: '情感达人',
-      description: '单章节情绪值达到100',
-      icon: '💗',
-      category: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 5 },
-      checkCondition: (state) => {
-        return Object.values(state.chapterCompletionDetails).some(d => d.totalEmotion >= 100)
-      }
-    },
-    {
-      id: 'emotion_master',
-      name: '情感大师',
-      description: '最终情绪值达到150',
-      icon: '💖',
-      category: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
-      rarity: ACHIEVEMENT_RARITY.EPIC.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 10 },
-      checkCondition: (state) => state.emotionValue >= 150
-    },
-    {
-      id: 'emotion_legend',
-      name: '情感传说',
-      description: '最终情绪值达到200',
-      icon: '🌟',
-      category: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
-      rarity: ACHIEVEMENT_RARITY.LEGENDARY.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'max_inheritance', value: 15 },
-      checkCondition: (state) => state.emotionValue >= 200
-    },
-    {
-      id: 'all_chapters_high_emotion',
-      name: '四季情深',
-      description: '所有章节情绪值都达到目标值',
-      icon: '💕',
-      category: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
-      rarity: ACHIEVEMENT_RARITY.EPIC.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'inheritance_ratio', value: 0.04 },
-      checkCondition: (state) => {
-        return state.chapters.every(ch => {
-          const detail = state.chapterCompletionDetails[ch.id]
-          return detail?.emotionReached
-        })
-      }
-    },
-    {
-      id: 'perfect_placement',
-      name: '精准大师',
-      description: '单周目完美放置率达到80%',
-      icon: '🎯',
-      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
-      rarity: ACHIEVEMENT_RARITY.RARE.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 6 },
-      checkCondition: (state) => {
-        const totalMaterialCount = Object.values(state.scenes).filter(s => s.requiredMaterial).length
-        const perfectRate = totalMaterialCount > 0 ? state.perfectPlacementCount / totalMaterialCount : 0
-        return perfectRate >= 0.8
-      }
-    },
-    {
-      id: 'material_enthusiast',
-      name: '素材爱好者',
-      description: '使用过20次以上素材',
-      icon: '🎨',
-      category: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
-      rarity: ACHIEVEMENT_RARITY.COMMON.id,
-      unlocked: false,
-      unlockedAt: null,
-      reward: { type: 'emotion_bonus', value: 3 },
-      checkCondition: (state) => {
-        const totalUsage = Object.values(state.materialUsageHistory).reduce((sum, count) => sum + count, 0)
-        return totalUsage >= 20
-      }
+      reward: { type: 'unlock_material', value: 'frozen_teardrop' }
     }
   ])
-
-  const achievementNotification = ref(null)
-  const newlyUnlockedAchievements = ref([])
-
-  const quests = ref(questsData)
-
-  const questProgress = ref({})
-
-  const activeQuests = ref([])
-
-  const completedQuests = ref([])
-
-  const questNotifications = ref([])
-
-  const showQuestPanel = ref(false)
-
-  const selectedQuestId = ref(null)
-
-  const totalEmotionAccumulated = ref(0)
-
-  const totalCombosTriggered = ref(0)
-
-  const scenesCompleted = ref([])
-
-  const chaptersStarted = ref([])
 
   const ngpNotification = ref(null)
 
@@ -1696,23 +1303,12 @@ export const useGameStore = defineStore('game', () => {
   }
 
   const addEmotionLog = (type, amount, detail = {}) => {
-    const logEntry = {
+    currentChapterLog.value.push({
       type,
       amount,
       sceneId: currentSceneId.value,
       timestamp: Date.now(),
       ...detail
-    }
-    currentChapterLog.value.push(logEntry)
-    
-    emotionHistory.value.push({
-      emotionValue: emotionValue.value,
-      chapterId: currentChapterId.value,
-      sceneId: currentSceneId.value,
-      type,
-      amount,
-      timestamp: Date.now(),
-      description: detail.text || detail.dialogueId || type
     })
   }
 
@@ -2163,40 +1759,9 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
-  const runtimeWarnings = ref([])
-  const showRuntimeWarningModal = ref(false)
-
-  const validateRuntimeData = () => {
-    const fullResult = validateStoryData(
-      chapters.value,
-      scenes.value,
-      endings.value,
-      materials.value
-    )
-    runtimeWarnings.value = fullResult.map(w => ({
-      severity: w.severity,
-      message: w.message,
-      code: w.code,
-      category: w.category,
-      targetId: w.targetId
-    }))
-    const errors = runtimeWarnings.value.filter(w => w.severity === 'error')
-    const warnings = runtimeWarnings.value.filter(w => w.severity !== 'error')
-    showRuntimeWarningModal.value = errors.length > 0
-    return { errors, warnings, hasErrors: errors.length > 0 }
-  }
-
-  const dismissRuntimeWarning = () => {
-    showRuntimeWarningModal.value = false
-  }
-
   const startChapter = (chapterId) => {
     const chapter = getChapterById(chapterId)
     if (!chapter || !unlockedChapters.value.includes(chapterId)) return
-
-    if (!chaptersStarted.value.includes(chapterId)) {
-      chaptersStarted.value.push(chapterId)
-    }
 
     currentChapterId.value = chapterId
     currentSceneId.value = chapter.scenes[0]
@@ -2223,20 +1788,8 @@ export const useGameStore = defineStore('game', () => {
     materialPlacementSequence.value = []
     keyDialogueLines.value = []
     hiddenDialogueSequence.value = []
-    emotionHistory.value = []
 
     emotionValue.value = newGamePlus.value.inheritedEmotion
-    emotionHistory.value.push({
-      emotionValue: emotionValue.value,
-      chapterId: chapterId,
-      sceneId: chapter.scenes[0],
-      type: 'start',
-      amount: 0,
-      timestamp: Date.now(),
-      description: '章节开始'
-    })
-
-    trackQuestEvent('start_chapter', { chapterId })
 
     const firstScene = scenes.value[chapter.scenes[0]]
     if (firstScene) {
@@ -2311,9 +1864,6 @@ export const useGameStore = defineStore('game', () => {
       positiveBonus.value += randomFluctuation
     }
 
-    trackQuestEvent('emotion_change', {})
-    updateTotalEmotionAccumulated()
-
     processDialogueAffinity(dialogue)
     addEmotionLog('dialogue', finalEmotion, {
       dialogueId: dialogue.id,
@@ -2342,10 +1892,6 @@ export const useGameStore = defineStore('game', () => {
       currentDialogueIndex.value++
     } else if (currentScene.value.nextScene) {
       const prevSceneId = currentSceneId.value
-      if (!scenesCompleted.value.includes(prevSceneId)) {
-        scenesCompleted.value.push(prevSceneId)
-      }
-      trackQuestEvent('complete_scene', { sceneId: prevSceneId })
       currentSceneId.value = currentScene.value.nextScene
       currentDialogueIndex.value = 0
       sceneBackgroundOverride.value = null
@@ -2361,20 +1907,12 @@ export const useGameStore = defineStore('game', () => {
       }
 
       recordSceneTransition(prevSceneId, currentScene.value.nextScene)
-    } else {
-      const prevSceneId = currentSceneId.value
-      if (!scenesCompleted.value.includes(prevSceneId)) {
-        scenesCompleted.value.push(prevSceneId)
-      }
-      trackQuestEvent('complete_scene', { sceneId: prevSceneId })
     }
   }
 
   const showHiddenDialogue = (hiddenDialogue) => {
     activeHiddenDialogue.value = { ...hiddenDialogue }
     isShowingHiddenDialogue.value = true
-
-    trackQuestEvent('find_hidden', { hiddenDialogueId: hiddenDialogue.id, hiddenDialogueName: hiddenDialogue.title })
 
     hiddenDialogueSequence.value.push({
       dialogueId: hiddenDialogue.id,
@@ -2398,8 +1936,6 @@ export const useGameStore = defineStore('game', () => {
       text: hiddenDialogue.text,
       isHidden: true
     })
-
-    checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH)
   }
 
   const checkMaterialCombos = () => {
@@ -2466,21 +2002,11 @@ export const useGameStore = defineStore('game', () => {
 
     comboJustTriggered.value = combo
 
-    trackQuestEvent('trigger_combo', { comboId: combo.id, comboName: combo.name })
-    updateTotalCombosTriggered()
-    trackQuestEvent('emotion_change', {})
-    updateTotalEmotionAccumulated()
-
     setTimeout(() => {
       if (comboJustTriggered.value?.id === combo.id) {
         comboJustTriggered.value = null
       }
     }, 4000)
-
-    checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO)
-    if (combo.hiddenDialogue) {
-      checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH)
-    }
 
     return {
       name: combo.name,
@@ -2559,10 +2085,6 @@ export const useGameStore = defineStore('game', () => {
       isPerfect,
       emotionGain: material.emotion + placementBonus
     })
-
-    trackQuestEvent('place_material', { materialId, isOptional: true, isPerfect })
-    trackQuestEvent('emotion_change', {})
-    updateTotalEmotionAccumulated()
 
     return {
       success: true,
@@ -2650,18 +2172,10 @@ export const useGameStore = defineStore('game', () => {
       emotionGain: material.emotion + placementBonus
     })
 
-    trackQuestEvent('place_material', { materialId, isOptional: false, isPerfect })
-    trackQuestEvent('emotion_change', {})
-    updateTotalEmotionAccumulated()
-
     if (currentDialogueIndex.value < currentScene.value.dialogues.length - 1) {
       currentDialogueIndex.value++
     } else if (currentScene.value.nextScene) {
       const prevSceneId = currentSceneId.value
-      if (!scenesCompleted.value.includes(prevSceneId)) {
-        scenesCompleted.value.push(prevSceneId)
-      }
-      trackQuestEvent('complete_scene', { sceneId: prevSceneId })
       currentSceneId.value = currentScene.value.nextScene
       currentDialogueIndex.value = 0
       sceneBackgroundOverride.value = null
@@ -2677,12 +2191,6 @@ export const useGameStore = defineStore('game', () => {
       }
 
       recordSceneTransition(prevSceneId, currentScene.value.nextScene)
-    } else {
-      const prevSceneId = currentSceneId.value
-      if (!scenesCompleted.value.includes(prevSceneId)) {
-        scenesCompleted.value.push(prevSceneId)
-      }
-      trackQuestEvent('complete_scene', { sceneId: prevSceneId })
     }
 
     return {
@@ -2783,15 +2291,7 @@ export const useGameStore = defineStore('game', () => {
 
     processChapterCompletionAffinity(chapter.id)
 
-    trackQuestEvent('complete_chapter', { chapterId: chapter.id, isPerfect })
-    trackQuestEvent('emotion_change', {})
-    updateTotalEmotionAccumulated()
-
     checkAndUnlockChapters()
-
-    checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION)
-    checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.HIGH_EMOTION)
-    checkAchievementsByCategory(ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO)
   }
 
   const evaluateEndingConditions = (finalScore, completedChapterCount, perfectRate) => {
@@ -3040,9 +2540,7 @@ export const useGameStore = defineStore('game', () => {
     const branchStatsReport = generateBranchStatsReport()
     const nextGoals = generateNextGoals(finalScore, completedChapterCount, branchStatus)
 
-    clearNewlyUnlockedAchievements()
     checkCrossCycleAchievements(ending)
-    checkAchievements()
     checkHiddenMaterialUnlockConditions()
 
     const ngpNextGoals = generateNgpNextGoals(ending, endingConditions)
@@ -3073,11 +2571,6 @@ export const useGameStore = defineStore('game', () => {
     }
 
     currentEnding.value = ending
-    
-    if (ending) {
-      shareStoryData.value = generateShareStoryData(ending, finalScore, completedChapterCount, perfectRate)
-    }
-    
     autoSave()
   }
 
@@ -3204,208 +2697,75 @@ export const useGameStore = defineStore('game', () => {
     return newlyUnlocked
   }
 
-  const getAchievementState = () => ({
-    chapters: chapters.value,
-    completedChapters: completedChapters.value,
-    chapterCompletionDetails: chapterCompletionDetails.value,
-    newGamePlus: newGamePlus.value,
-    emotionValue: emotionValue.value,
-    scenes: scenes.value,
-    perfectPlacementCount: perfectPlacementCount.value,
-    materialUsageHistory: materialUsageHistory.value,
-    unlockedChapters: unlockedChapters.value
-  })
-
-  const checkAchievements = (checkOnlyCategory = null) => {
-    const newlyUnlocked = []
-    const state = getAchievementState()
-
-    crossCycleAchievements.value.forEach(achievement => {
-      if (achievement.unlocked) return
-      if (checkOnlyCategory && achievement.category !== checkOnlyCategory) return
-      if (!achievement.checkCondition) return
-
-      try {
-        if (achievement.checkCondition(state)) {
-          unlockAchievement(achievement, newlyUnlocked)
-        }
-      } catch (e) {
-        console.error('Error checking achievement:', achievement.id, e)
-      }
-    })
-
-    return newlyUnlocked
-  }
-
-  const unlockAchievement = (achievement, newlyUnlockedList = null) => {
-    if (achievement.unlocked) return null
-
-    achievement.unlocked = true
-    achievement.unlockedAt = Date.now()
-
-    const ngp = newGamePlus.value
-    if (achievement.reward.type === 'unlock_material') {
-      const matId = achievement.reward.value
-      if (!ngp.unlockedHiddenMaterialIds.includes(matId)) {
-        ngp.unlockedHiddenMaterialIds.push(matId)
-        ngp.hiddenMaterialUnlockTimes[matId] = Date.now()
-      }
-    }
-
-    showAchievementNotification(achievement)
-    saveCrossCycleAchievements()
-    saveNewGamePlusData()
-
-    if (newlyUnlockedList) {
-      newlyUnlockedList.push(achievement)
-    }
-
-    newlyUnlockedAchievements.value.push({
-      ...achievement,
-      unlockedAt: achievement.unlockedAt
-    })
-
-    return achievement
-  }
-
-  const showAchievementNotification = (achievement) => {
-    const rarityInfo = ACHIEVEMENT_RARITY[achievement.rarity.toUpperCase()] || ACHIEVEMENT_RARITY.COMMON
-    achievementNotification.value = {
-      id: Date.now(),
-      visible: true,
-      icon: achievement.icon,
-      name: achievement.name,
-      description: achievement.description,
-      rarity: achievement.rarity,
-      rarityInfo,
-      reward: achievement.reward
-    }
-
-    showNgpNotification(
-      `🏆 成就解锁：${achievement.name}`,
-      'success',
-      4000
-    )
-
-    setTimeout(() => {
-      if (achievementNotification.value) {
-        achievementNotification.value.visible = false
-      }
-    }, 5000)
-  }
-
-  const checkAchievementsByCategory = (category) => {
-    return checkAchievements(category)
-  }
-
-  const getAchievementsByCategory = (category) => {
-    return crossCycleAchievements.value.filter(a => a.category === category)
-  }
-
-  const getAchievementRarityInfo = (rarityId) => {
-    return ACHIEVEMENT_RARITY[rarityId.toUpperCase()] || ACHIEVEMENT_RARITY.COMMON
-  }
-
-  const getAchievementCategoryInfo = (categoryId = null) => {
-    const allCategories = {
-      [ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION]: {
-        id: ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION,
-        name: '章节完成',
-        icon: '📚',
-        description: '完成各章节解锁的成就'
-      },
-      [ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO]: {
-        id: ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO,
-        name: '素材组合',
-        icon: '🎨',
-        description: '触发素材组合解锁的成就'
-      },
-      [ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH]: {
-        id: ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH,
-        name: '隐藏分支',
-        icon: '🔮',
-        description: '发现隐藏内容解锁的成就'
-      },
-      [ACHIEVEMENT_CATEGORIES.HIGH_EMOTION]: {
-        id: ACHIEVEMENT_CATEGORIES.HIGH_EMOTION,
-        name: '高情绪通关',
-        icon: '💕',
-        description: '高情绪值通关解锁的成就'
-      },
-      [ACHIEVEMENT_CATEGORIES.CROSS_CYCLE]: {
-        id: ACHIEVEMENT_CATEGORIES.CROSS_CYCLE,
-        name: '跨周目',
-        icon: '🔄',
-        description: '多周目游玩解锁的成就'
-      }
-    }
-    if (categoryId) {
-      return allCategories[categoryId] || allCategories[ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION]
-    }
-    return allCategories
-  }
-
-  const getAchievementStats = () => {
-    const total = crossCycleAchievements.value.length
-    const unlocked = crossCycleAchievements.value.filter(a => a.unlocked).length
-    const byCategory = {}
-
-    Object.values(ACHIEVEMENT_CATEGORIES).forEach(cat => {
-      const catAchievements = crossCycleAchievements.value.filter(a => a.category === cat)
-      byCategory[cat] = {
-        total: catAchievements.length,
-        unlocked: catAchievements.filter(a => a.unlocked).length
-      }
-    })
-
-    const chapterStats = byCategory[ACHIEVEMENT_CATEGORIES.CHAPTER_COMPLETION] || { total: 0, unlocked: 0 }
-    const comboStats = byCategory[ACHIEVEMENT_CATEGORIES.MATERIAL_COMBO] || { total: 0, unlocked: 0 }
-    const hiddenStats = byCategory[ACHIEVEMENT_CATEGORIES.HIDDEN_BRANCH] || { total: 0, unlocked: 0 }
-    const emotionStats = byCategory[ACHIEVEMENT_CATEGORIES.HIGH_EMOTION] || { total: 0, unlocked: 0 }
-
-    const rarityCounts = {}
-    Object.keys(ACHIEVEMENT_RARITY).forEach(rarity => {
-      rarityCounts[rarity.toLowerCase()] = crossCycleAchievements.value.filter(
-        a => a.unlocked && a.rarity === rarity.toLowerCase()
-      ).length
-    })
-
-    return {
-      total,
-      unlocked,
-      percent: total > 0 ? Math.round((unlocked / total) * 100) : 0,
-      percentage: total > 0 ? Math.round((unlocked / total) * 100) : 0,
-      chapterTotal: chapterStats.total,
-      chapterCompleted: chapterStats.unlocked,
-      comboTotal: comboStats.total,
-      comboCompleted: comboStats.unlocked,
-      hiddenTotal: hiddenStats.total,
-      hiddenCompleted: hiddenStats.unlocked,
-      emotionTotal: emotionStats.total,
-      emotionCompleted: emotionStats.unlocked,
-      commonCount: rarityCounts.common || 0,
-      rareCount: rarityCounts.rare || 0,
-      epicCount: rarityCounts.epic || 0,
-      legendaryCount: rarityCounts.legendary || 0,
-      byCategory
-    }
-  }
-
-  const getRecentlyUnlockedAchievements = (limit = 5) => {
-    return crossCycleAchievements.value
-      .filter(a => a.unlocked && a.unlockedAt)
-      .sort((a, b) => b.unlockedAt - a.unlockedAt)
-      .slice(0, limit)
-  }
-
-  const clearNewlyUnlockedAchievements = () => {
-    newlyUnlockedAchievements.value = []
-  }
-
   const checkCrossCycleAchievements = (endingData) => {
-    const newlyUnlocked = checkAchievements()
+    const newlyUnlocked = []
+    const ngp = newGamePlus.value
+
+    const checkAchievement = (achievementId) => {
+      const achievement = crossCycleAchievements.value.find(a => a.id === achievementId)
+      if (!achievement || achievement.unlocked) return
+
+      let unlocked = false
+
+      switch (achievementId) {
+        case 'first_cycle_complete':
+          unlocked = ngp.totalPlaythroughs >= 1
+          break
+        case 'seasoned_traveler':
+          unlocked = ngp.totalPlaythroughs >= 3
+          break
+        case 'perfectionist':
+          unlocked = chapters.value.every(ch => {
+            const detail = chapterCompletionDetails.value[ch.id]
+            return detail?.isPerfect
+          })
+          break
+        case 'ending_collector':
+          unlocked = ngp.discoveredEndingIds.length >= 6
+          break
+        case 'true_destiny':
+          unlocked = ngp.discoveredEndingIds.includes('ending_true')
+          break
+        case 'memory_hunter':
+          const totalHidden = chapters.value.reduce((sum, ch) =>
+            sum + getChapterTotalHiddenDialogues(ch.id), 0)
+          const foundHidden = chapters.value.reduce((sum, ch) =>
+            sum + getChapterTriggeredHiddenDialogues(ch.id), 0)
+          unlocked = totalHidden > 0 && foundHidden >= totalHidden
+          break
+        case 'cycle_master':
+          unlocked = ngp.totalPlaythroughs >= 5
+          break
+        case 'winter_wonder':
+          const ch4Detail = chapterCompletionDetails.value['chapter4']
+          unlocked = ch4Detail?.isPerfect || false
+          break
+      }
+
+      if (unlocked) {
+        achievement.unlocked = true
+        achievement.unlockedAt = Date.now()
+        newlyUnlocked.push(achievement)
+
+        if (achievement.reward.type === 'unlock_material') {
+          const matId = achievement.reward.value
+          if (!ngp.unlockedHiddenMaterialIds.includes(matId)) {
+            ngp.unlockedHiddenMaterialIds.push(matId)
+          }
+        }
+      }
+    }
+
+    crossCycleAchievements.value.forEach(a => checkAchievement(a.id))
 
     if (newlyUnlocked.length > 0) {
+      newlyUnlocked.forEach(achievement => {
+        showNgpNotification(
+          `🏆 成就解锁：${achievement.name} - ${achievement.description}`,
+          'success',
+          4000
+        )
+      })
       saveCrossCycleAchievements()
       saveNewGamePlusData()
     }
@@ -3488,7 +2848,6 @@ export const useGameStore = defineStore('game', () => {
     )
     newGamePlus.value.inheritedEmotion = inheritedEmotion
 
-    clearNewlyUnlockedAchievements()
     checkHiddenMaterialUnlockConditions()
 
     saveNewGamePlusData()
@@ -4129,154 +3488,6 @@ export const useGameStore = defineStore('game', () => {
     return goals.sort((a, b) => a.priority - b.priority)
   }
 
-  const generateShareStoryData = (ending, finalScore, completedChapterCount, perfectRate) => {
-    const chapterEmotionCurves = []
-    chapters.value.forEach(chapter => {
-      const scoreData = chapterScoreData.value[chapter.id]
-      if (scoreData?.log) {
-        let runningEmotion = 0
-        const points = scoreData.log
-          .filter(e => e.type !== 'environment_change' && e.amount !== 0)
-          .map((entry, idx) => {
-            runningEmotion += entry.amount
-            return {
-              index: idx,
-              emotion: runningEmotion,
-              type: entry.type,
-              description: entry.text || entry.type,
-              timestamp: entry.timestamp,
-              sceneId: entry.sceneId
-            }
-          })
-        chapterEmotionCurves.push({
-          chapterId: chapter.id,
-          chapterTitle: chapter.title,
-          points,
-          maxEmotion: Math.max(...points.map(p => p.emotion), 0),
-          totalEmotion: scoreData.totalEmotion || 0
-        })
-      }
-    })
-
-    const keyChoices = currentPathSequence.value
-      .filter(c => c.choiceType === 'material' || c.choiceType === 'dialogue')
-      .map(c => ({
-        chapterId: c.chapterId,
-        sceneId: c.sceneId,
-        choiceType: c.choiceType,
-        materialId: c.materialId,
-        materialName: c.materialName,
-        choiceId: c.choiceId,
-        choiceText: c.choiceText,
-        emotionGain: c.emotionGain || 0,
-        isPerfect: c.isPerfect,
-        timestamp: c.timestamp
-      }))
-
-    const allPlacedMaterials = []
-    Object.values(chapterScoreData.value).forEach(scoreData => {
-      if (scoreData?.materialChoices) {
-        scoreData.materialChoices.forEach(mc => {
-          const material = getMaterialById(mc.materialId)
-          if (material) {
-            allPlacedMaterials.push({
-              ...material,
-              chapterId: scoreData.chapterId,
-              sceneId: mc.sceneId,
-              isOptional: mc.isOptional,
-              isPerfect: mc.isPerfect,
-              placementOrder: allPlacedMaterials.length + 1
-            })
-          }
-        })
-      }
-    })
-
-    const triggeredCombosList = []
-    Object.values(chapterScoreData.value).forEach(scoreData => {
-      if (scoreData?.allCombos) {
-        scoreData.allCombos
-          .filter(c => c.triggered)
-          .forEach(combo => {
-            triggeredCombosList.push({
-              ...combo,
-              chapterId: scoreData.chapterId
-            })
-          })
-      }
-    })
-
-    const keyLines = keyDialogueLines.value.map(kdl => ({
-      ...kdl,
-      chapterTitle: getChapterById(kdl.chapterId)?.title || ''
-    }))
-
-    return {
-      shareId: `story_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: Date.now(),
-      ending: {
-        id: ending.id,
-        title: ending.title,
-        type: ending.type,
-        description: ending.description,
-        content: ending.content,
-        background: ending.background,
-        icon: getEndingTypeIcon(ending.type),
-        typeLabel: getEndingTypeLabel(ending.type)
-      },
-      stats: {
-        finalScore: Math.round(finalScore),
-        emotionValue: emotionValue.value,
-        completedChapters: completedChapterCount,
-        totalChapters: chapters.value.length,
-        placedMaterials: allPlacedMaterials.length,
-        perfectPlacements: perfectPlacementCount.value,
-        perfectRate: Math.round(perfectRate * 100),
-        triggeredCombos: triggeredCombosList.length,
-        totalCombos: getAllCombosCount(),
-        keyLinesCount: keyLines.length,
-        cycle: newGamePlus.value.currentCycle,
-        playTime: dialogueHistory.value.length
-      },
-      emotionCurve: {
-        overall: emotionHistory.value.map((e, i) => ({
-          index: i,
-          emotion: e.emotionValue,
-          chapterId: e.chapterId,
-          type: e.type,
-          description: e.description,
-          timestamp: e.timestamp
-        })),
-        byChapter: chapterEmotionCurves,
-        peakEmotion: Math.max(...emotionHistory.value.map(e => e.emotionValue), 0),
-        finalEmotion: emotionValue.value
-      },
-      keyChoices,
-      placedMaterials: allPlacedMaterials,
-      triggeredCombos: triggeredCombosList,
-      keyLines,
-      chapterScores: Object.values(chapterCompletionDetails.value).map(detail => ({
-        ...detail,
-        chapterTitle: getChapterById(detail.chapterId)?.title || ''
-      })),
-      characterAffinities: { ...characterAffinities.value },
-      achievements: crossCycleAchievements.filter(a => a.unlocked).map(a => ({
-        id: a.id,
-        name: a.name,
-        icon: a.icon,
-        rarity: a.rarity
-      }))
-    }
-  }
-
-  const getShareStoryData = () => {
-    return shareStoryData.value
-  }
-
-  const clearShareStoryData = () => {
-    shareStoryData.value = null
-  }
-
   const saveGame = (slotIndex) => {
     const saveData = serializeGameState()
 
@@ -4350,8 +3561,6 @@ export const useGameStore = defineStore('game', () => {
     keyDialogueLines.value = []
     hiddenDialogueSequence.value = []
     currentPathSequence.value = []
-    emotionHistory.value = []
-    shareStoryData.value = null
     currentTimeOfDay.value = 'day'
     currentWeather.value = 'clear'
     resetStats()
@@ -4389,8 +3598,6 @@ export const useGameStore = defineStore('game', () => {
       localStorage.removeItem(CYCLE_ACHIEVEMENTS_KEY)
       localStorage.removeItem(TUTORIAL_KEY)
     }
-
-    resetQuestProgress()
   }
 
   const goToChapterSelect = () => {
@@ -4518,7 +3725,6 @@ export const useGameStore = defineStore('game', () => {
       keyDialogueLines: keyDialogueLines.value,
       hiddenDialogueSequence: hiddenDialogueSequence.value,
       currentPathSequence: currentPathSequence.value,
-      emotionHistory: emotionHistory.value,
       currentTimeOfDay: currentTimeOfDay.value,
       currentWeather: currentWeather.value,
       characterAffinities: characterAffinities.value,
@@ -4657,7 +3863,6 @@ export const useGameStore = defineStore('game', () => {
     keyDialogueLines.value = saveData.keyDialogueLines || []
     hiddenDialogueSequence.value = saveData.hiddenDialogueSequence || []
     currentPathSequence.value = saveData.currentPathSequence || []
-    emotionHistory.value = saveData.emotionHistory || []
     currentTimeOfDay.value = saveData.currentTimeOfDay || 'day'
     currentWeather.value = saveData.currentWeather || 'clear'
     if (saveData.characterAffinities) {
@@ -5580,434 +4785,9 @@ export const useGameStore = defineStore('game', () => {
   loadNewGamePlusData()
   loadCrossCycleAchievements()
   loadCharacterRelationData()
-  loadQuestProgress()
   checkAndUnlockChapters()
   checkHiddenMaterialUnlockConditions()
   checkAffinityChapterUnlocks()
-  initializeQuestSystem()
-
-  const questTypeLabels = {
-    main: { name: '主线', color: '#ec4899', icon: '📖' },
-    side: { name: '支线', color: '#8b5cf6', icon: '✨' },
-    collect: { name: '收集', color: '#f59e0b', icon: '🎯' },
-    milestone: { name: '里程碑', color: '#06b6d4', icon: '🏆' },
-    achievement: { name: '成就', color: '#10b981', icon: '👑' }
-  }
-
-  const getQuestById = (questId) => {
-    return quests.value.find(q => q.id === questId) || null
-  }
-
-  const getQuestProgress = (questId) => {
-    if (!questProgress.value[questId]) {
-      questProgress.value[questId] = {
-        questId,
-        objectives: {},
-        completed: false,
-        claimed: false,
-        unlocked: false,
-        unlockedAt: null,
-        completedAt: null
-      }
-    }
-    return questProgress.value[questId]
-  }
-
-  const getObjectiveProgress = (questId, objectiveId) => {
-    const progress = getQuestProgress(questId)
-    if (!progress.objectives[objectiveId]) {
-      progress.objectives[objectiveId] = {
-        current: 0,
-        target: 1,
-        completed: false
-      }
-    }
-    return progress.objectives[objectiveId]
-  }
-
-  const checkQuestUnlockCondition = (condition) => {
-    if (!condition) return true
-
-    switch (condition.type) {
-      case 'game_start':
-        return isInitialized.value
-      case 'chapter_start':
-        return chaptersStarted.value.includes(condition.target)
-      case 'chapter_completed':
-        return completedChapters.value.includes(condition.target)
-      case 'quest_complete':
-        return completedQuests.value.includes(condition.target)
-      case 'affinity_reach':
-        return (characterAffinities.value[condition.characterId] || 0) >= condition.value
-      case 'emotion_reached':
-        return emotionValue.value >= condition.value
-      default:
-        return false
-    }
-  }
-
-  const checkQuestUnlock = (quest) => {
-    const progress = getQuestProgress(quest.id)
-    if (progress.unlocked) return true
-    if (!quest.unlockConditions || quest.unlockConditions.length === 0) return true
-
-    const allMet = quest.unlockConditions.every(condition => checkQuestUnlockCondition(condition))
-    if (allMet) {
-      progress.unlocked = true
-      progress.unlockedAt = Date.now()
-      if (!activeQuests.value.includes(quest.id)) {
-        activeQuests.value.push(quest.id)
-      }
-      showQuestNotification(`📜 新任务解锁：${quest.title}`, 'info', 3000)
-      saveQuestProgress()
-    }
-    return allMet
-  }
-
-  const initializeQuestSystem = () => {
-    quests.value.forEach(quest => {
-      checkQuestUnlock(quest)
-    })
-    updateTotalEmotionAccumulated()
-    updateTotalCombosTriggered()
-  }
-
-  const updateObjectiveProgress = (questId, objectiveId, increment = 1) => {
-    const quest = getQuestById(questId)
-    if (!quest) return
-
-    const progress = getQuestProgress(questId)
-    if (progress.completed) return
-
-    if (!progress.unlocked) {
-      if (!checkQuestUnlock(quest)) return
-    }
-
-    const objective = quest.objectives.find(o => o.id === objectiveId)
-    if (!objective) return
-
-    const objProgress = getObjectiveProgress(questId, objectiveId)
-    objProgress.target = objective.count || 1
-    objProgress.current = Math.min(objProgress.target, objProgress.current + increment)
-    objProgress.completed = objProgress.current >= objProgress.target
-
-    checkQuestCompletion(questId)
-    saveQuestProgress()
-  }
-
-  const checkQuestCompletion = (questId) => {
-    const quest = getQuestById(questId)
-    const progress = getQuestProgress(questId)
-
-    if (progress.completed) return
-
-    const allObjectivesCompleted = quest.objectives.every(obj => {
-      const objProgress = getObjectiveProgress(questId, obj.id)
-      return objProgress.completed
-    })
-
-    if (allObjectivesCompleted) {
-      progress.completed = true
-      progress.completedAt = Date.now()
-      completedQuests.value.push(questId)
-
-      const index = activeQuests.value.indexOf(questId)
-      if (index > -1) {
-        activeQuests.value.splice(index, 1)
-      }
-
-      claimQuestRewards(questId)
-
-      if (quest.nextQuest) {
-        const nextQuest = getQuestById(quest.nextQuest)
-        if (nextQuest) {
-          checkQuestUnlock(nextQuest)
-        }
-      }
-
-      showQuestNotification(`✅ 任务完成：${quest.title}`, 'success', 4000)
-    }
-  }
-
-  const claimQuestRewards = (questId) => {
-    const quest = getQuestById(questId)
-    const progress = getQuestProgress(questId)
-
-    if (!quest || !quest.rewards || progress.claimed) return
-
-    progress.claimed = true
-
-    if (quest.rewards.emotion) {
-      emotionValue.value += quest.rewards.emotion
-      showNotification(`💖 情绪值 +${quest.rewards.emotion}`, 'success', 2000)
-    }
-
-    if (quest.rewards.materials && quest.rewards.materials.length > 0) {
-      const materialNames = quest.rewards.materials.map(mId => {
-        const mat = getMaterialById(mId)
-        return mat ? mat.name : mId
-      }).join('、')
-      showNotification(`🎁 获得素材：${materialNames}`, 'success', 2500)
-    }
-
-    if (quest.rewards.affinity) {
-      Object.entries(quest.rewards.affinity).forEach(([charId, value]) => {
-        characterAffinities.value[charId] = Math.min(100, (characterAffinities.value[charId] || 0) + value)
-        const char = characterRegistry.value.find(c => c.id === charId)
-        if (char) {
-          showNotification(`💕 ${char.name}好感度 +${value}`, 'success', 2000)
-        }
-      })
-      saveCharacterRelationData()
-      checkAffinityChapterUnlocks()
-    }
-
-    if (quest.rewards.unlockQuest) {
-      quest.rewards.unlockQuest.forEach(qId => {
-        const q = getQuestById(qId)
-        if (q) checkQuestUnlock(q)
-      })
-    }
-
-    if (quest.rewards.unlockChapter) {
-      quest.rewards.unlockChapter.forEach(chId => {
-        if (!unlockedChapters.value.includes(chId)) {
-          unlockedChapters.value.push(chId)
-          const ch = getChapterById(chId)
-          if (ch) {
-            showNotification(`📚 解锁章节：${ch.title}`, 'success', 3000)
-          }
-        }
-      })
-    }
-
-    if (quest.rewards.unlockMaterial) {
-      quest.rewards.unlockMaterial.forEach(mId => {
-        if (!newGamePlus.value.unlockedHiddenMaterialIds.includes(mId)) {
-          newGamePlus.value.unlockedHiddenMaterialIds.push(mId)
-          const mat = hiddenMaterialsRegistry.value.find(m => m.id === mId)
-          if (mat) {
-            showNotification(`✨ 解锁隐藏素材：${mat.name}`, 'success', 3000)
-          }
-        }
-      })
-      saveNewGamePlusData()
-    }
-
-    if (quest.rewards.unlockAchievement) {
-      quest.rewards.unlockAchievement.forEach(achId => {
-        const achievement = crossCycleAchievements.value.find(a => a.id === achId)
-        if (achievement && !achievement.unlocked) {
-          achievement.unlocked = true
-          achievement.unlockedAt = Date.now()
-          showNotification(`🏆 成就解锁：${achievement.name}`, 'success', 3000)
-        }
-      })
-      saveCrossCycleAchievements()
-    }
-
-    saveQuestProgress()
-  }
-
-  const trackQuestEvent = (eventType, eventData) => {
-    if (!isInitialized.value) return
-
-    activeQuests.value.forEach(questId => {
-      const quest = getQuestById(questId)
-      if (!quest) return
-
-      quest.objectives.forEach(objective => {
-        let shouldUpdate = false
-
-        switch (objective.type) {
-          case 'place_material':
-            shouldUpdate = eventType === 'place_material' && eventData.materialId === objective.target
-            break
-          case 'trigger_combo':
-            shouldUpdate = eventType === 'trigger_combo' && eventData.comboId === objective.target
-            break
-          case 'complete_scene':
-            shouldUpdate = eventType === 'complete_scene' && eventData.sceneId === objective.target
-            break
-          case 'complete_chapter':
-            shouldUpdate = eventType === 'complete_chapter' && eventData.chapterId === objective.target
-            break
-          case 'start_chapter':
-            shouldUpdate = eventType === 'start_chapter' && eventData.chapterId === objective.target
-            break
-          case 'emotion_reach':
-            shouldUpdate = eventType === 'emotion_change' && emotionValue.value >= objective.target
-            break
-          case 'total_emotion_reach':
-            shouldUpdate = eventType === 'emotion_change' && totalEmotionAccumulated.value >= objective.target
-            break
-          case 'total_combos':
-            shouldUpdate = eventType === 'trigger_combo' && totalCombosTriggered.value >= objective.target
-            break
-          case 'find_hidden_dialogue':
-            shouldUpdate = eventType === 'find_hidden_dialogue' && eventData.chapterId === objective.target
-            break
-          case 'chapter_complete_perfect':
-            shouldUpdate = eventType === 'complete_chapter' && eventData.chapterId === objective.target && eventData.isPerfect
-            break
-        }
-
-        if (shouldUpdate) {
-          updateObjectiveProgress(questId, objective.id, 1)
-        }
-      })
-    })
-
-    quests.value.forEach(quest => {
-      if (!activeQuests.value.includes(quest.id) && !completedQuests.value.includes(quest.id)) {
-        checkQuestUnlock(quest)
-      }
-    })
-  }
-
-  const updateTotalEmotionAccumulated = () => {
-    let total = emotionValue.value
-    Object.values(chapterScoreData.value).forEach(score => {
-      if (score.totalEmotion) total += score.totalEmotion
-    })
-    totalEmotionAccumulated.value = total
-  }
-
-  const updateTotalCombosTriggered = () => {
-    const globalSet = buildGlobalTriggeredComboSet()
-    totalCombosTriggered.value = globalSet.size + triggeredCombos.value.length
-  }
-
-  const showQuestNotification = (message, type = 'info', duration = 3000) => {
-    const id = Date.now()
-    questNotifications.value.push({ id, message, type })
-    showNotification(message, type, duration)
-    setTimeout(() => {
-      const index = questNotifications.value.findIndex(n => n.id === id)
-      if (index > -1) {
-        questNotifications.value.splice(index, 1)
-      }
-    }, duration)
-  }
-
-  const toggleQuestPanel = () => {
-    showQuestPanel.value = !showQuestPanel.value
-  }
-
-  const openQuestPanel = () => {
-    showQuestPanel.value = true
-  }
-
-  const closeQuestPanel = () => {
-    showQuestPanel.value = false
-  }
-
-  const selectQuest = (questId) => {
-    selectedQuestId.value = questId
-  }
-
-  const clearSelectedQuest = () => {
-    selectedQuestId.value = null
-  }
-
-  const getQuestTypeInfo = (type) => {
-    return questTypeLabels[type] || questTypeLabels.main
-  }
-
-  const sortedActiveQuests = computed(() => {
-    return activeQuests.value
-      .map(id => getQuestById(id))
-      .filter(Boolean)
-      .sort((a, b) => a.priority - b.priority)
-  })
-
-  const sortedCompletedQuests = computed(() => {
-    return completedQuests.value
-      .map(id => getQuestById(id))
-      .filter(Boolean)
-      .sort((a, b) => {
-        const progressA = getQuestProgress(a.id)
-        const progressB = getQuestProgress(b.id)
-        return (progressB.completedAt || 0) - (progressA.completedAt || 0)
-      })
-  })
-
-  const questCompletionStats = computed(() => {
-    const total = quests.value.length
-    const completed = completedQuests.value.length
-    const active = activeQuests.value.length
-    const locked = total - completed - active
-
-    const byType = {}
-    Object.keys(questTypeLabels).forEach(type => {
-      const typeQuests = quests.value.filter(q => q.type === type)
-      byType[type] = {
-        total: typeQuests.length,
-        completed: typeQuests.filter(q => completedQuests.value.includes(q.id)).length,
-        active: typeQuests.filter(q => activeQuests.value.includes(q.id)).length
-      }
-    })
-
-    return {
-      total,
-      completed,
-      active,
-      locked,
-      percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
-      byType
-    }
-  })
-
-  const currentChapterQuests = computed(() => {
-    if (!currentChapterId.value) return []
-    return sortedActiveQuests.value.filter(q => q.chapterId === currentChapterId.value)
-  })
-
-  const saveQuestProgress = () => {
-    try {
-      localStorage.setItem(QUEST_PROGRESS_KEY, JSON.stringify({
-        questProgress: questProgress.value,
-        activeQuests: activeQuests.value,
-        completedQuests: completedQuests.value,
-        totalEmotionAccumulated: totalEmotionAccumulated.value,
-        totalCombosTriggered: totalCombosTriggered.value,
-        scenesCompleted: scenesCompleted.value,
-        chaptersStarted: chaptersStarted.value
-      }))
-    } catch (e) {
-      console.error('Failed to save quest progress:', e)
-    }
-  }
-
-  const loadQuestProgress = () => {
-    try {
-      const saved = localStorage.getItem(QUEST_PROGRESS_KEY)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        questProgress.value = parsed.questProgress || {}
-        activeQuests.value = parsed.activeQuests || []
-        completedQuests.value = parsed.completedQuests || []
-        totalEmotionAccumulated.value = parsed.totalEmotionAccumulated || 0
-        totalCombosTriggered.value = parsed.totalCombosTriggered || 0
-        scenesCompleted.value = parsed.scenesCompleted || []
-        chaptersStarted.value = parsed.chaptersStarted || []
-      }
-    } catch (e) {
-      console.error('Failed to load quest progress:', e)
-    }
-  }
-
-  const resetQuestProgress = () => {
-    questProgress.value = {}
-    activeQuests.value = []
-    completedQuests.value = []
-    totalEmotionAccumulated.value = 0
-    totalCombosTriggered.value = 0
-    scenesCompleted.value = []
-    chaptersStarted.value = []
-    localStorage.removeItem(QUEST_PROGRESS_KEY)
-    initializeQuestSystem()
-  }
 
   const startChapterWithTracking = (chapterId) => {
     const chapter = getChapterById(chapterId)
@@ -6114,8 +4894,6 @@ export const useGameStore = defineStore('game', () => {
     chapterCompletionDetails,
     keyDialogueLines,
     hiddenDialogueSequence,
-    emotionHistory,
-    shareStoryData,
     branchStats,
     currentPathSequence,
     currentTimeOfDay,
@@ -6236,25 +5014,12 @@ export const useGameStore = defineStore('game', () => {
     hiddenMaterialsRegistry,
     crossCycleAchievements,
     ngpNotification,
-    achievementNotification,
-    newlyUnlockedAchievements,
-    ACHIEVEMENT_CATEGORIES,
-    ACHIEVEMENT_RARITY,
     calculateInheritedEmotion,
     getEffectiveInheritanceRatio,
     getUnlockedHiddenMaterials,
     isMaterialUnlocked,
     checkHiddenMaterialUnlockConditions,
     checkCrossCycleAchievements,
-    checkAchievements,
-    checkAchievementsByCategory,
-    unlockAchievement,
-    getAchievementsByCategory,
-    getAchievementRarityInfo,
-    getAchievementCategoryInfo,
-    getAchievementStats,
-    getRecentlyUnlockedAchievements,
-    clearNewlyUnlockedAchievements,
     saveNewGamePlusData,
     loadNewGamePlusData,
     saveCrossCycleAchievements,
@@ -6272,9 +5037,6 @@ export const useGameStore = defineStore('game', () => {
     getGalleryStats,
     getEndingTypeLabel,
     getEndingTypeIcon,
-    generateShareStoryData,
-    getShareStoryData,
-    clearShareStoryData,
     characterRegistry,
     characterAffinities,
     affinityLog,
@@ -6295,39 +5057,6 @@ export const useGameStore = defineStore('game', () => {
     saveCharacterRelationData,
     loadCharacterRelationData,
     dismissAffinityNotification,
-    clearAffinityNotifications,
-    quests,
-    questProgress,
-    activeQuests,
-    completedQuests,
-    questNotifications,
-    showQuestPanel,
-    selectedQuestId,
-    totalEmotionAccumulated,
-    totalCombosTriggered,
-    scenesCompleted,
-    chaptersStarted,
-    getQuestById,
-    getQuestProgress,
-    getObjectiveProgress,
-    checkQuestUnlock,
-    trackQuestEvent,
-    toggleQuestPanel,
-    openQuestPanel,
-    closeQuestPanel,
-    selectQuest,
-    clearSelectedQuest,
-    getQuestTypeInfo,
-    sortedActiveQuests,
-    sortedCompletedQuests,
-    questCompletionStats,
-    currentChapterQuests,
-    saveQuestProgress,
-    loadQuestProgress,
-    resetQuestProgress,
-    runtimeWarnings,
-    showRuntimeWarningModal,
-    validateRuntimeData,
-    dismissRuntimeWarning
+    clearAffinityNotifications
   }
 })

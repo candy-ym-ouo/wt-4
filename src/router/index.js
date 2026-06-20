@@ -40,46 +40,6 @@ const routes = [
     path: '/character-relation',
     name: 'CharacterRelation',
     component: () => import('../views/CharacterRelationView.vue')
-  },
-  {
-    path: '/story-calendar',
-    name: 'StoryCalendar',
-    component: () => import('../views/StoryCalendar.vue')
-  },
-  {
-    path: '/decoration-gallery',
-    name: 'DecorationGallery',
-    component: () => import('../views/DecorationGallery.vue')
-  },
-  {
-    path: '/challenge-select',
-    name: 'ChallengeSelect',
-    component: () => import('../views/ChallengeSelectView.vue')
-  },
-  {
-    path: '/challenge-result',
-    name: 'ChallengeResult',
-    component: () => import('../views/ChallengeResultView.vue')
-  },
-  {
-    path: '/leaderboard',
-    name: 'Leaderboard',
-    component: () => import('../views/LeaderboardView.vue')
-  },
-  {
-    path: '/leaderboard/:challengeId',
-    name: 'LeaderboardForChallenge',
-    component: () => import('../views/LeaderboardView.vue')
-  },
-  {
-    path: '/share-story',
-    name: 'ShareStory',
-    component: () => import('../views/ShareStoryView.vue')
-  },
-  {
-    path: '/share-story/:shareId',
-    name: 'ShareStoryById',
-    component: () => import('../views/ShareStoryView.vue')
   }
 ]
 

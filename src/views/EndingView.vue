@@ -485,6 +485,7 @@ import { useRouter } from 'vue-router'
 import { useGameStore } from '../stores/gameStore'
 import AchievementBadge from '../components/AchievementBadge.vue'
 import AchievementPanel from '../components/AchievementPanel.vue'
+import { encodeShareData } from '../utils/shareCodec'
 
 const router = useRouter()
 const gameStore = useGameStore()
@@ -639,7 +640,12 @@ const generateAndShareStory = () => {
       localStorage.setItem(`share_story_${shareData.shareId}`, JSON.stringify(shareData))
     }
     
-    router.push('/share-story')
+    const encoded = encodeShareData(shareData)
+    if (encoded) {
+      router.push({ path: '/share-story', query: { d: encoded } })
+    } else {
+      router.push('/share-story')
+    }
   }
 }
 
