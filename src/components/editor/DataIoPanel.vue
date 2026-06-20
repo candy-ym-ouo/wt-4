@@ -1,8 +1,8 @@
 <template>
   <div class="data-io-panel">
     <div class="panel-header">
-      <span class="panel-icon">💾</span>
-      <span class="panel-title">数据管理</span>
+      <span class="panel-icon">�</span>
+      <span class="panel-title">剧情包管理</span>
     </div>
 
     <div class="io-stats">

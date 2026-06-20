@@ -4,6 +4,16 @@ import chaptersData from '../data/chapters.json'
 import scenesData from '../data/scenes.json'
 import endingsData from '../data/endings.json'
 import materialsData from '../data/materials.json'
+import {
+  createStoryPack,
+  parseStoryPack,
+  getPackPreview,
+  validatePackIntegrity,
+  detectConflicts,
+  mergePackData,
+  exportPackToFile,
+  readPackFromFile
+} from '../utils/storyPackCodec'
 
 export const useEditorStore = defineStore('editor', () => {
   const chapters = ref(JSON.parse(JSON.stringify(chaptersData)))
@@ -526,6 +536,105 @@ export const useEditorStore = defineStore('editor', () => {
     return { errors, warnings, isValid: errors.length === 0 }
   }
 
+  const exportStoryPack = (options = {}) => {
+    const pack = createStoryPack(
+      chapters.value,
+      scenes.value,
+      endings.value,
+      materials.value,
+      options
+    )
+    const filename = options.name
+      ? `${options.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}-${Date.now()}.json`
+      : `story-pack-${Date.now()}.json`
+    exportPackToFile(pack, filename)
+    isDirty.value = false
+    lastSavedAt.value = new Date()
+    showNotification('剧情包已导出', 'success')
+  }
+
+  const importStoryPack = (jsonString, mode = 'replace', conflictStrategy = 'rename') => {
+    try {
+      const result = parseStoryPack(jsonString)
+      if (!result.valid) {
+        throw new Error(result.error)
+      }
+
+      const pack = result.pack
+
+      if (mode === 'merge') {
+        const merged = mergePackData(
+          pack.data,
+          chapters.value,
+          scenes.value,
+          endings.value,
+          materials.value,
+          conflictStrategy
+        )
+        chapters.value = [...chapters.value, ...merged.chapters]
+        Object.assign(scenes.value, merged.scenes)
+        endings.value = [...endings.value, ...merged.endings]
+        materials.value = [...materials.value, ...merged.materials]
+        showNotification(`剧情包已合并导入：${merged.chapters.length} 章节，${Object.keys(merged.scenes).length} 场景`, 'success')
+      } else {
+        if (!confirm('替换导入将覆盖当前所有数据，确定继续吗？')) {
+          return
+        }
+        chapters.value = pack.data.chapters
+        scenes.value = pack.data.scenes
+        endings.value = pack.data.endings
+        if (pack.data.materials) {
+          materials.value = pack.data.materials
+        }
+        showNotification('剧情包已替换导入', 'success')
+      }
+
+      selectedChapterId.value = null
+      selectedSceneId.value = null
+      selectedDialogueIndex.value = null
+      selectedComboId.value = null
+      selectedEndingId.value = null
+      isDirty.value = false
+      lastSavedAt.value = new Date()
+    } catch (e) {
+      showNotification('导入失败: ' + e.message, 'error')
+    }
+  }
+
+  const previewPack = (jsonString) => {
+    try {
+      const result = parseStoryPack(jsonString)
+      if (!result.valid) {
+        return { valid: false, error: result.error }
+      }
+      const pack = result.pack
+      const preview = getPackPreview(pack)
+      const integrity = validatePackIntegrity(pack)
+      const conflicts = detectConflicts(
+        pack.data,
+        chapters.value,
+        scenes.value,
+        endings.value,
+        materials.value
+      )
+      return { valid: true, preview, integrity, conflicts, pack }
+    } catch (e) {
+      return { valid: false, error: e.message }
+    }
+  }
+
+  const validatePackData = (jsonString) => {
+    try {
+      const result = parseStoryPack(jsonString)
+      if (!result.valid) {
+        return { valid: false, errors: [result.error], warnings: [] }
+      }
+      return validatePackIntegrity(result.pack)
+    } catch (e) {
+      return { valid: false, errors: [e.message], warnings: [] }
+    }
+  }
+
   const resetToDefaults = () => {
     if (!confirm('确定要重置所有数据为默认值吗？此操作不可撤销。')) {
       return
@@ -595,6 +704,10 @@ export const useEditorStore = defineStore('editor', () => {
     exportData,
     importData,
     validateData,
-    resetToDefaults
+    resetToDefaults,
+    exportStoryPack,
+    importStoryPack,
+    previewPack,
+    validatePackData
   }
 })

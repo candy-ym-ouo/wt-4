@@ -144,7 +144,7 @@ const tabs = [
   { id: 'combos', label: '组合', icon: '✨' },
   { id: 'endings', label: '结局', icon: '🌟' },
   { id: 'warnings', label: '预警', icon: '🚨' },
-  { id: 'io', label: '数据', icon: '📦' }
+  { id: 'io', label: '剧情包', icon: '📦' }
 ]
 
 const getTabCount = (tabId) => {
