@@ -1,0 +1,575 @@
+[
+  {
+    "id": "bg_spring_sakura",
+    "category": "background",
+    "name": "樱花漫舞",
+    "description": "春日里樱花纷飞的浪漫背景，粉白花瓣随风飘落。",
+    "rarity": "common",
+    "unlocked": true,
+    "preview": {
+      "type": "gradient",
+      "value": "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #f9a8d4 100%)",
+      "pattern": "sakura"
+    },
+    "unlockCondition": null,
+    "rewardFrom": null,
+    "tags": ["春天", "樱花", "浪漫"]
+  },
+  {
+    "id": "bg_summer_sunshine",
+    "category": "background",
+    "name": "盛夏阳光",
+    "description": "明亮的夏日阳光透过绿叶，洒下斑驳光影。",
+    "rarity": "common",
+    "unlocked": false,
+    "preview": {
+      "type": "gradient",
+      "value": "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #6ee7b7 100%)",
+      "pattern": "sunshine"
+    },
+    "unlockCondition": {
+      "type": "chapter_completed",
+      "target": "chapter2",
+      "description": "完成「盛夏光年」章节"
+    },
+    "rewardFrom": "chapter2_complete",
+    "tags": ["夏天", "阳光", "清新"]
+  },
+  {
+    "id": "bg_autumn_maple",
+    "category": "background",
+    "name": "枫叶飘零",
+    "description": "金色的枫叶缓缓飘落，铺满小径。",
+    "rarity": "common",
+    "unlocked": false,
+    "preview": {
+      "type": "gradient",
+      "value": "linear-gradient(135deg, #fed7aa 0%, #fdba74 50%, #fb923c 100%)",
+      "pattern": "maple"
+    },
+    "unlockCondition": {
+      "type": "chapter_completed",
+      "target": "chapter3",
+      "description": "完成「秋日私语」章节"
+    },
+    "rewardFrom": "chapter3_complete",
+    "tags": ["秋天", "枫叶", "温暖"]
+  },
+  {
+    "id": "bg_winter_snow",
+    "category": "background",
+    "name": "初雪降临",
+    "description": "纯净的雪花缓缓飘落，世界银装素裹。",
+    "rarity": "rare",
+    "unlocked": false,
+    "preview": {
+      "type": "gradient",
+      "value": "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%)",
+      "pattern": "snow"
+    },
+    "unlockCondition": {
+      "type": "chapter_completed",
+      "target": "chapter4",
+      "description": "完成「冬日暖阳」章节"
+    },
+    "rewardFrom": "chapter4_complete",
+    "tags": ["冬天", "雪花", "纯净"]
+  },
+  {
+    "id": "bg_galaxy_night",
+    "category": "background",
+    "name": "星河璀璨",
+    "description": "深邃的夜空中繁星点点，银河横跨天际。",
+    "rarity": "epic",
+    "unlocked": false,
+    "preview": {
+      "type": "gradient",
+      "value": "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)",
+      "pattern": "stars"
+    },
+    "unlockCondition": {
+      "type": "ending_discovered",
+      "target": "ending_true",
+      "description": "发现真结局"
+    },
+    "rewardFrom": "true_ending",
+    "tags": ["星空", "夜晚", "梦幻"]
+  },
+  {
+    "id": "bg_sunset_glow",
+    "category": "background",
+    "name": "落日余晖",
+    "description": "天边绚烂的晚霞，映照着离别的时刻。",
+    "rarity": "rare",
+    "unlocked": false,
+    "preview": {
+      "type": "gradient",
+      "value": "linear-gradient(180deg, #fef3c7 0%, #fed7aa 30%, #fda4af 60%, #f472b6 100%)",
+      "pattern": "sunset"
+    },
+    "unlockCondition": {
+      "type": "emotion_reached",
+      "value": 150,
+      "description": "单周目情绪值达到 150"
+    },
+    "rewardFrom": "high_emotion_150",
+    "tags": ["夕阳", "晚霞", "浪漫"]
+  },
+  {
+    "id": "bg_rainy_day",
+    "category": "background",
+    "name": "雨中漫步",
+    "description": "淅淅沥沥的小雨，敲打着窗棂。",
+    "rarity": "rare",
+    "unlocked": false,
+    "preview": {
+      "type": "gradient",
+      "value": "linear-gradient(180deg, #e0e7ff 0%, #c7d2fe 50%, #a5b4fc 100%)",
+      "pattern": "rain"
+    },
+    "unlockCondition": {
+      "type": "combo_triggered",
+      "count": 5,
+      "description": "触发 5 个以上素材组合"
+    },
+    "rewardFrom": "combo_master_5",
+    "tags": ["雨天", "清新", "宁静"]
+  },
+  {
+    "id": "bg_cherry_blossom_night",
+    "category": "background",
+    "name": "夜樱",
+    "description": "月光下的樱花树，花瓣在夜色中闪烁。",
+    "rarity": "legendary",
+    "unlocked": false,
+    "preview": {
+      "type": "gradient",
+      "value": "linear-gradient(180deg, #1e1b4b 0%, #312e81 40%, #701a75 80%, #be185d 100%)",
+      "pattern": "night_sakura"
+    },
+    "unlockCondition": {
+      "type": "perfect_cycle",
+      "description": "完成一次完美周目"
+    },
+    "rewardFrom": "perfect_cycle",
+    "tags": ["夜樱", "月光", "传说"]
+  },
+  {
+    "id": "frame_hearts",
+    "category": "frame",
+    "name": "爱心边框",
+    "description": "粉粉嫩嫩的爱心环绕，满满的少女心。",
+    "rarity": "common",
+    "unlocked": true,
+    "preview": {
+      "type": "border",
+      "style": "hearts",
+      "color": "#f472b6"
+    },
+    "unlockCondition": null,
+    "rewardFrom": null,
+    "tags": ["爱心", "可爱", "粉色"]
+  },
+  {
+    "id": "frame_vintage_lace",
+    "category": "frame",
+    "name": "复古蕾丝",
+    "description": "优雅的白色蕾丝花边，复古又精致。",
+    "rarity": "common",
+    "unlocked": false,
+    "preview": {
+      "type": "border",
+      "style": "lace",
+      "color": "#fafafa"
+    },
+    "unlockCondition": {
+      "type": "achievement",
+      "target": "spring_blossom",
+      "description": "获得「春日绽放」成就"
+    },
+    "rewardFrom": "achievement_spring_blossom",
+    "tags": ["蕾丝", "复古", "优雅"]
+  },
+  {
+    "id": "frame_golden_ornate",
+    "category": "frame",
+    "name": "华丽金边",
+    "description": "奢华的金色花纹边框，尊贵典雅。",
+    "rarity": "rare",
+    "unlocked": false,
+    "preview": {
+      "type": "border",
+      "style": "golden",
+      "color": "#fbbf24"
+    },
+    "unlockCondition": {
+      "type": "chapter_perfect",
+      "target": "chapter1",
+      "description": "「春日序章」完美通关"
+    },
+    "rewardFrom": "perfect_chapter1",
+    "tags": ["金色", "华丽", "尊贵"]
+  },
+  {
+    "id": "frame_starry_border",
+    "category": "frame",
+    "name": "星光边框",
+    "description": "闪烁的星星组成边框，梦幻又浪漫。",
+    "rarity": "rare",
+    "unlocked": false,
+    "preview": {
+      "type": "border",
+      "style": "stars",
+      "color": "#8b5cf6"
+    },
+    "unlockCondition": {
+      "type": "hidden_dialogue",
+      "count": 3,
+      "description": "发现 3 段隐藏对话"
+    },
+    "rewardFrom": "hidden_hunter_3",
+    "tags": ["星光", "梦幻", "紫色"]
+  },
+  {
+    "id": "frame_floral_wreath",
+    "category": "frame",
+    "name": "花环边框",
+    "description": "四季鲜花编织的花环，生机盎然。",
+    "rarity": "epic",
+    "unlocked": false,
+    "preview": {
+      "type": "border",
+      "style": "floral",
+      "color": "#84cc16"
+    },
+    "unlockCondition": {
+      "type": "all_chapters_perfect",
+      "description": "所有章节完美通关"
+    },
+    "rewardFrom": "all_perfect",
+    "tags": ["花环", "四季", "自然"]
+  },
+  {
+    "id": "frame_butterfly",
+    "category": "frame",
+    "name": "蝶舞边框",
+    "description": "翩翩起舞的蝴蝶环绕，灵动优美。",
+    "rarity": "epic",
+    "unlocked": false,
+    "preview": {
+      "type": "border",
+      "style": "butterfly",
+      "color": "#06b6d4"
+    },
+    "unlockCondition": {
+      "type": "all_endings",
+      "description": "发现所有结局"
+    },
+    "rewardFrom": "ending_collector",
+    "tags": ["蝴蝶", "灵动", "青色"]
+  },
+  {
+    "id": "frame_infinity",
+    "category": "frame",
+    "name": "永恒之环",
+    "description": "象征永恒的莫比乌斯环，跨越时间的羁绊。",
+    "rarity": "legendary",
+    "unlocked": false,
+    "preview": {
+      "type": "border",
+      "style": "infinity",
+      "color": "#ec4899"
+    },
+    "unlockCondition": {
+      "type": "cycle_5",
+      "description": "完成 5 次完整周目"
+    },
+    "rewardFrom": "cycle_master",
+    "tags": ["永恒", "轮回", "传说"]
+  },
+  {
+    "id": "font_elegant_serif",
+    "category": "font",
+    "name": "雅致宋体",
+    "description": "经典的宋体字型，端庄典雅。",
+    "rarity": "common",
+    "unlocked": true,
+    "preview": {
+      "type": "font",
+      "family": "'Noto Serif SC', serif",
+      "color": "#3d3d3d"
+    },
+    "unlockCondition": null,
+    "rewardFrom": null,
+    "tags": ["宋体", "典雅", "经典"]
+  },
+  {
+    "id": "font_handwriting_warm",
+    "category": "font",
+    "name": "温暖手写",
+    "description": "温柔的手写字体，如同亲笔书写。",
+    "rarity": "common",
+    "unlocked": true,
+    "preview": {
+      "type": "font",
+      "family": "'Ma Shan Zheng', cursive",
+      "color": "#3d3d3d"
+    },
+    "unlockCondition": null,
+    "rewardFrom": null,
+    "tags": ["手写", "温暖", "亲切"]
+  },
+  {
+    "id": "font_romantic_pink",
+    "category": "font",
+    "name": "浪漫粉字",
+    "description": "粉红色的优雅字体，少女心满满。",
+    "rarity": "rare",
+    "unlocked": false,
+    "preview": {
+      "type": "font",
+      "family": "'Noto Serif SC', serif",
+      "color": "#ec4899"
+    },
+    "unlockCondition": {
+      "type": "chapter_completed",
+      "target": "chapter1",
+      "description": "完成「春日序章」章节"
+    },
+    "rewardFrom": "chapter1_complete",
+    "tags": ["粉色", "浪漫", "优雅"]
+  },
+  {
+    "id": "font_golden_classic",
+    "category": "font",
+    "name": "金色经典",
+    "description": "闪耀的金色字体，尊贵非凡。",
+    "rarity": "rare",
+    "unlocked": false,
+    "preview": {
+      "type": "font",
+      "family": "'Noto Serif SC', serif",
+      "color": "#f59e0b",
+      "effect": "glow"
+    },
+    "unlockCondition": {
+      "type": "achievement",
+      "target": "perfectionist",
+      "description": "获得「完美主义者」成就"
+    },
+    "rewardFrom": "achievement_perfectionist",
+    "tags": ["金色", "尊贵", "闪耀"]
+  },
+  {
+    "id": "font_gradient_dream",
+    "category": "font",
+    "name": "梦幻渐变",
+    "description": "粉紫渐变的字体，如梦似幻。",
+    "rarity": "epic",
+    "unlocked": false,
+    "preview": {
+      "type": "font",
+      "family": "'Ma Shan Zheng', cursive",
+      "color": "linear-gradient(135deg, #f472b6, #a78bfa)",
+      "effect": "gradient"
+    },
+    "unlockCondition": {
+      "type": "cycle_3",
+      "description": "完成 3 次完整周目"
+    },
+    "rewardFrom": "seasoned_traveler",
+    "tags": ["渐变", "梦幻", "粉紫"]
+  },
+  {
+    "id": "font_starry_shimmer",
+    "category": "font",
+    "name": "星光闪烁",
+    "description": "带有星光闪烁效果的字体，璀璨夺目。",
+    "rarity": "legendary",
+    "unlocked": false,
+    "preview": {
+      "type": "font",
+      "family": "'Ma Shan Zheng', cursive",
+      "color": "#fef3c7",
+      "effect": "shimmer"
+    },
+    "unlockCondition": {
+      "type": "all_achievements",
+      "description": "解锁所有成就"
+    },
+    "rewardFrom": "all_achievements",
+    "tags": ["星光", "闪烁", "传说"]
+  },
+  {
+    "id": "cover_spring",
+    "category": "cover",
+    "name": "春日封面",
+    "description": "樱花盛开的春日封面，开启新的故事。",
+    "rarity": "common",
+    "unlocked": true,
+    "season": "spring",
+    "preview": {
+      "type": "cover",
+      "background": "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)",
+      "icon": "🌸",
+      "titleColor": "#be185d"
+    },
+    "unlockCondition": null,
+    "rewardFrom": null,
+    "tags": ["春天", "樱花", "封面"]
+  },
+  {
+    "id": "cover_summer",
+    "category": "cover",
+    "name": "盛夏封面",
+    "description": "阳光灿烂的夏日封面，热情洋溢。",
+    "rarity": "common",
+    "unlocked": false,
+    "season": "summer",
+    "preview": {
+      "type": "cover",
+      "background": "linear-gradient(135deg, #d1fae5 0%, #6ee7b7 100%)",
+      "icon": "☀️",
+      "titleColor": "#065f46"
+    },
+    "unlockCondition": {
+      "type": "chapter_completed",
+      "target": "chapter2",
+      "description": "完成「盛夏光年」章节"
+    },
+    "rewardFrom": "chapter2_complete",
+    "tags": ["夏天", "阳光", "封面"]
+  },
+  {
+    "id": "cover_autumn",
+    "category": "cover",
+    "name": "秋日封面",
+    "description": "金色枫叶的秋日封面，诗意盎然。",
+    "rarity": "common",
+    "unlocked": false,
+    "season": "autumn",
+    "preview": {
+      "type": "cover",
+      "background": "linear-gradient(135deg, #fed7aa 0%, #fb923c 100%)",
+      "icon": "🍂",
+      "titleColor": "#92400e"
+    },
+    "unlockCondition": {
+      "type": "chapter_completed",
+      "target": "chapter3",
+      "description": "完成「秋日私语」章节"
+    },
+    "rewardFrom": "chapter3_complete",
+    "tags": ["秋天", "枫叶", "封面"]
+  },
+  {
+    "id": "cover_winter",
+    "category": "cover",
+    "name": "冬日封面",
+    "description": "白雪皑皑的冬日封面，纯净美好。",
+    "rarity": "rare",
+    "unlocked": false,
+    "season": "winter",
+    "preview": {
+      "type": "cover",
+      "background": "linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%)",
+      "icon": "❄️",
+      "titleColor": "#1e40af"
+    },
+    "unlockCondition": {
+      "type": "chapter_completed",
+      "target": "chapter4",
+      "description": "完成「冬日暖阳」章节"
+    },
+    "rewardFrom": "chapter4_complete",
+    "tags": ["冬天", "雪花", "封面"]
+  },
+  {
+    "id": "cover_four_seasons",
+    "category": "cover",
+    "name": "四季流转",
+    "description": "融合四季之美的封面，见证完整的故事。",
+    "rarity": "epic",
+    "unlocked": false,
+    "season": "all",
+    "preview": {
+      "type": "cover",
+      "background": "linear-gradient(135deg, #fce7f3 0%, #d1fae5 33%, #fed7aa 66%, #dbeafe 100%)",
+      "icon": "🌍",
+      "titleColor": "#3d3d3d"
+    },
+    "unlockCondition": {
+      "type": "all_chapters_completed",
+      "description": "完成所有章节"
+    },
+    "rewardFrom": "all_chapters",
+    "tags": ["四季", "流转", "封面"]
+  },
+  {
+    "id": "cover_true_ending",
+    "category": "cover",
+    "name": "命运交织",
+    "description": "真结局专属封面，记录命中注定的相遇。",
+    "rarity": "legendary",
+    "unlocked": false,
+    "season": "eternal",
+    "preview": {
+      "type": "cover",
+      "background": "linear-gradient(135deg, #fdf2f8 0%, #f5d0fe 25%, #ddd6fe 50%, #c7d2fe 75%, #dbeafe 100%)",
+      "icon": "💎",
+      "titleColor": "#7c3aed",
+      "effect": "sparkle"
+    },
+    "unlockCondition": {
+      "type": "ending_discovered",
+      "target": "ending_true",
+      "description": "达成真结局"
+    },
+    "rewardFrom": "true_ending",
+    "tags": ["真结局", "命运", "传说"]
+  },
+  {
+    "id": "cover_memory",
+    "category": "cover",
+    "name": "回忆相册",
+    "description": "珍藏所有美好回忆的封面，记录每一个感动瞬间。",
+    "rarity": "epic",
+    "unlocked": false,
+    "season": "memory",
+    "preview": {
+      "type": "cover",
+      "background": "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%)",
+      "icon": "📸",
+      "titleColor": "#92400e"
+    },
+    "unlockCondition": {
+      "type": "all_hidden_dialogues",
+      "description": "发现所有隐藏对话"
+    },
+    "rewardFrom": "memory_hunter",
+    "tags": ["回忆", "相册", "隐藏"]
+  },
+  {
+    "id": "cover_eternal_bloom",
+    "category": "cover",
+    "name": "永恒之花",
+    "description": "永不凋零的花朵，象征跨越时间的羁绊。",
+    "rarity": "legendary",
+    "unlocked": false,
+    "season": "eternal",
+    "preview": {
+      "type": "cover",
+      "background": "linear-gradient(180deg, #fdf2f8 0%, #fbcfe8 50%, #f472b6 100%)",
+      "icon": "🌺",
+      "titleColor": "#be185d",
+      "effect": "petals"
+    },
+    "unlockCondition": {
+      "type": "material_unlocked",
+      "target": "eternal_bloom",
+      "description": "解锁隐藏素材「永恒之花」"
+    },
+    "rewardFrom": "eternal_bloom_unlock",
+    "tags": ["永恒", "花朵", "传说"]
+  }
+]

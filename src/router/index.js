@@ -45,6 +45,11 @@ const routes = [
     path: '/story-calendar',
     name: 'StoryCalendar',
     component: () => import('../views/StoryCalendar.vue')
+  },
+  {
+    path: '/decoration-gallery',
+    name: 'DecorationGallery',
+    component: () => import('../views/DecorationGallery.vue')
   }
 ]
 

@@ -201,6 +201,9 @@
       <button class="btn btn-ghost calendar-btn" @click="goToStoryCalendar">
         📅 剧情日历
       </button>
+      <button class="btn btn-ghost decoration-btn" @click="goToDecorationGallery">
+        🎨 手账装扮
+      </button>
       <button class="btn btn-ghost" @click="goToEditor">
         📝 剧情编辑器
       </button>
@@ -421,11 +424,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '../stores/gameStore'
+import { useDecorationStore } from '../stores/decorationStore'
 import TutorialOverlay from '../components/TutorialOverlay.vue'
 import AchievementPanel from '../components/AchievementPanel.vue'
 
 const router = useRouter()
 const gameStore = useGameStore()
+const decorationStore = useDecorationStore()
 
 const showNgpStats = ref(false)
 const showAchievementPanel = ref(false)
@@ -703,9 +708,15 @@ const goToStoryCalendar = () => {
   router.push('/story-calendar')
 }
 
+const goToDecorationGallery = () => {
+  router.push('/decoration-gallery')
+}
+
 onMounted(() => {
   gameStore.checkForCrashRecovery()
   gameStore.isInitialized = true
+  decorationStore.initialize()
+  decorationStore.checkDecorationUnlockConditions()
   
   if (gameStore.shouldShowFirstTimeTutorial()) {
     setTimeout(() => {

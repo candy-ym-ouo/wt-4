@@ -2,11 +2,13 @@
   <div class="app-container">
     <router-view />
     <AchievementNotification />
+    <DecorationNotification />
   </div>
 </template>
 
 <script setup>
 import AchievementNotification from './components/AchievementNotification.vue'
+import DecorationNotification from './components/DecorationNotification.vue'
 </script>
 
 <style scoped>
